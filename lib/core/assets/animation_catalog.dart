@@ -62,6 +62,18 @@ abstract final class AssetCatalog {
 
 class AnimationCatalog {
   AnimationCatalog([Map<String, AnimationDefinition>? overrides]) {
+    definitions['hero.walk'] = const AnimationDefinition(
+      id: 'hero.walk',
+      asset: '${AssetCatalog.heroRoot}walk.png',
+      frames: 10,
+      frameWidth: 512,
+      frameHeight: 512,
+      stepTime: .125,
+      loop: true,
+      anchorX: .62,
+      anchorY: .875,
+      scale: .20,
+    );
     definitions.addAll(overrides ?? {});
     for (final entry in definitions.entries) {
       entry.value.validate();

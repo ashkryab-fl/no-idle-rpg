@@ -1,0 +1,253 @@
+{
+  "sheet": "assets/characters/hero/walk.png",
+  "frameSize": [
+    512,
+    512
+  ],
+  "frames": 10,
+  "fps": 8,
+  "stepTime": 0.125,
+  "loop": true,
+  "anchor": [
+    0.62,
+    0.875
+  ],
+  "scale": 0.2,
+  "upscale": {
+    "factor": 2,
+    "filter": "lanczos"
+  },
+  "sourceSheet": "art/hero/walk_v2/reference.png",
+  "frameTransforms": [
+    {
+      "index": 0,
+      "sourceSize": [
+        256,
+        256
+      ],
+      "sourceBounds": [
+        38,
+        38,
+        193,
+        222
+      ],
+      "sourceCell": [
+        0,
+        0
+      ],
+      "placedBounds": [
+        77,
+        77,
+        387,
+        443
+      ]
+    },
+    {
+      "index": 1,
+      "sourceSize": [
+        256,
+        256
+      ],
+      "sourceBounds": [
+        37,
+        38,
+        193,
+        222
+      ],
+      "sourceCell": [
+        1,
+        0
+      ],
+      "placedBounds": [
+        75,
+        77,
+        385,
+        444
+      ]
+    },
+    {
+      "index": 2,
+      "sourceSize": [
+        256,
+        256
+      ],
+      "sourceBounds": [
+        39,
+        35,
+        191,
+        223
+      ],
+      "sourceCell": [
+        2,
+        0
+      ],
+      "placedBounds": [
+        77,
+        71,
+        382,
+        445
+      ]
+    },
+    {
+      "index": 3,
+      "sourceSize": [
+        256,
+        256
+      ],
+      "sourceBounds": [
+        43,
+        33,
+        191,
+        228
+      ],
+      "sourceCell": [
+        3,
+        0
+      ],
+      "placedBounds": [
+        85,
+        67,
+        381,
+        457
+      ]
+    },
+    {
+      "index": 4,
+      "sourceSize": [
+        256,
+        256
+      ],
+      "sourceBounds": [
+        43,
+        33,
+        191,
+        237
+      ],
+      "sourceCell": [
+        4,
+        0
+      ],
+      "placedBounds": [
+        85,
+        67,
+        382,
+        475
+      ]
+    },
+    {
+      "index": 5,
+      "sourceSize": [
+        256,
+        256
+      ],
+      "sourceBounds": [
+        43,
+        36,
+        195,
+        238
+      ],
+      "sourceCell": [
+        0,
+        1
+      ],
+      "placedBounds": [
+        85,
+        73,
+        391,
+        475
+      ]
+    },
+    {
+      "index": 6,
+      "sourceSize": [
+        256,
+        256
+      ],
+      "sourceBounds": [
+        44,
+        38,
+        193,
+        238
+      ],
+      "sourceCell": [
+        1,
+        1
+      ],
+      "placedBounds": [
+        89,
+        77,
+        385,
+        477
+      ]
+    },
+    {
+      "index": 7,
+      "sourceSize": [
+        256,
+        256
+      ],
+      "sourceBounds": [
+        41,
+        36,
+        192,
+        240
+      ],
+      "sourceCell": [
+        2,
+        1
+      ],
+      "placedBounds": [
+        81,
+        73,
+        383,
+        481
+      ]
+    },
+    {
+      "index": 8,
+      "sourceSize": [
+        256,
+        256
+      ],
+      "sourceBounds": [
+        41,
+        34,
+        191,
+        235
+      ],
+      "sourceCell": [
+        3,
+        1
+      ],
+      "placedBounds": [
+        83,
+        67,
+        381,
+        471
+      ]
+    },
+    {
+      "index": 9,
+      "sourceSize": [
+        256,
+        256
+      ],
+      "sourceBounds": [
+        41,
+        33,
+        192,
+        221
+      ],
+      "sourceCell": [
+        4,
+        1
+      ],
+      "placedBounds": [
+        82,
+        66,
+        383,
+        441
+      ]
+    }
+  ]
+}
