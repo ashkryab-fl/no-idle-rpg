@@ -222,10 +222,11 @@ class GameSimulation {
       return 'hero.death';
     }
     if (idle.animationId != null) return idle.animationId!;
-    if (heroHitRemaining > 0) return 'hero.hit';
+    // Damage flashes over the current swing; it does not cancel the attack.
     if (phase == GamePhase.combat && combat.attacking(true, stats, 'hero')) {
       return 'hero.attack';
     }
+    if (heroHitRemaining > 0) return 'hero.hit';
     return phase == GamePhase.traveling || phase == GamePhase.enemyApproach
         ? 'hero.walk'
         : 'hero.idle';

@@ -92,7 +92,7 @@ void main() {
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox.shrink());
   });
-  testWidgets('Flame loads walk', (
+  testWidgets('Flame loads walk, attack and combat guard', (
     tester,
   ) async {
     final game = DesktopGame(GameSimulation(random: Random(1)));
@@ -123,6 +123,26 @@ void main() {
       expect(frame.sprite.image.width, 5120);
       expect(frame.sprite.image.height, 512);
     }
+    final attack = actor.animationSprites['hero.attack']!;
+    expect(attack.frames, hasLength(4));
+    expect(attack.loop, isFalse);
+    for (var index = 0; index < attack.frames.length; index++) {
+      final frame = attack.frames[index];
+      expect(frame.stepTime, .15);
+      expect(frame.sprite.srcPosition.x, index * 512);
+      expect(frame.sprite.srcPosition.y, 0);
+      expect(frame.sprite.srcSize.x, 512);
+      expect(frame.sprite.srcSize.y, 512);
+      expect(frame.sprite.image.width, 2048);
+      expect(frame.sprite.image.height, 512);
+    }
+    final guard = actor.animationSprites['hero.idle']!;
+    expect(guard.frames, hasLength(1));
+    expect(guard.loop, isTrue);
+    expect(guard.frames.single.sprite.srcSize.x, 512);
+    expect(guard.frames.single.sprite.srcSize.y, 512);
+    expect(guard.frames.single.sprite.image.width, 512);
+    expect(guard.frames.single.sprite.image.height, 512);
     await tester.pump(const Duration(milliseconds: 125));
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox.shrink());

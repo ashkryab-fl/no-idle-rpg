@@ -15,6 +15,47 @@ CombatStats fighter(double speed) => CombatStats(
   critDamage: 1.5,
 );
 void main() {
+  test('incoming hits preserve the swing and pauses return to the guard', () {
+    final game = GameSimulation(random: Random(1));
+    game.spawnEnemy();
+    game.machine.transition(GamePhase.combat);
+    expect(game.heroAnimation, 'hero.attack');
+    game.advance(.36);
+    expect(game.heroHitRemaining, greaterThan(0));
+    expect(game.heroAnimation, 'hero.attack');
+    final attack = game.animations.get('hero.attack');
+    expect((game.heroAnimationElapsed() / attack.stepTime).floor(), 2);
+    game.advance(.25);
+    expect(game.heroAnimation, 'hero.idle');
+    game.advance(.4);
+    expect(game.heroAnimation, 'hero.attack');
+    game.killEnemy();
+    expect(game.heroAnimation, 'hero.idle');
+  });
+  test('hero damage falls on the slash frame at normal and fast speeds', () {
+    for (final speed in [1.0, 5.0]) {
+      final catalog = AnimationCatalog();
+      final combat = CombatSystem(Random(1), catalog);
+      final attack = catalog.get('hero.attack');
+      final stats = fighter(speed);
+      final hitTime =
+          attack.damageEventTime! * min(1, 1 / speed / attack.duration);
+      final before = combat.update(
+        hitTime - .0001,
+        stats,
+        fighter(1),
+        'slime',
+        1,
+      );
+      expect(before.where((event) => event.fromHero), isEmpty);
+      final hits = combat.update(.0002, stats, fighter(1), 'slime', 1);
+      expect(hits.where((event) => event.fromHero), hasLength(1));
+      expect(
+        (combat.attackElapsed(true, stats, 'hero') / attack.stepTime).floor(),
+        2,
+      );
+    }
+  });
   test('speed upgrades do not replay previous combat cycles', () {
     final combat = CombatSystem(Random(1), AnimationCatalog());
     combat.update(40, fighter(1), fighter(1), 'slime', 1);

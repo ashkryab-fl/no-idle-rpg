@@ -74,6 +74,28 @@ class AnimationCatalog {
       anchorY: .875,
       scale: .20,
     );
+    definitions['hero.attack'] = const AnimationDefinition(
+      id: 'hero.attack',
+      asset: '${AssetCatalog.heroRoot}attack.png',
+      frames: 4,
+      frameWidth: 512,
+      frameHeight: 512,
+      stepTime: GameBalance.attackDuration / 4,
+      anchorX: .58,
+      anchorY: .875,
+      scale: .25,
+      damageEventTime: GameBalance.damageTiming,
+    );
+    definitions['hero.idle'] = const AnimationDefinition(
+      id: 'hero.idle',
+      asset: '${AssetCatalog.heroRoot}ready.png',
+      frameWidth: 512,
+      frameHeight: 512,
+      loop: true,
+      anchorX: .58,
+      anchorY: .875,
+      scale: .25,
+    );
     definitions.addAll(overrides ?? {});
     for (final entry in definitions.entries) {
       entry.value.validate();

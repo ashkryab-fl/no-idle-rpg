@@ -19,7 +19,12 @@ class ActorComponent extends Component {
     final elapsed = hero
         ? simulation.heroAnimationElapsed()
         : simulation.enemyAnimationElapsed();
-    final definition = simulation.animations.get(id);
+    // Until a dedicated hit sprite exists, flash the combat guard instead.
+    final spriteId =
+        hero && id == 'hero.hit' && !animationSprites.containsKey(id)
+        ? 'hero.idle'
+        : id;
+    final definition = simulation.animations.get(spriteId);
     final approach = (simulation.machine.elapsed / GameBalance.approachDuration)
         .clamp(0, 1);
     final x = hero
@@ -27,7 +32,7 @@ class ActorComponent extends Component {
         : simulation.phase == GamePhase.enemyApproach
         ? 386.0 - approach * 132
         : 254.0;
-    final spriteAnimation = animationSprites[id];
+    final spriteAnimation = animationSprites[spriteId];
     if (spriteAnimation != null) {
       final frame = (elapsed / definition.stepTime).floor();
       final index =
@@ -43,6 +48,13 @@ class ActorComponent extends Component {
           157 - h * definition.anchorY,
         ),
         size: Vector2(w, h),
+        overridePaint: hero && simulation.heroHitRemaining > 0
+            ? (Paint()
+                ..colorFilter = const ColorFilter.mode(
+                  Color(0x99fff4d6),
+                  BlendMode.srcATop,
+                ))
+            : null,
       );
     } else {
       _placeholder(canvas, x, id, elapsed, definition);
