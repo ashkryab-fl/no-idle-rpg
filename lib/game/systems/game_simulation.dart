@@ -35,6 +35,8 @@ class GameSimulation {
     Random? random,
     Random? idleRandom,
     AnimationCatalog? animations,
+    List<IdleAnimationDefinition> idleDefinitions =
+        IdleAnimationCatalog.definitions,
     CharacterProgress? character,
     ActivityStatisticsService? activity,
     GameSettings? settings,
@@ -50,6 +52,7 @@ class GameSimulation {
     idle = IdleBehaviorSystem(
       idleRandom ?? Random(this.random.nextInt(1 << 32)),
       this.animations,
+      definitions: idleDefinitions,
     );
     heroHp = stats.maxHp;
     encounterRemaining = spawner.nextDistance();
@@ -79,12 +82,15 @@ class GameSimulation {
   double _accumulator = 0;
   CombatStats get stats => CharacterStats.calculate(character);
   GamePhase get phase => machine.phase;
+  bool get isResting => phase == GamePhase.traveling && idle.blocksAdventure;
   double get movementMultiplier =>
       GameBalance.idleMovementMultipliers[idle.level.index];
   double get dpsMultiplier => GameBalance.idleDpsMultipliers[idle.level.index];
   double get rewardMultiplier =>
       GameBalance.idleRewardMultipliers[idle.level.index];
-  double get scrollSpeed => phase == GamePhase.traveling
+  double get scrollSpeed => isResting
+      ? 0
+      : phase == GamePhase.traveling
       ? GameBalance.movementSpeed * movementMultiplier
       : phase == GamePhase.enemyApproach
       ? GameBalance.movementSpeed *
@@ -106,7 +112,7 @@ class GameSimulation {
   }
 
   void _tick(double dt) {
-    idle.update(dt);
+    idle.update(dt, canRest: phase == GamePhase.traveling);
     heroHitRemaining = max(0, heroHitRemaining - dt);
     enemyHitRemaining = max(0, enemyHitRemaining - dt);
     machine.elapsed += dt;
@@ -198,7 +204,7 @@ class GameSimulation {
   }
 
   void spawnEnemy() {
-    if (phase != GamePhase.traveling) return;
+    if (phase != GamePhase.traveling || isResting) return;
     enemy = spawner.spawn(distance, kills);
     machine.transition(GamePhase.enemyApproach);
   }
@@ -221,7 +227,8 @@ class GameSimulation {
     if (phase == GamePhase.heroDeath || phase == GamePhase.respawn) {
       return 'hero.death';
     }
-    if (idle.animationId != null) return idle.animationId!;
+    // Stand still even before selection or when all roots are on cooldown.
+    if (isResting) return idle.animationId ?? 'hero.idle';
     // Damage flashes over the current swing; it does not cancel the attack.
     if (phase == GamePhase.combat && combat.attacking(true, stats, 'hero')) {
       return 'hero.attack';

@@ -105,6 +105,48 @@ void main() {
     idle.update(.61);
     expect(idle.animationId, 'a');
   });
+  test('chooses one eligible standalone or full chain at a time', () {
+    final idle = IdleBehaviorSystem(
+      Random(7),
+      AnimationCatalog(),
+      definitions: const [
+        ...chain,
+        IdleAnimationDefinition(
+          id: 'single',
+          requiredIdleLevel: IdleLevel.level1,
+        ),
+        IdleAnimationDefinition(
+          id: 'deepRest',
+          requiredIdleLevel: IdleLevel.level3,
+        ),
+      ],
+    )..setIdleSeconds(30);
+    final selectedRoots = <String>{};
+    idle.update(.01);
+    for (var i = 0; i < 100; i++) {
+      final previous = idle.animationId;
+      if (previous == 'a' || previous == 'single') {
+        selectedRoots.add(previous!);
+      }
+      expect(previous, isNot('deepRest'));
+      idle.update(.61);
+      if (previous == 'a') {
+        expect(idle.animationId, 'b');
+      } else if (previous == 'b') {
+        expect(idle.animationId, 'c');
+      } else {
+        expect(idle.animationId, isIn(['a', 'single']));
+      }
+    }
+    expect(selectedRoots, {'a', 'single'});
+    idle.setIdleSeconds(300);
+    var deepRestSelected = false;
+    for (var i = 0; i < 100; i++) {
+      idle.update(.61);
+      deepRestSelected |= idle.animationId == 'deepRest';
+    }
+    expect(deepRestSelected, true);
+  });
   test(
     'noninterruptible animation completes then caught state returns to active',
     () {

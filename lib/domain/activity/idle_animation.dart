@@ -24,6 +24,8 @@ class IdleAnimationDefinition {
 }
 
 abstract final class IdleAnimationCatalog {
+  // Placeholder IDs: add standalone nodes or complete chains here, then supply
+  // their sprite metadata in AnimationCatalog. Only roots enter the lottery.
   static const definitions = [
     IdleAnimationDefinition(
       id: 'hero.a1',
@@ -60,7 +62,7 @@ abstract final class IdleAnimationCatalog {
   ];
 }
 
-/// Orthogonal visual behavior: simulation keeps running while the hero slacks.
+/// Chooses one rest animation or chain at a time, once an encounter is over.
 class IdleBehaviorSystem {
   IdleBehaviorSystem(
     this.random,
@@ -118,6 +120,7 @@ class IdleBehaviorSystem {
   final Map<String, double> _lastPlayed = {};
   double _elapsed = 0, _duration = 0, _clock = 0, caughtRemaining = 0;
   String? get animationId => caughtRemaining > 0 ? 'hero.caught' : current?.id;
+  bool get blocksAdventure => level != IdleLevel.active || animationId != null;
   double get animationElapsed => caughtRemaining > 0
       ? animations.get('hero.caught').duration - caughtRemaining
       : _elapsed;
@@ -144,8 +147,10 @@ class IdleBehaviorSystem {
     level = levelFor(seconds);
   }
 
-  void update(double dt) {
+  void update(double dt, {bool canRest = true}) {
     _clock += dt;
+    // Keep tracking user inactivity, but finish combat/death/rewards first.
+    if (!canRest) return;
     if (caughtRemaining > 0) {
       caughtRemaining = max(0, caughtRemaining - dt);
       return;
