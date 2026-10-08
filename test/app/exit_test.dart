@@ -65,6 +65,9 @@ void main() {
     },
   );
   test('Native close during reset is cancelled and can be retried', () async {
+    controller.simulation.settings.backgroundOpacity = 0;
+    controller.simulation.settings.roadOpacity = .5;
+    controller.simulation.settings.overallOpacity = 0;
     repository.resetGate = Completer<void>();
     final reset = controller.reset();
     await window.closeHandler!();
@@ -72,6 +75,9 @@ void main() {
     expect(window.cancellations, 1);
     repository.resetGate!.complete();
     await reset;
+    expect(controller.simulation.settings.backgroundOpacity, 1);
+    expect(controller.simulation.settings.roadOpacity, 1);
+    expect(controller.simulation.settings.overallOpacity, 1);
     await controller.close();
     expect(window.quits, 1);
   });

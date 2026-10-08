@@ -136,6 +136,7 @@ class GameController extends Notifier<AppUiState> {
       await runtime.window.configure(
         alwaysOnTop: simulation.settings.alwaysOnTop,
         expanded: panel != null,
+        heroVisible: simulation.settings.overallOpacity > 0,
       );
     } catch (error) {
       reportError('Window configuration failed: $error');
@@ -229,16 +230,39 @@ class GameController extends Notifier<AppUiState> {
     unawaited(save());
   }
 
-  Future<void> updateSettings({bool? topmost, bool? sound, int? fps}) async {
+  Future<void> updateSettings({
+    bool? topmost,
+    bool? sound,
+    int? fps,
+    double? backgroundOpacity,
+    double? roadOpacity,
+    double? overallOpacity,
+    bool persist = true,
+  }) async {
     if (_closing || _resetting || _disposed) return;
+    final heroWasVisible = simulation.settings.overallOpacity > 0;
     if (topmost != null) simulation.settings.alwaysOnTop = topmost;
     if (sound != null) simulation.settings.sound = sound;
+    if (backgroundOpacity != null && backgroundOpacity.isFinite) {
+      simulation.settings.backgroundOpacity = backgroundOpacity.clamp(0.0, 1.0);
+    }
+    if (roadOpacity != null && roadOpacity.isFinite) {
+      simulation.settings.roadOpacity = roadOpacity.clamp(0.0, 1.0);
+    }
+    if (overallOpacity != null && overallOpacity.isFinite) {
+      simulation.settings.overallOpacity = overallOpacity.clamp(0.0, 1.0);
+    }
     if (fps != null) {
       simulation.settings.fps = fps;
       game.setFps(fps);
     }
-    await show(state.panel);
-    await save();
+    if (topmost != null ||
+        heroWasVisible != (simulation.settings.overallOpacity > 0)) {
+      await show(state.panel);
+    } else {
+      refresh();
+    }
+    if (persist) await save();
     refresh();
   }
 
@@ -268,6 +292,9 @@ class GameController extends Notifier<AppUiState> {
       simulation.settings.alwaysOnTop = true;
       simulation.settings.sound = false;
       simulation.settings.fps = 30;
+      simulation.settings.backgroundOpacity = 1;
+      simulation.settings.roadOpacity = 1;
+      simulation.settings.overallOpacity = 1;
       game.setFps(30);
       debugIdleSeconds = null;
       simulation.speed = 1;

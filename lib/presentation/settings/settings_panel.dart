@@ -15,6 +15,31 @@ class SettingsPanel extends StatelessWidget {
           value: settings.alwaysOnTop,
           onChanged: (v) => controller.updateSettings(topmost: v),
         ),
+        const SizedBox(height: 12),
+        _opacitySlider(
+          label: 'Background opacity',
+          value: settings.backgroundOpacity,
+          onChanged: (value) => controller.updateSettings(
+            backgroundOpacity: value,
+            persist: false,
+          ),
+        ),
+        _opacitySlider(
+          label: 'Road opacity',
+          value: settings.roadOpacity,
+          onChanged: (value) =>
+              controller.updateSettings(roadOpacity: value, persist: false),
+        ),
+        _opacitySlider(
+          label: 'Overall opacity',
+          value: settings.overallOpacity,
+          onChanged: (value) =>
+              controller.updateSettings(overallOpacity: value, persist: false),
+        ),
+        const Text(
+          'The settings button stays visible at 0%.',
+          style: TextStyle(color: Colors.white60, fontSize: 12),
+        ),
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
           title: const Text('Sound'),
@@ -81,4 +106,27 @@ class SettingsPanel extends StatelessWidget {
       ],
     );
   }
+
+  Widget _opacitySlider({
+    required String label,
+    required double value,
+    required ValueChanged<double> onChanged,
+  }) => Column(
+    children: [
+      Row(
+        children: [
+          Expanded(child: Text(label)),
+          Text('${(value * 100).round()}%'),
+        ],
+      ),
+      Slider(
+        key: ValueKey(label),
+        label: '${(value * 100).round()}%',
+        value: value,
+        divisions: 100,
+        onChanged: onChanged,
+        onChangeEnd: (_) => controller.save(),
+      ),
+    ],
+  );
 }

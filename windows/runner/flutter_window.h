@@ -29,6 +29,7 @@ class FlutterWindow : public Win32Window {
   void UpdateClickThrough();
   bool expanded_ = false;
   bool topmost_ = true;
+  bool hero_visible_ = true;
   bool close_pending_ = false;
   std::unique_ptr<flutter::MethodChannel<flutter::EncodableValue>> channel_;
 

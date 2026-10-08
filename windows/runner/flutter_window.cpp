@@ -58,6 +58,7 @@ bool FlutterWindow::OnCreate() {
         };
         expanded_ = read("expanded", false);
         topmost_ = read("alwaysOnTop", true);
+        hero_visible_ = read("heroVisible", true);
       }
       ConfigureOverlay();
       UpdateClickThrough();
@@ -171,7 +172,7 @@ void FlutterWindow::UpdateClickThrough() {
   const bool hero = x >= 68 && x < 140 && y >= height - 96 && y < height;
   const bool menu = x >= width - 46 && x < width - 8 && y >= height - 182 && y < height - 144;
   const bool panel = expanded_ && x >= 8 && x < width - 8 && y >= 8 && y < height - 194;
-  const bool interactive = inside && (panel || hero || menu);
+  const bool interactive = inside && (panel || (hero_visible_ && hero) || menu);
   const LONG_PTR previous = GetWindowLongPtr(hwnd, GWL_EXSTYLE);
   const LONG_PTR next = interactive ? previous & ~WS_EX_TRANSPARENT : previous | WS_EX_TRANSPARENT;
   if (previous != next) SetWindowLongPtr(hwnd, GWL_EXSTYLE, next);

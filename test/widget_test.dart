@@ -103,7 +103,7 @@ void main() {
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox.shrink());
   });
-  testWidgets('Flame loads walk, attack and combat guard, death, environment', (
+  testWidgets('Flame loads heroine walk, attack, death and combat guard', (
     tester,
   ) async {
     final game = DesktopGame(GameSimulation(random: Random(1)));
@@ -180,5 +180,66 @@ void main() {
     await tester.pump(const Duration(milliseconds: 125));
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox.shrink());
+  });
+  testWidgets('zero overall opacity keeps settings usable and restores game', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(400, 620);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final repository = MemoryRepository(), window = FakeWindow();
+    final container = ProviderContainer(
+      overrides: [
+        runtimeProvider.overrideWithValue(fakeRuntime(repository, window)),
+      ],
+    );
+    final controller = container.read(gameControllerProvider.notifier);
+    await tester.runAsync(() async {
+      await preloadHeroSprites(controller.game);
+      await preloadEnvironment(controller.game);
+    });
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const CompanionApp(),
+      ),
+    );
+    await tester.runAsync(() => controller.game.loaded);
+    await tester.pump();
+    await tester.tap(find.byTooltip('Open settings'));
+    await tester.pump();
+    expect(find.text('Background opacity'), findsOneWidget);
+    expect(find.text('Road opacity'), findsOneWidget);
+    final slider = find.byKey(const ValueKey('Overall opacity'));
+    await tester.ensureVisible(slider);
+    await tester.drag(slider, const Offset(-400, 0));
+    await tester.pump();
+    expect(controller.simulation.settings.overallOpacity, 0);
+    expect(window.heroVisible, isFalse);
+    expect(
+      tester.widget<Opacity>(find.byKey(const ValueKey('gameOpacity'))).opacity,
+      0,
+    );
+    expect(
+      tester.widget<Opacity>(find.byKey(const ValueKey('hudOpacity'))).opacity,
+      0,
+    );
+    expect((repository.snapshot!['settings'] as Map)['overallOpacity'], 0);
+    await tester.tap(find.byIcon(Icons.close));
+    await tester.pump();
+    expect(container.read(gameControllerProvider).panel, isNull);
+    expect(find.byTooltip('Open settings').hitTestable(), findsOneWidget);
+    await tester.tap(find.byTooltip('Open settings'));
+    await tester.pump();
+    expect(container.read(gameControllerProvider).panel, OverlayPanel.settings);
+    await tester.ensureVisible(slider);
+    await tester.drag(slider, const Offset(400, 0));
+    await tester.pump();
+    expect(controller.simulation.settings.overallOpacity, 1);
+    expect(window.heroVisible, isTrue);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+    container.dispose();
   });
 }

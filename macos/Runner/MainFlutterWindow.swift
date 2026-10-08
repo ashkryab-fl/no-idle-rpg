@@ -8,6 +8,7 @@ class MainFlutterWindow: NSWindow {
   private var pointerTimer: Timer?
   private var expanded = false
   private var topmost = true
+  private var heroVisible = true
   private var screenIndex = 0
   private var closePending = false
   private var lastVisibleFrame: NSRect?
@@ -53,6 +54,7 @@ class MainFlutterWindow: NSWindow {
         let arguments = call.arguments as? [String: Any] ?? [:]
         self.expanded = arguments["expanded"] as? Bool ?? false
         self.topmost = arguments["alwaysOnTop"] as? Bool ?? true
+        self.heroVisible = arguments["heroVisible"] as? Bool ?? true
         self.level = self.topmost ? .floating : .normal
         self.positionOverlay()
         self.updateClickThrough()
@@ -100,7 +102,7 @@ class MainFlutterWindow: NSWindow {
     let hero = NSRect(x: 68, y: height - 96, width: 72, height: 96)
     let menu = NSRect(x: frame.width - 46, y: height - 182, width: 38, height: 38)
     let panel = NSRect(x: 8, y: 8, width: frame.width - 16, height: max(0, height - 202))
-    let interactive = hero.contains(local) || menu.contains(local) || (expanded && panel.contains(local))
+    let interactive = (heroVisible && hero.contains(local)) || menu.contains(local) || (expanded && panel.contains(local))
     ignoresMouseEvents = !interactive
   }
   func requestClose() {

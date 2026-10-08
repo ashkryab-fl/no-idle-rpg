@@ -1,7 +1,11 @@
 import 'package:flutter/services.dart';
 
 abstract class DesktopWindowService {
-  Future<void> configure({required bool alwaysOnTop, required bool expanded});
+  Future<void> configure({
+    required bool alwaysOnTop,
+    required bool expanded,
+    bool heroVisible = true,
+  });
   Future<void> quit();
   Future<void> cancelClose();
   void onCloseRequested(Future<void> Function() handler);
@@ -13,10 +17,12 @@ class NativeDesktopWindowService implements DesktopWindowService {
   Future<void> configure({
     required bool alwaysOnTop,
     required bool expanded,
+    bool heroVisible = true,
   }) async {
     await channel.invokeMethod<void>('configure', {
       'alwaysOnTop': alwaysOnTop,
       'expanded': expanded,
+      'heroVisible': heroVisible,
     });
   }
 

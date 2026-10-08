@@ -59,17 +59,24 @@ class _CompanionOverlayState extends ConsumerState<CompanionOverlay>
               left: 0,
               right: 0,
               height: GameBalance.viewportHeight,
-              child: GameWidget(game: controller.game),
+              child: Opacity(
+                key: const ValueKey('gameOpacity'),
+                opacity: game.settings.overallOpacity,
+                child: GameWidget(game: controller.game),
+              ),
             ),
             Positioned(
               bottom: 0,
               left: 68,
               width: 72,
               height: GameBalance.heroHitboxHeight,
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: () => controller.show(
-                  ui.panel == null ? OverlayPanel.menu : null,
+              child: IgnorePointer(
+                ignoring: game.settings.overallOpacity == 0,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => controller.show(
+                    ui.panel == null ? OverlayPanel.menu : null,
+                  ),
                 ),
               ),
             ),
@@ -79,11 +86,13 @@ class _CompanionOverlayState extends ConsumerState<CompanionOverlay>
               width: 38,
               height: 38,
               child: IconButton.filledTonal(
-                tooltip: 'Open companion menu',
+                tooltip: 'Open settings',
                 onPressed: () => controller.show(
-                  ui.panel == null ? OverlayPanel.menu : null,
+                  ui.panel == OverlayPanel.settings
+                      ? null
+                      : OverlayPanel.settings,
                 ),
-                icon: const Icon(Icons.more_horiz),
+                icon: const Icon(Icons.settings),
               ),
             ),
             Positioned(
@@ -91,26 +100,30 @@ class _CompanionOverlayState extends ConsumerState<CompanionOverlay>
               left: 14,
               right: 56,
               child: IgnorePointer(
-                child: Row(
-                  children: [
-                    Text(
-                      'Lv ${game.character.level}  ·  ${game.phase.name}',
-                      style: const TextStyle(
-                        fontSize: 10,
-                        color: Colors.white70,
-                        backgroundColor: Color(0x99101720),
+                child: Opacity(
+                  key: const ValueKey('hudOpacity'),
+                  opacity: game.settings.overallOpacity,
+                  child: Row(
+                    children: [
+                      Text(
+                        'Lv ${game.character.level}  ·  ${game.phase.name}',
+                        style: const TextStyle(
+                          fontSize: 10,
+                          color: Colors.white70,
+                          backgroundColor: Color(0x99101720),
+                        ),
                       ),
-                    ),
-                    const Spacer(),
-                    Text(
-                      '${NumberFormatter.amount(game.character.gold)} G · ${NumberFormatter.amount(game.character.books)} B',
-                      style: const TextStyle(
-                        fontSize: 10,
-                        color: Color(0xffffd58a),
-                        backgroundColor: Color(0x99101720),
+                      const Spacer(),
+                      Text(
+                        '${NumberFormatter.amount(game.character.gold)} G · ${NumberFormatter.amount(game.character.books)} B',
+                        style: const TextStyle(
+                          fontSize: 10,
+                          color: Color(0xffffd58a),
+                          backgroundColor: Color(0x99101720),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -120,66 +133,81 @@ class _CompanionOverlayState extends ConsumerState<CompanionOverlay>
                 left: 8,
                 right: 8,
                 bottom: 194,
-                child: Material(
-                  color: const Color(0xee151c2b),
-                  borderRadius: BorderRadius.circular(16),
-                  clipBehavior: Clip.antiAlias,
-                  child: Column(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 4, 4, 0),
-                        child: Row(
-                          children: [
-                            if (ui.panel != OverlayPanel.menu)
-                              IconButton(
-                                onPressed: () =>
-                                    controller.show(OverlayPanel.menu),
-                                icon: const Icon(Icons.arrow_back, size: 18),
-                              ),
-                            Expanded(
-                              child: Text(
-                                _title(ui.panel!),
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                            IconButton(
-                              onPressed: () => controller.show(null),
-                              icon: const Icon(Icons.close, size: 18),
-                            ),
-                          ],
-                        ),
-                      ),
-                      if (ui.error != null)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  ui.error!,
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    color: Colors.orangeAccent,
+                child: IgnorePointer(
+                  ignoring:
+                      ui.panel != OverlayPanel.settings &&
+                      game.settings.overallOpacity == 0,
+                  child: Opacity(
+                    opacity: ui.panel == OverlayPanel.settings
+                        ? 1
+                        : game.settings.overallOpacity,
+                    child: Material(
+                      color: const Color(0xee151c2b),
+                      borderRadius: BorderRadius.circular(16),
+                      clipBehavior: Clip.antiAlias,
+                      child: Column(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 4, 4, 0),
+                            child: Row(
+                              children: [
+                                if (ui.panel != OverlayPanel.menu)
+                                  IconButton(
+                                    onPressed: () =>
+                                        controller.show(OverlayPanel.menu),
+                                    icon: const Icon(
+                                      Icons.arrow_back,
+                                      size: 18,
+                                    ),
+                                  ),
+                                Expanded(
+                                  child: Text(
+                                    _title(ui.panel!),
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                   ),
                                 ),
-                              ),
-                              IconButton(
-                                onPressed: controller.dismissError,
-                                icon: const Icon(Icons.close, size: 14),
-                              ),
-                            ],
+                                IconButton(
+                                  onPressed: () => controller.show(null),
+                                  icon: const Icon(Icons.close, size: 18),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                      const Divider(height: 1),
-                      Expanded(
-                        child: SingleChildScrollView(
-                          padding: const EdgeInsets.all(16),
-                          child: _panel(ui.panel!, controller),
-                        ),
+                          if (ui.error != null)
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                              ),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      ui.error!,
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.orangeAccent,
+                                      ),
+                                    ),
+                                  ),
+                                  IconButton(
+                                    onPressed: controller.dismissError,
+                                    icon: const Icon(Icons.close, size: 14),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          const Divider(height: 1),
+                          Expanded(
+                            child: SingleChildScrollView(
+                              padding: const EdgeInsets.all(16),
+                              child: _panel(ui.panel!, controller),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
               ),

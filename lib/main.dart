@@ -41,6 +41,7 @@ Future<void> bootstrap() async {
     await window.configure(
       alwaysOnTop: simulation.settings.alwaysOnTop,
       expanded: false,
+      heroVisible: simulation.settings.overallOpacity > 0,
     );
     runApp(
       ProviderScope(

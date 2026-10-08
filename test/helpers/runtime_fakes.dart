@@ -32,12 +32,17 @@ class MemoryRepository implements GameSaveRepository {
 class FakeWindow implements DesktopWindowService {
   int quits = 0, cancellations = 0;
   bool failQuit = false;
+  bool heroVisible = true;
   Future<void> Function()? closeHandler;
   @override
   Future<void> configure({
     required bool alwaysOnTop,
     required bool expanded,
-  }) async {}
+    bool heroVisible = true,
+  }) async {
+    this.heroVisible = heroVisible;
+  }
+
   @override
   Future<void> quit() async {
     quits++;

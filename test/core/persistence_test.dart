@@ -59,6 +59,9 @@ void main() {
       game.character.equipment['weapon'] = 30;
       game.character.upgrades['damage'] = 4;
       game.settings.fps = 15;
+      game.settings.backgroundOpacity = .35;
+      game.settings.roadOpacity = .65;
+      game.settings.overallOpacity = 0;
       game.activity.total.activeSeconds = 200;
       final now = DateTime(2026, 10, 8);
       await repository.save(GameSave.capture(game, now));
@@ -68,6 +71,9 @@ void main() {
       expect(restored.character.upgrades['damage'], 4);
       expect(restored.activity.total.activeSeconds, 200);
       expect(restored.settings.fps, 15);
+      expect(restored.settings.backgroundOpacity, .35);
+      expect(restored.settings.roadOpacity, .65);
+      expect(restored.settings.overallOpacity, 0);
       expect(restored.distance, 100);
       expect(restored.kills, 9);
       expect(restored.enemyProgressKills, 3);
@@ -83,6 +89,9 @@ void main() {
     final restored = GameSave.fromJson(Map<String, dynamic>.from(json));
     expect(restored.character.gold.toDouble(), closeTo(1234, 1e-8));
     expect(restored.settings.fps, 30);
+    expect(restored.settings.backgroundOpacity, 1);
+    expect(restored.settings.roadOpacity, 1);
+    expect(restored.settings.overallOpacity, 1);
     json['saveVersion'] = 999;
     expect(
       () => GameSave.fromJson(Map<String, dynamic>.from(json)),

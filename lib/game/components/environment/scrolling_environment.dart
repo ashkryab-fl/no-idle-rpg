@@ -17,10 +17,34 @@ class ScrollingEnvironment extends Component {
     ..filterQuality = FilterQuality.low;
   @override
   void render(Canvas canvas) {
-    _renderBackground(canvas);
-    if (road != null) {
+    final opacity = simulation.settings.backgroundOpacity;
+    if (opacity > 0) {
+      _backgroundPaint.color = Color.fromRGBO(255, 255, 255, opacity);
+      if (sprites.isEmpty && opacity < 1) {
+        canvas.saveLayer(
+          const Rect.fromLTWH(
+            0,
+            37,
+            GameBalance.viewportWidth,
+            GameBalance.viewportHeight - 37,
+          ),
+          Paint()..color = Color.fromRGBO(255, 255, 255, opacity),
+        );
+        _renderBackground(canvas);
+        canvas.restore();
+      } else {
+        _renderBackground(canvas);
+      }
+    }
+    if (road != null && simulation.settings.roadOpacity > 0) {
       const width = GameBalance.viewportWidth;
       final x = -(simulation.distance % width);
+      _roadPaint.color = Color.fromRGBO(
+        255,
+        255,
+        255,
+        simulation.settings.roadOpacity,
+      );
       canvas.save();
       canvas.clipRect(
         const Rect.fromLTWH(

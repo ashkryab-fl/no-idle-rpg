@@ -9,7 +9,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   test(
-    'road follows travel distance independently of scenery',
+    'road follows travel distance and fades independently of scenery',
     () async {
       final recorder = ui.PictureRecorder();
       final canvas = ui.Canvas(recorder);
@@ -42,11 +42,18 @@ void main() {
         return List.generate(4, (i) => bytes.getUint8((y * 400 + x) * 4 + i));
       }
 
-      expect(await pixelAt(10, 100), [0, 0, 255, 255]);
+      simulation.settings.backgroundOpacity = 0;
+      expect(await pixelAt(10, 100), [0, 0, 0, 0]);
       expect(await pixelAt(10, 180), [0, 0, 255, 255]);
       expect(await pixelAt(390, 180), [255, 0, 0, 255]);
       simulation.distance = 0;
       expect(await pixelAt(10, 180), [255, 0, 0, 255]);
+      simulation.settings.roadOpacity = .5;
+      expect((await pixelAt(10, 180))[3], closeTo(128, 1));
+      simulation.settings.roadOpacity = 0;
+      expect(await pixelAt(10, 180), [0, 0, 0, 0]);
+      simulation.settings.backgroundOpacity = .5;
+      expect((await pixelAt(10, 100))[3], closeTo(128, 1));
     },
   );
 
