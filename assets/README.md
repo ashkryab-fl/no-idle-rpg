@@ -24,6 +24,15 @@ stand at y=179; HUD sits above the scenery. It scrolls with travel distance. Bac
 opacity are separate saved settings; overall opacity fades all game visuals.
 The settings button and open Settings panel remain available at zero opacity.
 
+Seated rest uses characters/hero/sit_down.png (4x512x512, non-looping,
+0.3s/frame plus a 0.5s hold), seated.png (the exact shared static frame), and
+sharpen.png (5x512x512, 0.225s/frame). Sharpen frame 0 plays once; frames 1-4
+loop until user activity returns. The graph randomly selects an eligible
+continuation after sitting; only sharpening is currently registered.
+All use anchor (0.5, 0.875), scale 0.25. Canonical reference and future pose
+contract: art/hero/seated_v1/reference.png and docs/hero_rest.md.
+Rebuild/install: python3 tool/build_hero_rest.py
+
 Hero attack is characters/hero/attack.png: four horizontal 512x512 RGBA frames,
 0.15 seconds per frame, non-looping (0.6 seconds). Damage at 0.35 seconds lands
 on frame 2, the main sword slash. characters/hero/ready.png is an exact copy of

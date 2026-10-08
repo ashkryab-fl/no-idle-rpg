@@ -2,206 +2,190 @@ import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:idle_companion/core/balance/game_balance.dart';
+import 'package:idle_companion/core/balance/progression_balance.dart';
 import 'package:idle_companion/core/numbers/amount.dart';
-import 'package:idle_companion/game/systems/enemy_spawner.dart';
 import 'package:idle_companion/game/systems/game_simulation.dart';
 import 'package:idle_companion/game/systems/game_state_machine.dart';
 
 void main() {
-  test('enemy tiers and rewards advance only at victory milestones', () {
-    final definition = EnemyCatalog.definitions.first;
-    final spawner = EnemySpawner(Random(1), definitions: [definition]);
-    for (final kills in [0, 11, 12, 23, 24]) {
-      final tier = kills ~/ GameBalance.tierKills;
-      final enemy = spawner.spawn(tier);
-      final game = GameSimulation(random: Random(1))
-        ..enemyProgressKills = kills;
+  test('enemy HP, damage and rewards scale exponentially with stage', () {
+    for (final stage in [1, 2, 10, 100]) {
+      final game = GameSimulation(random: Random(1))..stage = stage;
       game.spawnEnemy();
-      expect(game.enemyTier, tier);
-      expect(
-        game.enemy!.stats.maxHp.toDouble(),
-        closeTo(
-          game.enemy!.definition.baseHp * pow(GameBalance.hpGrowth, tier),
-          1e-8,
-        ),
-      );
+      final enemy = game.enemy!, definition = enemy.definition;
       expect(
         enemy.stats.maxHp.toDouble(),
-        closeTo(definition.baseHp * pow(GameBalance.hpGrowth, tier), 1e-8),
+        closeTo(
+          definition.baseHp * pow(ProgressionBalance.hpGrowth, stage - 1),
+          .0001,
+        ),
       );
       expect(
         enemy.stats.damage.toDouble(),
         closeTo(
-          definition.baseDamage * pow(GameBalance.damageGrowth, tier),
-          1e-8,
+          definition.baseDamage *
+              pow(ProgressionBalance.damageGrowth, stage - 1),
+          .0001,
         ),
       );
       expect(
         enemy.gold.toDouble(),
         closeTo(
-          definition.rewardGold * pow(GameBalance.rewardGrowth, tier),
-          1e-8,
+          definition.rewardGold *
+              pow(ProgressionBalance.goldRewardGrowth, stage - 1),
+          .0001,
         ),
       );
       expect(
         enemy.xp.toDouble(),
         closeTo(
-          definition.rewardXp * pow(GameBalance.rewardGrowth, tier),
-          1e-8,
+          definition.rewardXp *
+              pow(ProgressionBalance.xpRewardGrowth, stage - 1),
+          .0001,
         ),
       );
     }
   });
 
-  test('distance and repeated losses cannot advance the next enemy', () {
+  test('distance, lifetime victories and hero XP do not advance the stage', () {
     final game = GameSimulation(random: Random(1))
       ..distance = 1000000
-      ..kills = GameBalance.tierKills - 1
-      ..enemyProgressKills = GameBalance.tierKills - 1;
-    game.spawnEnemy();
-    final original = game.enemy!;
+      ..kills = 1000000;
+    game.progression.addXp(game.character, Amount.fromNum(1000));
+    expect(game.character.level, greaterThan(1));
     expect(
-      original.stats.maxHp.toDouble(),
-      closeTo(original.definition.baseHp, 1e-8),
+      game.stats.damage > Amount.fromNum(ProgressionBalance.heroDamage),
+      isTrue,
     );
-    final gold = game.character.gold;
-    final xp = game.character.xp;
-    final books = game.character.books;
-    final distance = game.distance;
+    expect(
+      game.stats.maxHp > Amount.fromNum(ProgressionBalance.heroHp),
+      isTrue,
+    );
+    game.spawnEnemy();
+    expect(game.stage, 1);
+    expect(game.stageKills, 0);
+    expect(
+      game.enemy!.stats.maxHp.toDouble(),
+      closeTo(game.enemy!.definition.baseHp, 1e-8),
+    );
+    final enemy = game.enemy;
+    game.advance(1.2);
+    expect(game.enemy, same(enemy));
+    expect(game.stage, 1);
+  });
 
-    for (var attempt = 0; attempt < 5; attempt++) {
-      game.advance(1.2);
-      expect(game.phase, GamePhase.combat);
-      game.heroHp = Amount.one;
-      game.advance(.4);
-      expect(original.hp < original.stats.maxHp, isTrue);
-      expect(game.phase, GamePhase.heroDeath);
-      game.advance(3);
-      expect(game.phase, GamePhase.traveling);
-      expect(game.kills, GameBalance.tierKills - 1);
-      expect(game.character.gold, gold);
-      expect(game.character.xp, xp);
-      expect(game.character.books, books);
-      expect(game.heroHp.ratio(game.stats.maxHp), closeTo(1, 1e-8));
-      game.spawnEnemy();
-      expect(game.enemy, same(original));
-      expect(game.enemy!.hp, original.stats.maxHp);
-    }
-    expect(game.distance, greaterThan(distance));
-
+  test('only completed victories unlock the next stage', () {
+    final game = GameSimulation(random: Random(1))
+      ..stage = 9
+      ..stageKills = ProgressionBalance.enemiesPerStage - 1;
+    game.spawnEnemy();
     game.killEnemy();
+    expect(game.stage, 9);
+    expect(game.stageKills, ProgressionBalance.enemiesPerStage - 1);
     game.advance(2);
     expect(game.phase, GamePhase.traveling);
-    expect(game.kills, GameBalance.tierKills);
-    expect(game.character.gold > gold, isTrue);
-    game.spawnEnemy();
-    final next = game.enemy!;
-    expect(next, isNot(same(original)));
-    expect(
-      next.stats.maxHp.toDouble(),
-      closeTo(next.definition.baseHp * GameBalance.hpGrowth, 1e-8),
-    );
-    expect(
-      next.stats.damage.toDouble(),
-      closeTo(next.definition.baseDamage * GameBalance.damageGrowth, 1e-8),
-    );
-  });
-
-  test('each combat death drops one tier and weakens the retry', () {
-    final game = GameSimulation(random: Random(1))
-      ..kills = 100
-      ..enemyProgressKills = 2 * GameBalance.tierKills + 1;
-    game.spawnEnemy();
-    final definition = game.enemy!.definition;
-    final gold = game.character.gold;
-    final xp = game.character.xp;
-
-    for (var attempt = 0; attempt < 4; attempt++) {
-      final previousTier = game.enemyTier;
-      game.advance(1.2);
-      game.heroHp = Amount.one;
-      game.advance(.4);
-      expect(game.phase, GamePhase.heroDeath);
-      final nextTier = max(0, previousTier - 1);
-      expect(game.enemyTier, nextTier);
-      expect(game.enemyProgressKills, nextTier * GameBalance.tierKills + 1);
-      expect(game.kills, 100);
-      expect(game.character.gold, gold);
-      expect(game.character.xp, xp);
-      // Repeated debug calls during death/respawn must not apply another drop.
-      game.killHero();
-      expect(game.enemyTier, nextTier);
-      game.advance(game.animations.get('hero.death').duration + .05);
-      expect(game.phase, GamePhase.respawn);
-      game.killHero();
-      expect(game.enemyTier, nextTier);
-      game.advance(GameBalance.respawnDuration + .1);
-      expect(game.phase, GamePhase.traveling);
-      game.spawnEnemy();
-      final retry = game.enemy!;
-      expect(retry.definition, same(definition));
-      expect(retry.hp, same(retry.stats.maxHp));
-      expect(
-        retry.stats.maxHp.toDouble(),
-        closeTo(definition.baseHp * pow(GameBalance.hpGrowth, nextTier), 1e-8),
-      );
-      expect(
-        retry.stats.damage.toDouble(),
-        closeTo(
-          definition.baseDamage * pow(GameBalance.damageGrowth, nextTier),
-          1e-8,
-        ),
-      );
-      expect(
-        retry.gold.toDouble(),
-        closeTo(
-          definition.rewardGold * pow(GameBalance.rewardGrowth, nextTier),
-          1e-8,
-        ),
-      );
-      expect(
-        retry.xp.toDouble(),
-        closeTo(
-          definition.rewardXp * pow(GameBalance.rewardGrowth, nextTier),
-          1e-8,
-        ),
-      );
-    }
-  });
-
-  test('debug death drops a tier and victories resume the saved progress', () {
-    final game = GameSimulation(random: Random(1))
-      ..kills = 100
-      ..enemyProgressKills = 3 * GameBalance.tierKills - 1;
-    expect(game.enemyTier, 2);
-    // Death while traveling follows the same difficulty rule as combat death.
-    game.killHero();
-    expect(game.enemyTier, 1);
-    expect(game.enemyProgressKills, 2 * GameBalance.tierKills - 1);
-    game.advance(3);
-    game.spawnEnemy();
-    game.killEnemy();
-    game.advance(2);
-    expect(game.kills, 101);
-    expect(game.enemyTier, 2);
+    expect(game.stage, 10);
+    expect(game.stageKills, 0);
+    expect(game.kills, 1);
     game.spawnEnemy();
     expect(
-      game.enemy!.stats.damage.toDouble(),
+      game.enemy!.stats.maxHp.toDouble(),
       closeTo(
-        game.enemy!.definition.baseDamage * pow(GameBalance.damageGrowth, 2),
+        game.enemy!.definition.baseHp * pow(ProgressionBalance.hpGrowth, 9),
         1e-8,
       ),
     );
   });
 
-  test('reset clears the opponent waiting for a retry', () {
-    final game = GameSimulation(random: Random(1));
-    game.spawnEnemy();
-    final original = game.enemy!;
-    game.killHero();
-    game.advance(3);
-    game.resetEncounter();
-    game.spawnEnemy();
-    expect(game.enemy, isNot(same(original)));
-  });
+  test(
+    '10 to 9 to 10 farming replays a full stage and keeps gold and upgrades',
+    () {
+      final game = GameSimulation(random: Random(1))
+        ..stage = 10
+        ..stageKills = 8
+        ..kills = 100;
+      game.character
+        ..level = 10
+        ..xp = Amount.fromNum(25)
+        ..gold = Amount.fromNum(100)
+        ..books = Amount.fromNum(10);
+      game.character.equipment['weapon'] = 2;
+      game.character.upgrades['hp'] = 3;
+      var previousGold = game.character.gold;
+      for (var cycle = 0; cycle < 2; cycle++) {
+        final heroLevel = game.character.level;
+        final xp = game.character.xp;
+        final books = game.character.books;
+        game.spawnEnemy();
+        game.advance(1.2);
+        game.heroHp = Amount.one;
+        game.advance(.4);
+        expect(game.phase, GamePhase.heroDeath);
+        expect(game.stage, 9);
+        expect(game.stageKills, 0);
+        expect(game.character.level, heroLevel);
+        expect(game.character.xp, same(xp));
+        expect(game.character.gold, same(previousGold));
+        expect(game.character.books, same(books));
+        expect(game.character.equipment['weapon'], 2);
+        expect(game.character.upgrades['hp'], 3);
+        game.advance(3);
+        expect(game.phase, GamePhase.traveling);
+        expect(game.heroHp.ratio(game.stats.maxHp), closeTo(1, 1e-8));
+        for (var kill = 1; kill <= ProgressionBalance.enemiesPerStage; kill++) {
+          game.spawnEnemy();
+          expect(
+            game.enemy!.stats.damage.toDouble(),
+            closeTo(
+              game.enemy!.definition.baseDamage *
+                  pow(ProgressionBalance.damageGrowth, 8),
+              1e-8,
+            ),
+          );
+          game.killEnemy();
+          game.advance(2);
+          expect(game.phase, GamePhase.traveling);
+          expect(
+            game.stage,
+            kill < ProgressionBalance.enemiesPerStage ? 9 : 10,
+          );
+          expect(game.stageKills, kill % ProgressionBalance.enemiesPerStage);
+        }
+        expect(game.character.gold > previousGold, isTrue);
+        expect(
+          game.kills,
+          100 + (cycle + 1) * ProgressionBalance.enemiesPerStage,
+        );
+        expect(game.character.level, greaterThanOrEqualTo(heroLevel));
+        previousGold = game.character.gold;
+      }
+    },
+  );
+
+  test(
+    'one rollback per death, stage floor is 1 and partial progress resets',
+    () {
+      final game = GameSimulation(random: Random(1))
+        ..stage = 2
+        ..stageKills = 7;
+      game.character.level = 10;
+      game.character.xp = Amount.fromNum(20);
+      for (var attempt = 0; attempt < 3; attempt++) {
+        game.killHero();
+        expect(game.stage, 1);
+        expect(game.stageKills, 0);
+        game.killHero();
+        expect(game.stage, 1);
+        game.advance(game.animations.get('hero.death').duration + .05);
+        expect(game.phase, GamePhase.respawn);
+        game.killHero();
+        expect(game.stage, 1);
+        game.advance(GameBalance.respawnDuration + .1);
+        expect(game.phase, GamePhase.traveling);
+        expect(game.character.level, 10);
+        expect(game.character.xp.toDouble(), closeTo(20, 1e-8));
+        game.stageKills = 5;
+      }
+    },
+  );
 }

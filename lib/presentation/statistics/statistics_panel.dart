@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../app/game_controller.dart';
+import '../../core/balance/progression_balance.dart';
 import '../../core/numbers/number_formatter.dart';
 import '../../core/numbers/amount.dart';
 
@@ -25,7 +26,16 @@ class StatisticsPanel extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        row('Level', '${hero.level}'),
+        row('Stage', '${game.stage}'),
+        row(
+          'Stage progress',
+          '${game.stageKills}/${ProgressionBalance.enemiesPerStage}',
+        ),
+        row('Character level', '${hero.level}'),
+        Text(
+          'Each character level adds ${((ProgressionBalance.levelStatGrowth - 1) * 100).toStringAsFixed(1)}% to base HP and damage. Death returns you to the previous stage; character progress and upgrades are kept.',
+          style: const TextStyle(fontSize: 11, color: Colors.white54),
+        ),
         row('Experience', number(hero.xp)),
         row(
           'XP to next level',
@@ -33,7 +43,6 @@ class StatisticsPanel extends StatelessWidget {
         ),
         row('DPS', number(stats.dps.scale(game.dpsMultiplier))),
         row('Damage', number(stats.damage)),
-        row('Attack speed', '${stats.attackSpeed.toStringAsFixed(2)}/s'),
         row('Crit chance', '${(stats.critChance * 100).toStringAsFixed(1)}%'),
         row('Crit damage', '${stats.critDamage.toStringAsFixed(2)}×'),
         row('HP / max HP', '${number(game.heroHp)} / ${number(stats.maxHp)}'),

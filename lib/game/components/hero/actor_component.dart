@@ -34,13 +34,16 @@ class ActorComponent extends Component {
         : 254.0;
     final spriteAnimation = animationSprites[spriteId];
     if (spriteAnimation != null) {
-      final frame = (elapsed / definition.stepTime).floor();
-      final index =
-          (definition.loop || (hero && simulation.idle.current?.id == id))
-          ? frame % spriteAnimation.frames.length
-          : min(frame, spriteAnimation.frames.length - 1);
-      final w = definition.frameWidth * definition.scale,
-          h = definition.frameHeight * definition.scale;
+      // A rest entry is a one-shot; only its seated activity loops.
+      final index = definition.frameIndex(elapsed);
+      // The final sit-down frame is the shared static seated pose.
+      final scaleMultiplier = spriteId == 'hero.sitDown' &&
+              index == definition.frames - 1
+          ? simulation.animations.get('hero.seated').scaleMultiplier
+          : definition.scaleMultiplier;
+      final renderScale = definition.scale * scaleMultiplier;
+      final w = definition.frameWidth * renderScale,
+          h = definition.frameHeight * renderScale;
       spriteAnimation.frames[index].sprite.render(
         canvas,
         position: Vector2(

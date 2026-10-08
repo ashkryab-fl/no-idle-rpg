@@ -1,4 +1,4 @@
-import '../../core/balance/game_balance.dart';
+import '../../core/balance/progression_balance.dart';
 import '../../core/numbers/amount.dart';
 import '../equipment/equipment.dart';
 import '../progression/infinite_upgrade.dart';
@@ -86,30 +86,29 @@ abstract final class CharacterStats {
         damage = effect(CharacterStat.damage);
     final critDamage = effect(CharacterStat.critDamage);
     final levelGrowth = Amount.one.grow(
-      GameBalance.levelStatGrowth,
+      ProgressionBalance.levelStatGrowth,
       progress.level - 1,
     );
     return CombatStats(
       maxHp:
-          Amount.fromNum(GameBalance.heroHp) * hp.multiplier * levelGrowth +
+          Amount.fromNum(ProgressionBalance.heroHp) *
+              hp.multiplier *
+              levelGrowth +
           Amount.fromNum(hp.additive),
       damage:
-          Amount.fromNum(GameBalance.heroDamage) *
+          Amount.fromNum(ProgressionBalance.heroDamage) *
               damage.multiplier *
               levelGrowth +
           Amount.fromNum(damage.additive),
-      attackSpeed: capped(
-        GameBalance.heroAttackSpeed,
-        GameBalance.attackSpeedCap,
-        effect(CharacterStat.attackSpeed),
-      ),
+      // Legacy speed/boots levels in saves no longer affect combat.
+      attackSpeed: ProgressionBalance.heroAttackSpeed,
       critChance: capped(
-        GameBalance.heroCritChance,
-        GameBalance.critChanceCap,
+        ProgressionBalance.heroCritChance,
+        ProgressionBalance.critChanceCap,
         effect(CharacterStat.critChance),
       ),
       critDamage:
-          GameBalance.heroCritDamage * critDamage.multiplier.toDouble() +
+          ProgressionBalance.heroCritDamage * critDamage.multiplier.toDouble() +
           critDamage.additive,
     );
   }

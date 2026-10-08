@@ -1,6 +1,7 @@
 import 'dart:math';
 import '../../core/assets/animation_catalog.dart';
 import '../../core/balance/game_balance.dart';
+import '../../core/balance/progression_balance.dart';
 import '../../core/numbers/amount.dart';
 import '../../domain/activity/activity_statistics.dart';
 import '../../domain/activity/idle_animation.dart';
@@ -72,26 +73,26 @@ class GameSimulation {
   late final IdleBehaviorSystem idle;
   late Amount heroHp;
   Enemy? enemy;
-  Enemy? _undefeatedEnemy;
   Reward? lastReward;
   double distance = 0, scroll = 0, encounterRemaining = 0;
   double heroHitRemaining = 0, enemyHitRemaining = 0;
   int kills = 0;
-  // Difficulty progress is separate from the lifetime victory statistic.
-  int enemyProgressKills = 0;
+  int stage = 1;
+  int stageKills = 0;
   double speed = 1;
   bool hitboxes = false;
   final List<VisualEvent> events = [];
   double _accumulator = 0;
   CombatStats get stats => CharacterStats.calculate(character);
   GamePhase get phase => machine.phase;
-  int get enemyTier => enemyProgressKills ~/ GameBalance.tierKills;
+  int get enemyTier => stage - 1;
   bool get isResting => phase == GamePhase.traveling && idle.blocksAdventure;
   double get movementMultiplier =>
       GameBalance.idleMovementMultipliers[idle.level.index];
-  double get dpsMultiplier => GameBalance.idleDpsMultipliers[idle.level.index];
+  double get dpsMultiplier =>
+      ProgressionBalance.idleDpsMultipliers[idle.level.index];
   double get rewardMultiplier =>
-      GameBalance.idleRewardMultipliers[idle.level.index];
+      ProgressionBalance.idleRewardMultipliers[idle.level.index];
   double get scrollSpeed => isResting
       ? 0
       : phase == GamePhase.traveling
@@ -168,8 +169,11 @@ class GameSimulation {
           final levels = progression.addXp(character, lastReward!.xp);
           if (levels > 0) heroHp = stats.maxHp;
           kills++;
-          enemyProgressKills++;
-          _undefeatedEnemy = null;
+          stageKills++;
+          if (stageKills >= ProgressionBalance.enemiesPerStage) {
+            stage++;
+            stageKills = 0;
+          }
           events.add(VisualEvent('reward', reward: lastReward));
           machine.transition(GamePhase.reward);
         }
@@ -191,7 +195,6 @@ class GameSimulation {
 
   void resetEncounter() {
     enemy = null;
-    _undefeatedEnemy = null;
     lastReward = null;
     events.clear();
     combat.reset();
@@ -211,10 +214,7 @@ class GameSimulation {
 
   void spawnEnemy() {
     if (phase != GamePhase.traveling || isResting) return;
-    // Retry the same opponent after a loss; only a victory unlocks a new one.
-    enemy = _undefeatedEnemy ?? spawner.spawn(enemyTier);
-    enemy!.hp = enemy!.stats.maxHp;
-    _undefeatedEnemy = enemy;
+    enemy = spawner.spawn(enemyTier);
     machine.transition(GamePhase.enemyApproach);
   }
 
@@ -234,13 +234,8 @@ class GameSimulation {
 
   void _heroDied() {
     deathPolicy.onDeath(character);
-    if (enemyTier > 0) {
-      enemyProgressKills -= GameBalance.tierKills;
-      final retry = _undefeatedEnemy;
-      if (retry != null) {
-        _undefeatedEnemy = spawner.factory.create(retry.definition, enemyTier);
-      }
-    }
+    if (stage > 1) stage--;
+    stageKills = 0;
     machine.transition(GamePhase.heroDeath);
   }
 

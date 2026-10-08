@@ -1,4 +1,4 @@
-import '../../core/balance/game_balance.dart';
+import '../../core/balance/progression_balance.dart';
 import '../../core/numbers/amount.dart';
 import '../../domain/character/character.dart';
 import '../../domain/progression/infinite_upgrade.dart';
@@ -8,8 +8,8 @@ class ProgressionSystem {
     id: 'xp',
     name: 'XP',
     stat: CharacterStat.damage,
-    baseCost: GameBalance.baseXp,
-    costGrowth: GameBalance.xpGrowth,
+    baseCost: ProgressionBalance.baseXp,
+    costGrowth: ProgressionBalance.xpGrowth,
   );
   Amount xpRequired(int level) => _xpCurve.cost(level - 1);
   int addXp(CharacterProgress hero, Amount reward) {

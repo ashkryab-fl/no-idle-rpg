@@ -1,9 +1,9 @@
 import 'dart:math' as math;
 import '../../core/numbers/amount.dart';
-import '../../core/balance/game_balance.dart';
+import '../../core/balance/progression_balance.dart';
 import 'stat_effect.dart';
 
-enum CharacterStat { damage, maxHp, attackSpeed, critChance, critDamage }
+enum CharacterStat { damage, maxHp, critChance, critDamage }
 
 enum UpgradeCurve { exponential, softCap, additive }
 
@@ -13,11 +13,11 @@ class InfiniteUpgradeDefinition {
     required this.name,
     required this.stat,
     required this.baseCost,
-    this.costGrowth = 1.16,
+    this.costGrowth = ProgressionBalance.bookUpgradeCostGrowth,
     this.curve = UpgradeCurve.exponential,
-    this.valueGrowth = GameBalance.upgradeGrowth,
-    this.softCapRate = GameBalance.softCapRate,
-    this.bonusPerLevel = GameBalance.critDamageBonus,
+    this.valueGrowth = ProgressionBalance.upgradeGrowth,
+    this.softCapRate = ProgressionBalance.softCapRate,
+    this.bonusPerLevel = ProgressionBalance.critDamageBonus,
   }) : assert(baseCost > 0),
        assert(costGrowth >= 1),
        assert(valueGrowth >= 1),
@@ -102,33 +102,27 @@ abstract final class UpgradeCatalog {
       id: 'damage',
       name: 'Damage',
       stat: CharacterStat.damage,
-      baseCost: 1,
+      baseCost: ProgressionBalance.bookDamageCost,
     ),
     InfiniteUpgradeDefinition(
       id: 'hp',
       name: 'Max HP',
       stat: CharacterStat.maxHp,
-      baseCost: 1,
-    ),
-    InfiniteUpgradeDefinition(
-      id: 'speed',
-      name: 'Attack Speed',
-      stat: CharacterStat.attackSpeed,
-      baseCost: 2,
-      curve: UpgradeCurve.softCap,
+      baseCost: ProgressionBalance.bookHpCost,
     ),
     InfiniteUpgradeDefinition(
       id: 'crit',
       name: 'Crit Chance',
       stat: CharacterStat.critChance,
-      baseCost: 2,
-      curve: UpgradeCurve.softCap,
+      baseCost: ProgressionBalance.bookCritChanceCost,
+      curve: UpgradeCurve.additive,
+      bonusPerLevel: ProgressionBalance.critChanceBonus,
     ),
     InfiniteUpgradeDefinition(
       id: 'critDamage',
       name: 'Crit Damage',
       stat: CharacterStat.critDamage,
-      baseCost: 2,
+      baseCost: ProgressionBalance.bookCritDamageCost,
       curve: UpgradeCurve.additive,
     ),
   ];

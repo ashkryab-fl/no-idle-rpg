@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../app/game_controller.dart';
+import '../../core/balance/progression_balance.dart';
+import '../../core/numbers/amount.dart';
 import '../../core/numbers/number_formatter.dart';
+import '../../domain/character/character.dart';
 import '../../domain/progression/infinite_upgrade.dart';
 
 class UpgradeList extends StatefulWidget {
@@ -29,12 +32,27 @@ class _UpgradeListState extends State<UpgradeList> {
         ? game.character.equipment
         : game.character.upgrades;
     final stats = game.stats;
+    String preciseAmount(Amount value) => value.log10 < 3
+        ? value.toDouble().toStringAsFixed(2)
+        : NumberFormatter.amount(value);
+    String statValue(CharacterStat stat, CombatStats values) => switch (stat) {
+      CharacterStat.damage => preciseAmount(values.damage),
+      CharacterStat.maxHp => preciseAmount(values.maxHp),
+      CharacterStat.critChance =>
+        '${(values.critChance * 100).toStringAsFixed(2)}%',
+      CharacterStat.critDamage => '${values.critDamage.toStringAsFixed(2)}×',
+    };
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
           '${widget.equipment ? 'Gold' : 'Knowledge Books'}  ${NumberFormatter.amount(wallet)}',
           style: const TextStyle(color: Color(0xffffd58a)),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          'Stats: now → after selected purchase',
+          style: TextStyle(fontSize: 12, color: Colors.white60),
         ),
         const SizedBox(height: 12),
         SegmentedButton<int>(
@@ -57,24 +75,47 @@ class _UpgradeListState extends State<UpgradeList> {
                   ? affordable
                   : count!.clamp(0, affordable);
               final effect = definition.effect(level);
+              final statLabel = switch (definition.stat) {
+                CharacterStat.damage => 'Damage',
+                CharacterStat.maxHp => 'Max HP',
+                CharacterStat.critChance => 'Crit chance',
+                CharacterStat.critDamage => 'Crit damage',
+              };
+              final source = widget.equipment ? 'equipment' : 'upgrade';
               final effectText = switch (definition.curve) {
                 UpgradeCurve.exponential =>
-                  '+${NumberFormatter.amount(effect.percentageBonus)}%',
-                UpgradeCurve.additive =>
-                  '+${effect.additive.toStringAsFixed(2)}×',
-                UpgradeCurve.softCap =>
-                  '${effect.capProgressPercent.toStringAsFixed(1)}% toward stat cap',
+                  'Total $source bonus: +${preciseAmount(effect.percentageBonus)}% ${statLabel.toLowerCase()}',
+                UpgradeCurve.additive => switch (definition.stat) {
+                  CharacterStat.critChance =>
+                    'Total $source bonus: +${(effect.additive * 100).toStringAsFixed(1)} percentage points crit chance. Limit: ${(ProgressionBalance.critChanceCap * 100).toStringAsFixed(0)}%.',
+                  CharacterStat.critDamage =>
+                    'Total $source bonus: +${effect.additive.toStringAsFixed(2)}× crit damage',
+                  _ =>
+                    'Total $source bonus: +${effect.additive.toStringAsFixed(2)} ${statLabel.toLowerCase()}',
+                },
+                UpgradeCurve.softCap => switch (definition.stat) {
+                  CharacterStat.critChance =>
+                    'Limit: ${(ProgressionBalance.critChanceCap * 100).toStringAsFixed(0)}%. Gains decrease near the limit.',
+                  _ => 'Gains decrease near the stat limit.',
+                },
               };
-              final current = switch (definition.stat) {
-                CharacterStat.damage => NumberFormatter.amount(stats.damage),
-                CharacterStat.maxHp => NumberFormatter.amount(stats.maxHp),
-                CharacterStat.attackSpeed =>
-                  '${stats.attackSpeed.toStringAsFixed(2)}/s',
-                CharacterStat.critChance =>
-                  '${(stats.critChance * 100).toStringAsFixed(1)}%',
-                CharacterStat.critDamage =>
-                  '${stats.critDamage.toStringAsFixed(2)}×',
-              };
+              final current = statValue(definition.stat, stats);
+              var statText = '$statLabel: $current';
+              if (buying > 0) {
+                final preview = CharacterProgress()
+                  ..level = game.character.level
+                  ..upgrades.addAll(game.character.upgrades)
+                  ..equipment.addAll(game.character.equipment);
+                final previewLevels = widget.equipment
+                    ? preview.equipment
+                    : preview.upgrades;
+                previewLevels[definition.id] = level + buying;
+                final after = statValue(
+                  definition.stat,
+                  CharacterStats.calculate(preview),
+                );
+                statText += ' → $after (after +$buying)';
+              }
               return Card(
                 color: const Color(0x88232c3d),
                 margin: const EdgeInsets.only(bottom: 8),
@@ -98,7 +139,15 @@ class _UpgradeListState extends State<UpgradeList> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Current: $current · Effect: $effectText',
+                        statText,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xff9bdfcc),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        effectText,
                         style: const TextStyle(
                           fontSize: 12,
                           color: Colors.white60,

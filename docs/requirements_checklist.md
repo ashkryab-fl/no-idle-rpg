@@ -10,32 +10,32 @@
 | 2 | Asset rendering і fallback | Hero walk: 10×512×512 із alpha, 8 FPS; attack: 4×512×512, 0.15 s/frame, damage 0.35 s на третьому кадрі; idle — перший кадр бойової стійки. Hit flash не перериває swing. No-assets startup і реальний sprite loader перевірені widget tests. Інші assets — placeholders. |
 | 3 | Gameplay loop | GameSimulation, background scrolling, random encounter distance, smooth approach; simulation tests і macOS runtime. |
 | 4 | Combat/event timing | CombatSystem/AttackClock, crit, hit reaction, DamageEvent, HP; tests timing, speed change та chronological ordering. |
-| 5 | Death/respawn | Hero death: 4 RGBA кадри по 0.4 s, sword plant → head bow → collapse to knees. Остання поза 1 s (0.4 s кадру + 0.6 s RESPAWN), загалом 2.2 s. Real sprite loading і final-frame timing перевірені tests; full-HP respawn/NoDeathPenalty. |
-| 6 | Procedural enemies | EnemyDefinition/Factory/Spawner, weighted random, exponential tier scaling після перемог; смерть героя знижує tier на 1 (мінімум 0), retry того самого ворога на нижчому tier. Regression tests. |
+| 5 | Death/respawn | Hero death: 4 RGBA кадри по 0.4 s, sword plant → head bow → collapse to knees. Остання поза 1 s (0.4 s кадру + 0.6 s RESPAWN), загалом 2.2 s. Full-HP respawn, попередній Stage із 0/12; character level/XP/currencies/upgrades зберігаються. Timing/farming regression tests. |
+| 6 | Procedural enemies | EnemyDefinition/Factory/Spawner, weighted random, exponential HP/damage/rewards від Stage. Stage зростає після 12 перемог; смерть відкочує на початок попереднього Stage (мінімум 1), потрібні всі 12 перемог заново. Formula/scenario tests, джерела у stage_balance.md. |
 | 7 | Global activity | CGEventSource + duration-only IOHIDSystem, Win32 GetLastInputInfo; macOS input у Finder без focus companion перевірено. Windows не перевірено. |
 | 8 | Idle levels | Configurable thresholds 30/120/300s; threshold tests, debug override. |
-| 9 | Idle graph | Data-driven chains/roots, weights, cooldown, loop count; chain/cooldown/invalid graph tests. |
+| 9 | Idle graph | Data-driven chains/roots і weighted continuations, cooldown, loop count, final-pose hold та loop до активності; branch/cooldown/cycle/interruption tests. |
 | 10 | User return | canInterrupt та caught placeholder; both interruption paths tested. |
-| 11 | Idle/rest behavior | Після поточного encounter герой відпочиває: distance/scroll/encounter countdown зупинені, спавну немає. Weighted вибір одного standalone або root chain, cooldown fallback, повернення через caught; simulation/domain tests. Assets відпочинку — placeholders. Debug override не змінює real activity aggregates. |
+| 11 | Idle/rest behavior | Після поточного encounter герой відпочиває: distance/scroll/encounter countdown зупинені, спавну немає. Weighted вибір одного standalone або root chain, cooldown fallback, повернення через caught; simulation/domain tests. RGBA сідання, спільна статична поза і loop точіння меча; інші продовження додаються через nextAnimationIds. Debug override не змінює real activity aggregates. |
 | 12 | Click/menu | Hero/menu hit regions, Flutter panel, transparent background click-through; Swift/C++ region bounds narrowed for expanded panel. Windows behavior не перевірено. |
-| 13 | Character statistics | All specified stats у StatisticsPanel; macOS runtime. |
+| 13 | Character statistics | Damage/HP/crit та progression у StatisticsPanel; attack speed прихована й зафіксована програмно на 1 атаці/с. |
 | 14 | Activity statistics | Aggregates, session means, local midnight, total retention, suspend gaps; unit tests. |
-| 15 | Books progression | Five character stats, permanent levels, Books currency; XP/effect/cost/purchase tests. |
-| 16 | Upgrade scaling | Generic cost/effect curves, soft caps, domain formulas; tests near-linear/flat growth і high levels. |
-| 17 | Character level | XP geometric requirements, carry-over, auto stat growth; level-up tests. |
-| 18 | Equipment | Fixed Weapon/Armor/Helmet/Boots/Amulet, no inventory/replacement. |
-| 19 | Gold upgrades | x1/x10/MAX, analytic geometric sum, item effect + total current stat; purchase tests. |
-| 20 | Drops | Independent Reward/DropSystem; Gold guaranteed, Books chance, placeholder visual event; tests 0/1 probabilities. |
+| 15 | Books progression | Four upgradable character stats, permanent levels, Books currency; XP/effect/cost/purchase tests. |
+| 16 | Upgrade scaling | Generic cost/effect curves, crit chance cap 80%, +0.1 п.п. crit chance та +0.01× crit damage за рівень, domain formulas; tests near-linear/flat growth і high levels. |
+| 17 | Character level | XP geometric requirements, carry-over, +1.5% HP/damage за level, level-up healing; постійний progress незалежний від Stage. Level-up/scaling/farming tests. |
+| 18 | Equipment | Fixed Weapon/Armor/Helmet/Amulet, no inventory/replacement; Boots і апгрейд швидкості прибрані. |
+| 19 | Gold upgrades | x1/x10/MAX, analytic geometric sum, named item bonus + total current stat + purchase preview; purchase tests. |
+| 20 | Drops | Independent Reward/DropSystem; Gold/Books +10% за Stage, XP +7%, Books chance default 28%. Activity multiplier впливає на Gold/Books. Formula/farming/large-number tests. |
 | 21 | Large numbers | Amount log10 abstraction, formatter suffix/scientific notation; huge-number tests. Metadata levels мають technical precision bound 2^53−1, описаний у README. |
-| 22 | Persistence | Repository, synchronous snapshot + serialized I/O, backup, schema v3 migration із enemyProgressKills, single-instance lock, minute autosave / every successful upgrade / lifecycle / exit saves; round-trip/recovery/invalid-state/Exit tests та збереження зниження складності після смерті. |
+| 22 | Persistence | Repository, synchronous snapshot + serialized I/O, backup, schema v5 із stage/stageKills та migration v1–v4, single-instance lock, minute autosave / every successful upgrade / lifecycle / exit saves; round-trip/recovery/invalid-state/Exit tests та збереження відкоту Stage після смерті. |
 | 23 | Offline infrastructure | OfflineProgressService/Result із duration та майбутніми rewards; no fabricated offline combat; tests. |
 | 24 | Architecture | Pure-Dart domain/systems, Flutter presentation/Riverpod orchestration, Flame components, native service adapters. |
 | 25 | State machine | Explicit tested transition graph; USER_IDLE orthogonal, пояснення у README. |
 | 26 | FPS/energy | Fixed simulation step, actual capped renderer 15/30/60, suspend guard; cross-FPS and invalid-delta tests. |
 | 27 | UI/settings | All panels; topmost/sound/FPS, background/road/overall opacity sliders, persistent settings button and readable Settings at 0%, hidden hero click-through, startup placeholder, confirmed reset, save/exit. |
 | 28 | Debug tools | All specified actions/idle/speed/hitboxes; menu only in debug. Release runtime: Debug Tools відсутні; Quick Menu Exit зберігає стан і завершує процес. |
-| 29 | Balance configs | GameBalance та definition catalogs; cost/effect/combat formulas поза widgets. |
-| 30 | Tests | Original minimum + regression coverage. **70 tests passed**, analyzer no issues; перевірено attack/death/guard asset loading, death final-frame hold 1 s, guard pauses, damage на slash frame при різній attack speed, зниження enemy tier після смерті та save migration. |
+| 29 | Balance configs | ProgressionBalance — окремий файл усіх combat/progression/loot/cost/power coefficients та numeric catalog values; GameBalance — rendering/timing/platform. Формули поза widgets. |
+| 30 | Tests | Після economy/constants та місячного pacing: **95 tests passed**, повний flutter test --no-pub. Global analyzer без issues; fixed hero speed, crit steps/cap та x1/x10/MAX purchase previews перевірені tests; перевірено weighted continuations, seated reference seam і незмінні pixels під час final-pose hold. 30-денна event simulation за 8/24 активні години на день збережена в docs/progression_pacing_30_days.json. Long-run ручний playtest ще потрібен. |
 | 31 | README | Launch/build instructions, native behavior/limitations, architecture/formulas/catalog extensions. |
 | 32 | Asset example | Реальні walk (10 кадрів), attack/death (по 4 кадри) і статична бойова стійка; registration/pubspec, source artwork, окремі PNG, GIF та повторювані ffmpeg pipelines. |
 | 33 | Working vertical slice | Existing macOS runtime: travel→combat→death→reward, idle, UI, upgrades, save/restart. Assets не потрібні. |

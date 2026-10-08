@@ -13,7 +13,9 @@ void main() {
     for (final modify in <void Function(Map<String, Object?>)>[
       (j) => j['distance'] = double.nan,
       (j) => j['kills'] = -1,
-      (j) => j['enemyProgressKills'] = -1,
+      (j) => j['stage'] = 0,
+      (j) => j['stageKills'] = -1,
+      (j) => j['stageKills'] = 12,
       (j) => (j['character'] as Map)['level'] = 0,
       (j) => (j['character'] as Map)['upgrades'] = {'damage': -1},
       (j) => ((j['activity'] as Map)['today'] as Map)['idle'] = -5,
@@ -54,7 +56,8 @@ void main() {
       final game = GameSimulation()
         ..distance = 100
         ..kills = 9
-        ..enemyProgressKills = 3;
+        ..stage = 10
+        ..stageKills = 3;
       game.character.gold = Amount.fromLog(900);
       game.character.equipment['weapon'] = 30;
       game.character.upgrades['damage'] = 4;
@@ -76,7 +79,8 @@ void main() {
       expect(restored.settings.overallOpacity, 0);
       expect(restored.distance, 100);
       expect(restored.kills, 9);
-      expect(restored.enemyProgressKills, 3);
+      expect(restored.stage, 10);
+      expect(restored.stageKills, 3);
       expect(restored.lastSaveTime.toLocal(), now);
     },
   );
@@ -98,22 +102,47 @@ void main() {
       throwsUnsupportedError,
     );
   });
-  test('legacy saves initialize difficulty from lifetime victories', () {
-    for (final version in [1, 2]) {
-      final json = GameSave.capture(GameSimulation(), DateTime.now()).toJson()
-        ..['saveVersion'] = version
-        ..['kills'] = 25
-        ..remove('enemyProgressKills');
-      final restored = GameSave.fromJson(Map<String, dynamic>.from(json));
-      expect(restored.kills, 25);
-      expect(restored.enemyProgressKills, 25);
-    }
-  });
+  test(
+    'legacy saves initialize stage without changing character progression',
+    () {
+      for (final version in [1, 2, 3, 4]) {
+        final json = GameSave.capture(GameSimulation(), DateTime.now()).toJson()
+          ..['saveVersion'] = version
+          ..['kills'] = 25
+          ..remove('stage')
+          ..remove('stageKills');
+        (json['character'] as Map)['level'] = 10;
+        final restored = GameSave.fromJson(Map<String, dynamic>.from(json));
+        expect(restored.kills, 25);
+        expect(restored.stage, 3);
+        expect(restored.stageKills, 1);
+        expect(restored.character.level, 10);
+      }
+    },
+  );
 
-  test('death difficulty reduction survives save and reload', () {
+  test(
+    'version 3 preserves a previous difficulty rollback as stage progress',
+    () {
+      final json = GameSave.capture(GameSimulation(), DateTime.now()).toJson()
+        ..['saveVersion'] = 3
+        ..['kills'] = 100
+        ..['enemyProgressKills'] = 13
+        ..remove('stage')
+        ..remove('stageKills');
+      final restored = GameSave.fromJson(Map<String, dynamic>.from(json));
+      expect(restored.stage, 2);
+      expect(restored.stageKills, 1);
+      expect(restored.kills, 100);
+      expect(restored.toJson().containsKey('enemyProgressKills'), isFalse);
+    },
+  );
+  test('death stage rollback survives save and reload', () {
     final game = GameSimulation()
       ..kills = 25
-      ..enemyProgressKills = 25;
+      ..stage = 10
+      ..stageKills = 7;
+    game.character.level = 20;
     game.killHero();
     final save = GameSave.fromJson(
       Map<String, dynamic>.from(
@@ -122,10 +151,13 @@ void main() {
     );
     final restored = GameSimulation(character: save.character)
       ..kills = save.kills
-      ..enemyProgressKills = save.enemyProgressKills;
+      ..stage = save.stage
+      ..stageKills = save.stageKills;
     expect(restored.kills, 25);
-    expect(restored.enemyProgressKills, 13);
-    expect(restored.enemyTier, 1);
+    expect(restored.stage, 9);
+    expect(restored.stageKills, 0);
+    expect(restored.enemyTier, 8);
+    expect(restored.character.level, 20);
   });
   test('queued snapshots, corrupt primary backup recovery and reset', () async {
     final repository = FileGameSaveRepository(dir), game = GameSimulation();

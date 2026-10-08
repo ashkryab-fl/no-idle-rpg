@@ -9,7 +9,7 @@ class DropSystem {
   Reward roll(Enemy enemy, {double multiplier = 1}) => Reward(
     gold: enemy.gold.scale(multiplier),
     books: random.nextDouble() < enemy.definition.rewardBookChance
-        ? Amount.fromNum(multiplier)
+        ? enemy.books.scale(multiplier)
         : Amount.zero,
     xp: enemy.xp,
   );

@@ -10,54 +10,39 @@ class IdleAnimationDefinition {
     required this.requiredIdleLevel,
     this.weight = 1,
     this.nextAnimationId,
+    this.nextAnimationIds = const [],
     this.canInterrupt = true,
     this.minLoops = 1,
     this.maxLoops = 1,
     this.cooldown = 0,
+    this.holdLastFrame = 0,
+    this.loopUntilActivity = false,
   });
   final String id;
   final IdleLevel requiredIdleLevel;
-  final double weight, cooldown;
+  final double weight, cooldown, holdLastFrame;
   final String? nextAnimationId;
-  final bool canInterrupt;
+  final List<String> nextAnimationIds;
+  final bool canInterrupt, loopUntilActivity;
   final int minLoops, maxLoops;
+  List<String> get continuations => [?nextAnimationId, ...nextAnimationIds];
 }
 
 abstract final class IdleAnimationCatalog {
-  // Placeholder IDs: add standalone nodes or complete chains here, then supply
-  // their sprite metadata in AnimationCatalog. Only roots enter the lottery.
+  // Add seated activities to this root's continuations. Child weights control
+  // the random choice; children never enter the lottery before sitting down.
   static const definitions = [
     IdleAnimationDefinition(
-      id: 'hero.a1',
+      id: 'hero.sitDown',
       requiredIdleLevel: IdleLevel.level1,
-      nextAnimationId: 'hero.a2',
+      nextAnimationIds: ['hero.sharpen'],
       canInterrupt: false,
+      holdLastFrame: .5,
     ),
     IdleAnimationDefinition(
-      id: 'hero.a2',
+      id: 'hero.sharpen',
       requiredIdleLevel: IdleLevel.level1,
-      nextAnimationId: 'hero.a3',
-      canInterrupt: false,
-    ),
-    IdleAnimationDefinition(id: 'hero.a3', requiredIdleLevel: IdleLevel.level1),
-    IdleAnimationDefinition(
-      id: 'hero.b',
-      requiredIdleLevel: IdleLevel.level1,
-      minLoops: 1,
-      maxLoops: 3,
-      cooldown: 3,
-    ),
-    IdleAnimationDefinition(
-      id: 'hero.c',
-      requiredIdleLevel: IdleLevel.level2,
-      maxLoops: 2,
-    ),
-    IdleAnimationDefinition(
-      id: 'hero.d',
-      requiredIdleLevel: IdleLevel.level3,
-      minLoops: 2,
-      maxLoops: 4,
-      canInterrupt: false,
+      loopUntilActivity: true,
     ),
   ];
 }
@@ -92,21 +77,34 @@ class IdleBehaviorSystem {
           d.maxLoops < d.minLoops ||
           !d.cooldown.isFinite ||
           d.cooldown < 0 ||
-          (d.nextAnimationId != null &&
-              !_byId.containsKey(d.nextAnimationId))) {
+          !d.holdLastFrame.isFinite ||
+          d.holdLastFrame < 0 ||
+          d.continuations.toSet().length != d.continuations.length ||
+          d.continuations.any((id) => !_byId.containsKey(id)) ||
+          (d.loopUntilActivity &&
+              (!animations.get(d.id).loop ||
+                  d.holdLastFrame > 0 ||
+                  d.continuations.isNotEmpty))) {
         throw ArgumentError('Invalid idle graph node: ${d.id}');
       }
-      final visited = <String>{};
-      IdleAnimationDefinition? node = d;
-      while (node != null) {
-        if (!visited.add(node.id)) {
-          throw ArgumentError('Idle chain cycle at ${node.id}');
-        }
-        node = _byId[node.nextAnimationId];
+    }
+    void visit(String id, Set<String> path) {
+      if (!path.add(id)) {
+        throw ArgumentError('Idle graph cycle at $id');
       }
+      for (final next in _byId[id]!.continuations) {
+        visit(next, path);
+      }
+      path.remove(id);
+    }
+
+    for (final d in definitions) {
+      visit(d.id, <String>{});
     }
     _roots = definitions
-        .where((d) => !definitions.any((node) => node.nextAnimationId == d.id))
+        .where(
+          (d) => !definitions.any((node) => node.continuations.contains(d.id)),
+        )
         .toList();
   }
   final Random random;
@@ -121,9 +119,25 @@ class IdleBehaviorSystem {
   double _elapsed = 0, _duration = 0, _clock = 0, caughtRemaining = 0;
   String? get animationId => caughtRemaining > 0 ? 'hero.caught' : current?.id;
   bool get blocksAdventure => level != IdleLevel.active || animationId != null;
-  double get animationElapsed => caughtRemaining > 0
-      ? animations.get('hero.caught').duration - caughtRemaining
-      : _elapsed;
+  double get animationElapsed {
+    if (caughtRemaining > 0) {
+      return animations.get('hero.caught').duration - caughtRemaining;
+    }
+    final node = current;
+    if (node != null) {
+      final animation = animations.get(node.id);
+      final playbackDuration = _duration - node.holdLastFrame;
+      // Explicit finite repeats still work for a one-shot sprite. Once their
+      // last cycle ends, the end hold must clamp instead of replaying it.
+      if (!animation.loop &&
+          playbackDuration > animation.duration &&
+          _elapsed < playbackDuration) {
+        return _elapsed % animation.duration;
+      }
+    }
+    return _elapsed;
+  }
+
   IdleLevel levelFor(double seconds) {
     for (var i = thresholds.length - 1; i >= 0; i--) {
       if (seconds >= thresholds[i]) {
@@ -165,11 +179,22 @@ class IdleBehaviorSystem {
     }
     _elapsed += dt;
     if (_elapsed < _duration) return;
-    final next = current!.nextAnimationId;
     if (level == IdleLevel.active) {
       _caught();
-    } else if (next != null) {
-      _start(_byId[next]!);
+    } else if (current!.loopUntilActivity) {
+      // Wrap only the active cycle, preserving any one-time entry frame. A
+      // noninterruptible activity can then finish its current cycle on return.
+      final animation = animations.get(current!.id);
+      final intro = animation.loopStartFrame * animation.stepTime;
+      _elapsed = intro + (_elapsed - intro) % (_duration - intro);
+    } else if (current!.continuations.isNotEmpty) {
+      final next = _pick([for (final id in current!.continuations) _byId[id]!]);
+      if (next != null) {
+        _start(next);
+      } else {
+        // Preserve the completed pose while child cooldowns/levels block them.
+        _elapsed = _duration;
+      }
     } else {
       current = null;
       _choose();
@@ -186,30 +211,36 @@ class IdleBehaviorSystem {
     current = d;
     _elapsed = 0;
     _lastPlayed[d.id] = _clock;
-    _duration =
-        animations.get(d.id).duration *
-        (d.minLoops + random.nextInt(d.maxLoops - d.minLoops + 1));
+    final animation = animations.get(d.id);
+    final loops = d.minLoops + random.nextInt(d.maxLoops - d.minLoops + 1);
+    final cycle =
+        (animation.frames - animation.loopStartFrame) * animation.stepTime;
+    _duration = animation.duration + cycle * (loops - 1) + d.holdLastFrame;
   }
 
   void _choose() {
-    final choices = _roots
+    final choice = _pick(_roots);
+    if (choice != null) _start(choice);
+  }
+
+  IdleAnimationDefinition? _pick(List<IdleAnimationDefinition> candidates) {
+    final choices = candidates
         .where(
           (d) =>
               d.requiredIdleLevel.index <= level.index &&
               _clock - (_lastPlayed[d.id] ?? -double.infinity) >= d.cooldown,
         )
         .toList();
-    if (choices.isEmpty) return;
+    if (choices.isEmpty) return null;
     var roll =
         random.nextDouble() *
         choices.fold<double>(0, (sum, d) => sum + d.weight);
     for (final d in choices) {
       roll -= d.weight;
       if (roll <= 0) {
-        _start(d);
-        return;
+        return d;
       }
     }
-    _start(choices.last);
+    return choices.last;
   }
 }

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/game_controller.dart';
 import '../../core/balance/game_balance.dart';
+import '../../core/balance/progression_balance.dart';
 import '../../core/numbers/number_formatter.dart';
 import '../../domain/progression/infinite_upgrade.dart';
 import '../equipment/equipment_panel.dart';
@@ -106,7 +107,8 @@ class _CompanionOverlayState extends ConsumerState<CompanionOverlay>
                   child: Row(
                     children: [
                       Text(
-                        'Lv ${game.character.level}  ·  ${game.phase.name}',
+                        'Stage ${game.stage} · ${game.stageKills}/${ProgressionBalance.enemiesPerStage}',
+                        key: const ValueKey('stageProgress'),
                         style: const TextStyle(
                           fontSize: 10,
                           color: Colors.white70,

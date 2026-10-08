@@ -2,7 +2,7 @@
 
 Робочий desktop idle RPG MVP на Flutter + Flame для macOS та Windows. Поки користувач активний, герой іде, procedural вороги зупиняють рух, автоматичний бій дає Gold, XP і Knowledge Books. Після смерті герой відроджується. Глобальна бездіяльність користувача переводить героя у відпочинок: після завершення поточного encounter він зупиняється й обирає одну idle animation або один граф.
 
-Для героїні підключено прозорі RGBA спрайти: ходьба — 10 кадрів 512×512, 8 FPS; атака та смерть — по 4 кадри; бойова стійка — перший кадр атаки. Рухомий фон циклічно показує три панорами: луки з хатиною та млином → струмок → пшеничні поля з дерев’яним парканом. Інші анімації, вороги, hit particles, damage numbers і drops поки мають програмні debug placeholders. Відсутні assets підтримують fallback.
+Для героїні підключено прозорі RGBA спрайти: ходьба — 10 кадрів 512×512, 8 FPS; атака та смерть — по 4 кадри; бойова стійка — перший кадр атаки; відпочинок — сідання та цикл точіння меча зі спільною статичною позою. Рухомий фон циклічно показує три панорами: луки з хатиною та млином → струмок → пшеничні поля з дерев’яним парканом. Інші анімації, вороги, hit particles, damage numbers і drops поки мають програмні debug placeholders. Відсутні assets підтримують fallback.
 
 ## Запуск
 
@@ -99,7 +99,7 @@ lib/
   app/                  Riverpod controller, runtime dependencies, lifecycle orchestration
   core/
     assets/             AssetCatalog, AnimationCatalog, AnimationDefinition
-    balance/            GameBalance
+    balance/            ProgressionBalance coefficients; GameBalance timing/rendering
     numbers/            Amount, NumberFormatter
     persistence/        GameSave, migration, repository, instance lock, offline infrastructure
   domain/
@@ -126,13 +126,13 @@ BOOT → TRAVELING → ENEMY_APPROACH → COMBAT → ENEMY_DEATH → REWARD → 
                                        ↘ HERO_DEATH → RESPAWN → TRAVELING
 ```
 
-Переходи явно перевіряє `GameStateMachine`. Hero death також може бути викликаний debug tools під час travel/approach/reward. Enemy death animation завершується перед розрахунком reward. Death penalty має інтерфейс `DeathPolicy`; MVP використовує `NoDeathPenalty` і full-HP respawn.
+Переходи явно перевіряє `GameStateMachine`. Hero death також може бути викликаний debug tools під час travel/approach/reward. Enemy death animation завершується перед розрахунком reward. Смерть відкочує поточний етап на 1 (мінімум 1) та обнуляє stageKills; respawn відновлює full HP. `NoDeathPenalty` зберігає постійний character progress: level, XP, Gold, Books і придбані upgrades/equipment не втрачаються.
 
 **USER_IDLE** визначає бажання відпочивати незалежно від поточної combat phase. Якщо користувач став idle під час encounter, герой завершує approach, бій, death/reward або власний death/respawn, і лише після повернення до `TRAVELING` запускає відпочинок. Idle animation не перекриває бойові анімації. Якщо активність повернулась до завершення encounter, відпочинок не починається.
 
 `GameSimulation.isResting` зупиняє рух, background scroll, накопичення distance та зменшення encounter distance. Нові вороги не спавняться на жодному idle level, включно з Debug Spawn enemy. Рух і спавн відновлюються після повернення до active та завершення поточної idle animation і `hero.caught`. Під час cooldown між доступними idle animations герой також стоїть (`hero.idle` fallback).
 
-`AnimationDefinition.damageEventTime` задає момент damage. Default attack: 0.6 s, damage на 0.35 s. Якщо attack speed швидша за animation duration, timeline прискорюється пропорційно, разом із damage event. Hit reaction, critical visual event, HP change, damage number походять від того самого `DamageEvent`. Events обох бійців впорядковуються за часом удару всередині step; при однаковому часі герой має deterministic tie priority. Attack clock зберігає progress поточного cycle: upgrade attack speed у combat не повторює історичні удари. Death animation утримує останній frame у reward/respawn паузі.
+`AnimationDefinition.damageEventTime` задає момент damage. Default attack: 0.6 s, damage на 0.35 s. Якщо attack speed швидша за animation duration, timeline прискорюється пропорційно, разом із damage event. Hit reaction, critical visual event, HP change, damage number походять від того самого `DamageEvent`. Events обох бійців впорядковуються за часом удару всередині step; при однаковому часі герой має deterministic tie priority. Attack clock зберігає progress поточного cycle: програмна зміна attack speed у combat не повторює історичні удари. Death animation утримує останній frame у reward/respawn паузі.
 
 Герой програє 4 кадри атаки по 0.15 s: бойова стійка → замах → удар зі слідом меча → завершення. Damage на 0.35 s припадає на третій кадр. Влучання у героя не перериває його swing: короткий світлий flash накладається поверх спрайта. Між атаками та під час stationary pauses `hero.idle` тримає перший кадр — бойову стійку з мечем напоготові. Якщо hit asset відсутній, реакція на влучання поза swing використовує цю стійку зі спалахом.
 
@@ -144,38 +144,44 @@ Simulation використовує delta time accumulator із fixed step, а �
 
 ## Balance і progression
 
-Центральні coefficients — `lib/core/balance/game_balance.dart`. Base enemy data — `EnemyCatalog`, upgrade costs — `UpgradeCatalog` і `EquipmentCatalog`. Widgets не містять progression formulas.
+Усі числові coefficients бою, етапів, луту, XP, вартості й сили апгрейдів та base enemy values — `lib/core/balance/progression_balance.dart`. `game_balance.dart` містить rendering/timing/platform settings. `EnemyCatalog`, `UpgradeCatalog` і `EquipmentCatalog` містять IDs/names/curves та посилання на ці константи. Widgets не містять progression formulas.
 
 ```text
-tier = enemyProgressKills ~/ 12
-onVictory: kills += 1; enemyProgressKills += 1
-onHeroDeath: if tier > 0, enemyProgressKills -= 12
+tier = stage - 1
+onVictory: kills += 1; stageKills += 1; addXp(character, xpReward)
+after 12 stage victories: stage += 1; stageKills = 0
+onHeroDeath: stage = max(1, stage - 1); stageKills = 0
 enemyHP = baseHP × 1.08^tier
 enemyDamage = baseDamage × 1.065^tier
-goldReward = baseGold × 1.07^tier
+goldReward = baseGold × 1.10^tier
+bookDropAmount = baseBooks × 1.10^tier; bookDropChance = 0.28
 xpReward = baseXPReward × 1.07^tier
 xpRequired(level) = 45 × 1.12^(level - 1)
 characterLevelStatMultiplier = 1.015^(level - 1)
 
 upgradeCost(level) = baseCost × costGrowth^level
+costGrowth: Gold equipment = 1.1405; Books upgrades = 1.1605
 batchCost(level, n) = cost(level) × (costGrowth^n - 1) / (costGrowth - 1)
 MAX = floor(log(1 + wallet / cost(level) × (costGrowth - 1)) / log(costGrowth))
 ```
 
-Складність ворогів і rewards зростають після кожних 12 перемог за поточним progression. Пройдена відстань і час не підвищують tier. Кожна смерть героя знижує tier на 1, мінімум — 0; progress усередині tier зберігається. Загальна статистика `kills` не зменшується. Наступний encounter повторює того самого непереможеного ворога з повним HP та характеристиками й rewards нижчого tier; новий випадковий ворог обирається після перемоги. На tier 0 смерть не змінює характеристики ворога.
+HUD показує `Stage N · kills/12`. Етап визначає складність ворогів і rewards; XP та character level визначають постійну силу героя (+1.5% HP і damage за рівень, із compound growth). Distance, час, lifetime kills і character level не підвищують етап. Після смерті на Stage 10 герой повертається на початок Stage 9 (0/12), знову вбиває 12 випадкових мобів цього етапу, отримуючи Gold/Books/XP, та повертається на Stage 10. Повторення циклу накопичує валюту й XP для постійних апгрейдів. Смерть на Stage 1 залишає Stage 1 та обнуляє тільки stageKills. Character level/XP, Gold/Books, upgrades/equipment та lifetime kills зберігаються. Формули, джерела та критерії оцінки балансу — [docs/stage_balance.md](docs/stage_balance.md).
 
 MAX працює без sequential level loops; після математичного розрахунку є rounding correction. Для costGrowth = 1 використовується flat-cost формула; для growth дуже близько до 1 — чисельно стабільні expm1/log1p series. Ці крайні випадки також покриті tests. x10 купує до 10 доступних рівнів, показуючи фактичну кількість і сумарну ціну.
+
+Прокачка поступово відстає від enemy HP: ціни Gold/Books ростуть на 14.05%/16.05% за upgrade, а HP/damage — на 5%. Результат 30-денної event simulation із 8 активними годинами на день і збалансованими покупками раз на годину: медіанний час етапу приблизно 2.0 хв на день 1, 2.9 хв на день 14 та 8.1 хв на день 30. Це довгостроковий тренд; випадкові вороги, crit, покупки та deaths змінюють час окремих етапів. Сценарії й обмеження — [docs/stage_balance.md](docs/stage_balance.md); відтворення: `dart run tool/simulate_progression.dart --hours-per-day 8 --seeds 3`.
 
 Books upgrades і equipment contributions додають рівні відповідного stat:
 
 - Damage і Max HP: `base × 1.05^combinedUpgradeLevel × levelStatMultiplier`;
-- Attack Speed: `5 - (5 - baseSpeed) × exp(-0.035 × combinedUpgradeLevel)`;
-- Crit Chance: `0.8 - (0.8 - baseChance) × exp(-0.035 × combinedUpgradeLevel)`;
-- Crit Damage: `1.5 + 0.035 × combinedUpgradeLevel`.
+- Crit Chance: `min(0.8, 0.05 + 0.001 × combinedUpgradeLevel)` — +0.1 відсоткового пункту за рівень;
+- Crit Damage: `1.5 + 0.01 × combinedUpgradeLevel` — +0.01× за рівень.
 
-`CombatStats.dps` включає attack speed, crit chance і crit multiplier. UI показує фактичний total stat із character та equipment contributions, а також окремий effect поточного upgrade/item. `InfiniteUpgradeDefinition.effect` застосовує `curve`, `valueGrowth`, `softCapRate` та `bonusPerLevel`; effect formulas знаходяться в domain, не widgets. Equipment slots постійні: Weapon, Armor, Boots, Helmet, Amulet. Inventory/equipment replacement відсутні. Кожен слот підтримує x1/x10/MAX.
+Швидкість героя стала: `ProgressionBalance.heroAttackSpeed = 1.0` атака/с. Вона залишається у `CombatStats`, але відсутня у Statistics, character upgrade catalog і equipment catalog. Старі збережені рівні `speed`/`boots` не впливають на характеристики; рівні критів перераховуються за новими коефіцієнтами.
 
-Gold гарантований, Books мають per-enemy configured chance. `DropSystem` повертає renderer-independent `Reward`. Placeholder pickup label можна замінити coin/book effects, не змінюючи економіку.
+`CombatStats.dps` включає attack speed, crit chance і crit multiplier. UI підписує характеристику, показує фактичний total stat зараз і після вибраної покупки x1/x10/MAX, а також окремий сумарний bonus поточного upgrade/item. Для crit chance бонус вказано у відсоткових пунктах. `InfiniteUpgradeDefinition.effect` застосовує `curve`, `valueGrowth`, `softCapRate` та `bonusPerLevel`; effect formulas знаходяться в domain, не widgets. Equipment slots постійні: Weapon, Armor, Helmet, Amulet. Inventory/equipment replacement відсутні. Кожен слот підтримує x1/x10/MAX.
+
+Gold гарантований, Books мають per-enemy configured chance (default 28%); кількість Gold і Books зростає на 10% за етап, XP на 7%. `EnemyFactory` обчислює всі три нагороди; `DropSystem` застосовує chance для Books і activity multiplier до Gold/Books, XP не множиться. Валюти зберігаються як `Amount`, без округлення кожного drop. `DropSystem` повертає renderer-independent `Reward`. Обґрунтування цін/сили та приклади — [docs/stage_balance.md](docs/stage_balance.md).
 
 ### Великі числа
 
@@ -209,7 +215,7 @@ instance.lock         exclusive OS lock for process lifetime
 
 Main startup бере instance lock: одночасні процеси не повинні перезаписувати progression один одного. Writes serialized, JSON snapshot захоплюється до asynchronous I/O. На macOS rename atomic; на Windows replacement потребує delete + rename, тож backup захищає від crash між ними. Якщо primary пошкоджений, load пробує backup. Перевіряються не тільки JSON syntax, а й finite/nonnegative durations/distance, kill count, character та upgrade levels. Помилка запису backup не замовчується як помилка JSON. Якщо обидва пошкоджені або schema новіша — показується startup error із Retry/confirmed Reset, automatic overwrite немає.
 
-Save schema version 3. `SaveMigrator` мігрує v1 → v2, додаючи missing settings/activity, і v2 → v3, починаючи `enemyProgressKills` зі збереженого `kills`; наступні migrations додаються в одному місці. Зберігаються Level, XP, Books, Gold, upgrades, equipment levels, distance, kills, enemyProgressKills, activity aggregates, settings і UTC timestamp.
+Save schema version 5. Зберігаються stage/stageKills, character Level/XP/Books/Gold/upgrades/equipment, distance, lifetime kills, activity aggregates, settings і UTC timestamp. `SaveMigrator` підтримує v1–v4: старий `enemyProgressKills` (або lifetime kills за його відсутності) перетворюється на stage/stageKills за колишнім кроком 12 перемог; character progression зберігається. Старий прихований counter видаляється.
 
 Save: раз на хвилину (60 s), після кожного успішного character/equipment upgrade та зміни settings, на lifecycle inactive/paused/detached та перед controlled exit. Exit призупиняє simulation, завершує activity session і чекає save; повторні натискання не запускають паралельний exit. Якщо save або native quit не вдалися, гра відновлюється й показує помилку. Startup error UI теж підтримує native Quit. Force-kill/power-loss може втратити останні ≤60 s. Reset вимагає Flutter confirmation і очищає primary, backup та live progression; instance lock зберігається до виходу.
 
@@ -219,7 +225,7 @@ Save: раз на хвилину (60 s), після кожного успішн�
 
 ### Новий enemy
 
-Додайте `EnemyDefinition` у `EnemyCatalog.definitions` у `game/systems/enemy_spawner.dart`: id/name/baseHp/baseDamage/attackSpeed/critChance/critDamage/rewardGold/rewardXp/rewardBookChance/difficultyWeight/animations prefix. Factory застосує scaling; spawner обере definition через weighted random. Зареєструйте animation IDs `prefix.idle/attack/hit/death` у `AnimationCatalog`. Зміни combat не потрібні.
+Додайте числові base values/weights/rewards у `ProgressionBalance`, а `EnemyDefinition` у `EnemyCatalog.definitions` у `game/systems/enemy_spawner.dart`: id/name/baseHp/baseDamage/attackSpeed/critChance/critDamage/rewardGold/rewardXp/rewardBooks/rewardBookChance/difficultyWeight/animations prefix. Factory застосує незалежне HP/damage/Gold/Books/XP scaling; spawner обере definition через weighted random. Зареєструйте animation IDs `prefix.idle/attack/hit/death` у `AnimationCatalog`. Зміни combat не потрібні.
 
 ### Character upgrade
 
@@ -250,6 +256,9 @@ flutter:
     - assets/characters/hero/attack.png
     - assets/characters/hero/ready.png
     - assets/characters/hero/death.png
+    - assets/characters/hero/sit_down.png
+    - assets/characters/hero/seated.png
+    - assets/characters/hero/sharpen.png
 ```
 
 У `AnimationCatalog` замініть definition або передайте override під час створення simulation:
@@ -302,6 +311,7 @@ final simulation = GameSimulation(animations: animations);
 assets/
   characters/hero/
     walk.png attack.png hit.png death.png
+    sit_down.png seated.png sharpen.png
     idle/a1.png idle/a2.png idle/a3.png idle/b.png idle/c.png idle/d.png
     caught_slacking.png
   enemies/enemy_01/
@@ -316,7 +326,7 @@ Paths не пов'язані із combat logic: animation IDs і enemy prefixes 
 
 ### Idle chains
 
-`IdleAnimationCatalog.definitions` — список `IdleAnimationDefinition(id, requiredIdleLevel, weight, nextAnimationId, canInterrupt, minLoops, maxLoops, cooldown)`. Зареєструйте visual timelines у `AnimationCatalog`.
+`IdleAnimationCatalog.definitions` — список вузлів із weight, idle level, cooldown, loop count та правилами переривання. `nextAnimationId` задає лінійний chain, `nextAnimationIds` — випадковий вибір продовження. Зареєструйте visual timelines у `AnimationCatalog`.
 
 ```dart
 const IdleAnimationDefinition(
@@ -326,9 +336,9 @@ const IdleAnimationDefinition(
 // a2 → a3, a3 без nextAnimationId
 ```
 
-Selection обирає weighted root chain або standalone animation, а не довільний її child. `nextAnimationId` проходиться після завершення configured duration × randomly selected loop count. Cooldown застосовується до наступного вибору root. Конструктор перевіряє thresholds, duplicate IDs, weights, loop counts, cooldowns, наявність next ID та відсутність cycles. AnimationCatalog перевіряє finite timeline/geometry та узгодженість ключа й ID. User return interrupt-ить тільки `canInterrupt` animation; інакше чекає завершення поточного вузла, потім `hero.caught` placeholder і normal gameplay.
+Selection обирає weighted root chain або standalone animation, а не довільний її child. Після configured duration × loop count та `holdLastFrame` система вибирає доступне продовження за його weight, idle level і cooldown. Якщо продовження недоступні, утримує завершену позу. Конструктор перевіряє thresholds, duplicate IDs, weights, loop counts, cooldowns, targets та cycles. AnimationCatalog перевіряє finite timeline/geometry та узгодженість ключа й ID. User return interrupt-ить тільки `canInterrupt` animation; інакше чекає завершення поточного вузла, потім `hero.caught` placeholder і normal gameplay.
 
-Каталог розрахований на багато варіантів відпочинку. Додайте node без `nextAnimationId` для окремої animation або повний chain для графа. Поки користувач idle, після завершення обраного варіанта система знову обирає один доступний root за idle level, weight і cooldown. Поточні `a1/a2/a3/b/c/d` — лише placeholders для майбутніх assets; сидіння, кава та сон ще не намальовані. Власний каталог можна передати через `GameSimulation(idleDefinitions: definitions)`; sprite metadata задається окремо в `AnimationCatalog`.
+Поточний граф: `hero.sitDown → hero.sharpen`. Сідання має 4 кадри по 0.3 s і додаткову паузу 0.5 s у фінальній позі. Точіння має спільний стартовий кадр сидіння, потім цикл із 4 рухомих кадрів по 0.225 s (центр → зліва → центр → справа) до повернення активності (`loopUntilActivity`). `loopStartFrame: 1` не повторює стартовий кадр у кожному циклі; non-looping сідання утримує останній кадр. Для нових варіантів додайте IDs до `nextAnimationIds` сідання та задайте ваги дочірніх вузлів. Останній кадр сідання і перший кадр продовження — точні копії `art/hero/seated_v1/reference.png`. [Референс, промпти, previews і контракт розширення](docs/hero_rest.md). Власний каталог можна передати через `GameSimulation(idleDefinitions: definitions)`.
 
 ## Debug tools
 
@@ -343,8 +353,10 @@ Sound preference зберігається, але audio playback поки не �
 ## Перевірка та відомі межі
 
 - `flutter analyze --no-pub`: без issues (2026-10-08).
-- `flutter test --no-pub`: **70 tests passed**, включно з no-assets Flame startup, hero walk/attack/death/guard asset loading, death sequence 2.2 s з фінальним кадром 1 s, damage на slash frame при звичайній та прискореній атаці, guard між ударами, Exit/retry/failure/reset collision, invalid saves, chronological combat timing, speed upgrades, death frame hold, idle graph validation та near-linear MAX.
-- macOS debug build: успішний для поточних змін (2026-10-08). **Release build успішний**: `flutter build macos --release --no-pub`, app 20.8 MB, arm64. Поточні Release/Profile обирають одну native Flutter-supported architecture через Xcode settings (arm64e host → arm64, Intel → x86_64). На Xcode 27 штатний `lipo -verify_arch arm64 x86_64` fails despite both slices present; universal build потребує окремого сумісного tooling verification. Intel mapping написано, але Intel build на цьому Apple Silicon Mac не перевірено.
+- Попередня повна перевірка `flutter test --no-pub`: **72 tests passed**, включно зі stage scaling, HUD rollback, повторним farming Stage 10 → 9 → 10, save migration, no-assets Flame startup, hero walk/attack/death/guard asset loading, death sequence 2.2 s з фінальним кадром 1 s, damage на slash frame при звичайній та прискореній атаці, guard між ударами, Exit/retry/failure/reset collision, invalid saves, chronological combat timing, програмні зміни швидкості, death frame hold, idle graph validation та near-linear MAX.
+- Після перегляду економіки та місячного темпу прогресу: **90 tests passed** у повному `flutter test --no-pub`, включно з 30-денною симуляцією та новими idle assets. Global analyzer без issues; pixel regression перевіряє незмінність завершеної пози сидіння протягом паузи. Event simulation перевіряє баланс за 8 і 24 активні години на день; тривалий ручний playtest не проводився.
+- Після фіксації attack speed та зменшення критів: **95 tests passed** у повному `flutter test --no-pub`; `dart analyze lib test tool` і `git diff --check` без issues. Перевірено старі speed/boots levels, кроки +0.1 п.п. / +0.01×, cap 80%, UI previews x1/x10/MAX і відповідність preview фактичній покупці на ширині 400 px. 30-денні scenarios оновлені; новий macOS build/live runtime для цих змін ще не перевірено.
+- Попередній macOS debug build: успішний для попередніх змін (2026-10-08). **Release build успішний**: `flutter build macos --release --no-pub`, app 20.8 MB, arm64. Поточні Release/Profile обирають одну native Flutter-supported architecture через Xcode settings (arm64e host → arm64, Intel → x86_64). На Xcode 27 штатний `lipo -verify_arch arm64 x86_64` fails despite both slices present; universal build потребує окремого сумісного tooling verification. Intel mapping написано, але Intel build на цьому Apple Silicon Mac не перевірено.
 - macOS runtime: перевірено travel/combat/death/reward, панелі Statistics/Upgrades/Equipment/Settings/Debug, purchases, idle override та global idle reset після input у Finder без focus companion. Після Save & quit/restart збережений equipment level відновився; native Quit menu також завершив save handshake. У поточному **release runtime** перевірено Quick Menu без Debug Tools, equipment item effect, відновлення Weapon Lv 1 і Quick Menu **Exit**. Exit записав новий lastSaveTime і завершив app process; гра після перевірки закрита.
 - Windows C++ implementation написано, але Windows build/runtime на macOS **не перевірено**. Потрібен Windows host для validation Win32 transparency, click-through, DPI/taskbar behavior і WM_CLOSE save handshake.
 - Hot-plug кількох monitor, зміна resolution і Dock/taskbar position реалізовані через notifications/messages, але live display-topology matrix не перевірялась. Monitor picker не входить до MVP.

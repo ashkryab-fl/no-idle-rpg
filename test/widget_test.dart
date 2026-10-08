@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'dart:ui' as ui;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:idle_companion/app/companion_app.dart';
 import 'package:idle_companion/app/game_controller.dart';
@@ -27,6 +28,53 @@ Future<void> preloadEnvironment(DesktopGame game) async {
 }
 
 void main() {
+  testWidgets('HUD shows stage rollback independently of the character level', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(400, 620);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final container = ProviderContainer(
+      overrides: [
+        runtimeProvider.overrideWithValue(
+          fakeRuntime(MemoryRepository(), FakeWindow()),
+        ),
+      ],
+    );
+    final controller = container.read(gameControllerProvider.notifier);
+    controller.simulation
+      ..stage = 10
+      ..stageKills = 5;
+    controller.simulation.character.level = 23;
+    await tester.runAsync(() async {
+      await preloadHeroSprites(controller.game);
+      await preloadEnvironment(controller.game);
+    });
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const CompanionApp(),
+      ),
+    );
+    await tester.runAsync(() => controller.game.loaded);
+    await tester.pump();
+    expect(find.text('Stage 10 · 5/12'), findsOneWidget);
+    expect(find.textContaining('Lv 23'), findsNothing);
+    controller.simulation.killHero();
+    controller.refresh();
+    await tester.pump();
+    expect(find.text('Stage 9 · 0/12'), findsOneWidget);
+    expect(controller.simulation.character.level, 23);
+    await controller.show(OverlayPanel.statistics);
+    await tester.pump();
+    expect(find.text('Character level'), findsOneWidget);
+    expect(find.text('23'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+    container.dispose();
+  });
+
   testWidgets('Quick Menu Exit is visible and saves before quitting', (
     tester,
   ) async {
@@ -79,6 +127,7 @@ void main() {
             definition.id: AnimationDefinition(
               id: definition.id,
               asset: 'assets/characters/hero/missing.png',
+              loop: definition.loop,
             ),
       }),
     );
@@ -177,6 +226,52 @@ void main() {
       expect(frame.sprite.image.width, 2048);
       expect(frame.sprite.image.height, 512);
     }
+    final sitDown = actor.animationSprites['hero.sitDown']!;
+    expect(sitDown.frames, hasLength(4));
+    expect(sitDown.loop, isFalse);
+    expect(sitDown.frames.first.stepTime, .3);
+    expect(sitDown.frames.first.sprite.image.width, 2048);
+    final seated = actor.animationSprites['hero.seated']!;
+    expect(seated.frames, hasLength(1));
+    expect(seated.frames.single.sprite.image.width, 512);
+    final sharpen = actor.animationSprites['hero.sharpen']!;
+    expect(sharpen.frames, hasLength(5));
+    expect(sharpen.loop, isTrue);
+    expect(sharpen.frames.first.stepTime, .225);
+    expect(sharpen.frames.first.sprite.image.width, 2560);
+    // Render real sprite pixels across the end hold. The earlier renderer
+    // wrapped every idle sprite here and replayed the standing entry frame.
+    game.suspended = true;
+    final idle = game.simulation.idle;
+    idle.setIdleSeconds(30);
+    idle.update(.01);
+    idle.update(.95);
+    await tester.runAsync(() async {
+      Future<List<int>> captureActor() async {
+        final recorder = ui.PictureRecorder();
+        actor.render(ui.Canvas(recorder));
+        final picture = recorder.endRecording();
+        final image = await picture.toImage(400, 190);
+        picture.dispose();
+        final pixels = (await image.toByteData())!.buffer.asUint8List();
+        image.dispose();
+        return pixels;
+      }
+
+      final end = await captureActor();
+      idle.update(.4);
+      expect(game.simulation.heroAnimation, 'hero.sitDown');
+      final held = await captureActor();
+      var differentBytes = 0;
+      for (var index = 0; index < end.length; index++) {
+        if (end[index] != held[index]) differentBytes++;
+      }
+      expect(
+        differentBytes,
+        0,
+        reason: 'The completed seated pose must stay still',
+      );
+    });
     await tester.pump(const Duration(milliseconds: 125));
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox.shrink());

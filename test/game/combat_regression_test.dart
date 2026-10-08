@@ -56,7 +56,7 @@ void main() {
       );
     }
   });
-  test('speed upgrades do not replay previous combat cycles', () {
+  test('programmatic speed changes do not replay previous combat cycles', () {
     final combat = CombatSystem(Random(1), AnimationCatalog());
     combat.update(40, fighter(1), fighter(1), 'slime', 1);
     final hits = combat.update(.01, fighter(2), fighter(1), 'slime', 1);

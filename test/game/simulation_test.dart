@@ -233,7 +233,7 @@ void main() {
     );
     expect(
       enemy.gold.toDouble(),
-      closeTo(definition.rewardGold * pow(1.07, 10), 1e-7),
+      closeTo(definition.rewardGold * pow(1.10, 10), 1e-7),
     );
   });
   test(

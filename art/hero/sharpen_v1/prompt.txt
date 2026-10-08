@@ -1,0 +1,11 @@
+Use case: stylized-concept
+Asset type: sword sharpening loop poses for a 2D game sprite.
+Input image 1 is the EXACT canonical seated heroine pose and art style. Preserve this character identity, costume, front-facing orientation, seated body, folded legs, head scale, ponytail/cape, sword design and horizontal sword placement.
+Make ONE transparent square sprite sheet, exactly FOUR full-body poses in a 2x2 grid with clear transparent gutters and at least 5% margin within EACH cell. No overlapping cells, cropping, captions, separators or background.
+The same chibi blonde armored female knight is seated ON THE GROUND, torso upright and directly facing the CAMERA, legs folded in front. Her silver longsword with gold guard/red gem rests horizontally across her LAP, hilt at image left, point at image right. A small gray whetstone is held by the glove on the image RIGHT and dragged along the exposed blade to SHARPEN it. The glove at image LEFT steadies the hilt.
+Pose 1 (top left): the exact neutral reference pose, BOTH hands resting on the sword, no stone visible; calm seated pause.
+Pose 2 (top right): same seated pose; glove on the right holds the small gray whetstone against the top edge/face of blade around the middle of the sword. Keep elbow close to torso.
+Pose 3 (bottom left): stone and right-side hand slide left toward the guard, performing an unmistakable short sharpening stroke. The hilt-side hand holds the sword still, torso and legs remain still.
+Pose 4 (bottom right): stone and right-side hand slide right along the blade toward the tip, completing the sharpening stroke. Sword stays flat across the lap. Subtle attentive eyes, no large head turn.
+Animation will use poses 2-3-4-3-2 in a back-and-forth loop. Keep HEAD, HAIR, BODY, LEGS, CAPE and SWORD POSITION identical in these three poses; only hand/forearm and the whetstone move. No attack, sword swinging, weapon trails, magic, sparks, injury or additional weapons. No standing or kneeling.
+Same polished hand-painted anime RPG chibi style, crisp detailed contour and shading as reference. Exactly the same red scarf/cape, cream-blonde ponytail, red/amber eyes, silver and gold armor, brown gloves/boots, white/red skirt. Transparent alpha background, no ground drawing or shadow disk, no added props except small whetstone, no text.

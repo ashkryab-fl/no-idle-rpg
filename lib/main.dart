@@ -37,7 +37,8 @@ Future<void> bootstrap() async {
           )
           ..distance = save?.distance ?? 0
           ..kills = save?.kills ?? 0
-          ..enemyProgressKills = save?.enemyProgressKills ?? 0;
+          ..stage = save?.stage ?? 1
+          ..stageKills = save?.stageKills ?? 0;
     await window.configure(
       alwaysOnTop: simulation.settings.alwaysOnTop,
       expanded: false,

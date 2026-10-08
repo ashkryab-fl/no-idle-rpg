@@ -1,5 +1,6 @@
 import 'dart:math';
 import '../../core/balance/game_balance.dart';
+import '../../core/balance/progression_balance.dart';
 import '../../core/numbers/amount.dart';
 import '../../domain/character/character.dart';
 
@@ -13,10 +14,11 @@ class EnemyDefinition {
     required this.rewardGold,
     required this.rewardXp,
     required this.animations,
-    this.critChance = .03,
-    this.critDamage = 1.5,
-    this.rewardBookChance = .28,
-    this.difficultyWeight = 1,
+    this.critChance = ProgressionBalance.enemyCritChance,
+    this.critDamage = ProgressionBalance.enemyCritDamage,
+    this.rewardBookChance = ProgressionBalance.bookDropChance,
+    this.rewardBooks = ProgressionBalance.baseBookReward,
+    this.difficultyWeight = ProgressionBalance.enemyWeight,
   });
   final String id, name, animations;
   final double baseHp,
@@ -27,6 +29,7 @@ class EnemyDefinition {
       rewardGold,
       rewardXp,
       rewardBookChance,
+      rewardBooks,
       difficultyWeight;
 }
 
@@ -35,43 +38,46 @@ abstract final class EnemyCatalog {
     EnemyDefinition(
       id: 'slime',
       name: 'Moss slime',
-      baseHp: 48,
-      baseDamage: 6,
-      attackSpeed: .75,
-      rewardGold: 12,
-      rewardXp: 18,
+      baseHp: ProgressionBalance.slimeHp,
+      baseDamage: ProgressionBalance.slimeDamage,
+      attackSpeed: ProgressionBalance.slimeAttackSpeed,
+      rewardGold: ProgressionBalance.slimeGold,
+      rewardXp: ProgressionBalance.slimeXp,
+      difficultyWeight: ProgressionBalance.slimeWeight,
       animations: 'slime',
     ),
     EnemyDefinition(
       id: 'sentinel',
       name: 'Stone sentinel',
-      baseHp: 80,
-      baseDamage: 9,
-      attackSpeed: .55,
-      rewardGold: 20,
-      rewardXp: 28,
+      baseHp: ProgressionBalance.sentinelHp,
+      baseDamage: ProgressionBalance.sentinelDamage,
+      attackSpeed: ProgressionBalance.sentinelAttackSpeed,
+      rewardGold: ProgressionBalance.sentinelGold,
+      rewardXp: ProgressionBalance.sentinelXp,
       animations: 'sentinel',
-      difficultyWeight: .5,
+      difficultyWeight: ProgressionBalance.sentinelWeight,
     ),
     EnemyDefinition(
       id: 'wisp',
       name: 'Lost wisp',
-      baseHp: 34,
-      baseDamage: 5,
-      attackSpeed: 1.2,
-      rewardGold: 14,
-      rewardXp: 20,
+      baseHp: ProgressionBalance.wispHp,
+      baseDamage: ProgressionBalance.wispDamage,
+      attackSpeed: ProgressionBalance.wispAttackSpeed,
+      rewardGold: ProgressionBalance.wispGold,
+      rewardXp: ProgressionBalance.wispXp,
       animations: 'wisp',
-      difficultyWeight: .8,
+      difficultyWeight: ProgressionBalance.wispWeight,
     ),
   ];
 }
 
 class Enemy {
-  Enemy(this.definition, this.stats, this.gold, this.xp) : hp = stats.maxHp;
+  Enemy(this.definition, this.stats, this.gold, this.xp, {Amount? books})
+    : books = books ?? Amount.fromNum(ProgressionBalance.baseBookReward),
+      hp = stats.maxHp;
   final EnemyDefinition definition;
   final CombatStats stats;
-  final Amount gold, xp;
+  final Amount gold, xp, books;
   Amount hp;
 }
 
@@ -79,16 +85,25 @@ class EnemyFactory {
   Enemy create(EnemyDefinition definition, int tier) => Enemy(
     definition,
     CombatStats(
-      maxHp: Amount.fromNum(definition.baseHp).grow(GameBalance.hpGrowth, tier),
+      maxHp: Amount.fromNum(
+        definition.baseHp,
+      ).grow(ProgressionBalance.hpGrowth, tier),
       damage: Amount.fromNum(
         definition.baseDamage,
-      ).grow(GameBalance.damageGrowth, tier),
+      ).grow(ProgressionBalance.damageGrowth, tier),
       attackSpeed: definition.attackSpeed,
       critChance: definition.critChance,
       critDamage: definition.critDamage,
     ),
-    Amount.fromNum(definition.rewardGold).grow(GameBalance.rewardGrowth, tier),
-    Amount.fromNum(definition.rewardXp).grow(GameBalance.rewardGrowth, tier),
+    Amount.fromNum(
+      definition.rewardGold,
+    ).grow(ProgressionBalance.goldRewardGrowth, tier),
+    Amount.fromNum(
+      definition.rewardXp,
+    ).grow(ProgressionBalance.xpRewardGrowth, tier),
+    books: Amount.fromNum(
+      definition.rewardBooks,
+    ).grow(ProgressionBalance.bookRewardGrowth, tier),
   );
 }
 

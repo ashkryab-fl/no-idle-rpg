@@ -2,6 +2,7 @@ import '../../domain/activity/activity_statistics.dart';
 import '../../domain/character/character.dart';
 import '../../domain/settings.dart';
 import '../../game/systems/game_simulation.dart';
+import '../balance/progression_balance.dart';
 
 class GameSave {
   GameSave({
@@ -11,16 +12,17 @@ class GameSave {
     required this.lastSaveTime,
     this.distance = 0,
     this.kills = 0,
-    this.enemyProgressKills = 0,
+    this.stage = 1,
+    this.stageKills = 0,
   });
-  static const currentVersion = 3;
+  static const currentVersion = 5;
   final CharacterProgress character;
   final ActivityStatisticsService activity;
   final GameSettings settings;
   final DateTime lastSaveTime;
   final double distance;
   final int kills;
-  final int enemyProgressKills;
+  final int stage, stageKills;
   factory GameSave.capture(GameSimulation game, DateTime now) => GameSave(
     character: game.character,
     activity: game.activity,
@@ -28,7 +30,8 @@ class GameSave {
     lastSaveTime: now,
     distance: game.distance,
     kills: game.kills,
-    enemyProgressKills: game.enemyProgressKills,
+    stage: game.stage,
+    stageKills: game.stageKills,
   );
   Map<String, Object?> toJson() => {
     'saveVersion': currentVersion,
@@ -37,19 +40,25 @@ class GameSave {
     'settings': settings.toJson(),
     'distance': distance,
     'kills': kills,
-    'enemyProgressKills': enemyProgressKills,
+    'stage': stage,
+    'stageKills': stageKills,
     'lastSaveTime': lastSaveTime.toUtc().toIso8601String(),
   };
   factory GameSave.fromJson(Map<String, dynamic> source) {
     final json = SaveMigrator.migrate(source);
     final distance = (json['distance'] as num? ?? 0).toDouble();
     final kills = json['kills'] as int? ?? 0;
-    final enemyProgressKills = json['enemyProgressKills'] as int? ?? 0;
+    final stage = json['stage'] as int? ?? 1;
+    final stageKills = json['stageKills'] as int? ?? 0;
     if (!distance.isFinite ||
         distance < 0 ||
         kills < 0 ||
-        enemyProgressKills < 0) {
-      throw const FormatException('Invalid distance or kill progression');
+        stage < 1 ||
+        stageKills < 0 ||
+        stageKills >= ProgressionBalance.enemiesPerStage) {
+      throw const FormatException(
+        'Invalid distance, kills or stage progression',
+      );
     }
     return GameSave(
       character: CharacterProgress.fromJson(
@@ -64,7 +73,8 @@ class GameSave {
       lastSaveTime: DateTime.parse(json['lastSaveTime'] as String),
       distance: distance,
       kills: kills,
-      enemyProgressKills: enemyProgressKills,
+      stage: stage,
+      stageKills: stageKills,
     );
   }
 }
@@ -83,8 +93,36 @@ abstract final class SaveMigrator {
           json.putIfAbsent('activity', () => <String, dynamic>{});
           version = 2;
         case 2:
-          json.putIfAbsent('enemyProgressKills', () => json['kills'] ?? 0);
           version = 3;
+        case 3:
+          final progress = json['enemyProgressKills'] ?? json['kills'] ?? 0;
+          if (progress is! int || progress < 0) {
+            throw const FormatException('Invalid legacy enemy progression');
+          }
+          json.putIfAbsent(
+            'stage',
+            () => progress ~/ ProgressionBalance.enemiesPerStage + 1,
+          );
+          json.putIfAbsent(
+            'stageKills',
+            () => progress % ProgressionBalance.enemiesPerStage,
+          );
+          json.remove('enemyProgressKills');
+          version = 4;
+        case 4:
+          final kills = json['kills'] ?? 0;
+          if (kills is! int || kills < 0) {
+            throw const FormatException('Invalid legacy kill count');
+          }
+          json.putIfAbsent(
+            'stage',
+            () => kills ~/ ProgressionBalance.enemiesPerStage + 1,
+          );
+          json.putIfAbsent(
+            'stageKills',
+            () => kills % ProgressionBalance.enemiesPerStage,
+          );
+          version = 5;
         default:
           throw UnsupportedError('No migration for $version');
       }

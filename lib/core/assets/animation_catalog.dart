@@ -10,15 +10,18 @@ class AnimationDefinition {
     this.frameHeight = 128,
     this.stepTime = .6,
     this.loop = false,
+    this.loopStartFrame = 0,
     this.anchorX = .5,
     this.anchorY = 1,
     this.scale = .55,
+    this.scaleMultiplier = 1,
     this.damageEventTime,
   }) : assert(frames > 0),
        assert(frameWidth > 0),
        assert(frameHeight > 0),
        assert(stepTime > 0),
        assert(scale > 0),
+       assert(scaleMultiplier > 0),
        assert(
          damageEventTime == null ||
              (damageEventTime >= 0 && damageEventTime <= frames * stepTime),
@@ -26,6 +29,9 @@ class AnimationDefinition {
   void validate() {
     if (id.isEmpty ||
         frames <= 0 ||
+        loopStartFrame < 0 ||
+        loopStartFrame >= frames ||
+        (!loop && loopStartFrame != 0) ||
         !frameWidth.isFinite ||
         frameWidth <= 0 ||
         !frameHeight.isFinite ||
@@ -35,6 +41,8 @@ class AnimationDefinition {
         !duration.isFinite ||
         !scale.isFinite ||
         scale <= 0 ||
+        !scaleMultiplier.isFinite ||
+        scaleMultiplier <= 0 ||
         !anchorX.isFinite ||
         !anchorY.isFinite ||
         (damageEventTime != null &&
@@ -47,11 +55,19 @@ class AnimationDefinition {
 
   final String id;
   final String? asset;
-  final int frames;
+  final int frames, loopStartFrame;
   final double frameWidth, frameHeight, stepTime, anchorX, anchorY, scale;
+  /// Per-animation size correction, applied around the sprite anchor.
+  final double scaleMultiplier;
   final bool loop;
   final double? damageEventTime;
   double get duration => frames * stepTime;
+  int frameIndex(double elapsed) {
+    final frame = (elapsed / stepTime).floor();
+    if (!loop || frame < frames) return frame.clamp(0, frames - 1);
+    return loopStartFrame +
+        (frame - loopStartFrame) % (frames - loopStartFrame);
+  }
 }
 
 abstract final class AssetCatalog {
@@ -111,6 +127,43 @@ class AnimationCatalog {
       anchorX: .58,
       anchorY: .875,
       scale: .25,
+    );
+    definitions['hero.sitDown'] = const AnimationDefinition(
+      id: 'hero.sitDown',
+      asset: '${AssetCatalog.heroRoot}sit_down.png',
+      frames: 4,
+      frameWidth: 512,
+      frameHeight: 512,
+      stepTime: .3,
+      anchorX: .5,
+      anchorY: .875,
+      scale: .25,
+    );
+    definitions['hero.seated'] = const AnimationDefinition(
+      id: 'hero.seated',
+      asset: '${AssetCatalog.heroRoot}seated.png',
+      frameWidth: 512,
+      frameHeight: 512,
+      loop: true,
+      anchorX: .5,
+      anchorY: .875,
+      scale: .25,
+      scaleMultiplier: 1.05,
+    );
+    definitions['hero.sharpen'] = const AnimationDefinition(
+      id: 'hero.sharpen',
+      asset: '${AssetCatalog.heroRoot}sharpen.png',
+      frames: 5,
+      frameWidth: 512,
+      frameHeight: 512,
+      stepTime: .225,
+      loop: true,
+      // Enter from the shared neutral pose once, then keep the stone in hand.
+      loopStartFrame: 1,
+      anchorX: .5,
+      anchorY: .875,
+      scale: .25,
+      scaleMultiplier: 1.05,
     );
     definitions.addAll(overrides ?? {});
     for (final entry in definitions.entries) {

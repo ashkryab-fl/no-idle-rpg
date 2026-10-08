@@ -1,4 +1,5 @@
 import '../progression/infinite_upgrade.dart';
+import '../../core/balance/progression_balance.dart';
 
 class EquipmentDefinition extends InfiniteUpgradeDefinition {
   const EquipmentDefinition({
@@ -6,7 +7,7 @@ class EquipmentDefinition extends InfiniteUpgradeDefinition {
     required super.name,
     required super.stat,
     required super.baseCost,
-    super.costGrowth = 1.14,
+    super.costGrowth = ProgressionBalance.equipmentCostGrowth,
     super.curve,
     super.valueGrowth,
     super.softCapRate,
@@ -20,33 +21,27 @@ abstract final class EquipmentCatalog {
       id: 'weapon',
       name: 'Weapon',
       stat: CharacterStat.damage,
-      baseCost: 20,
+      baseCost: ProgressionBalance.weaponCost,
     ),
     EquipmentDefinition(
       id: 'armor',
       name: 'Armor',
       stat: CharacterStat.maxHp,
-      baseCost: 20,
-    ),
-    EquipmentDefinition(
-      id: 'boots',
-      name: 'Boots',
-      stat: CharacterStat.attackSpeed,
-      baseCost: 35,
-      curve: UpgradeCurve.softCap,
+      baseCost: ProgressionBalance.armorCost,
     ),
     EquipmentDefinition(
       id: 'helmet',
       name: 'Helmet',
       stat: CharacterStat.critChance,
-      baseCost: 35,
-      curve: UpgradeCurve.softCap,
+      baseCost: ProgressionBalance.helmetCost,
+      curve: UpgradeCurve.additive,
+      bonusPerLevel: ProgressionBalance.critChanceBonus,
     ),
     EquipmentDefinition(
       id: 'amulet',
       name: 'Amulet',
       stat: CharacterStat.critDamage,
-      baseCost: 30,
+      baseCost: ProgressionBalance.amuletCost,
       curve: UpgradeCurve.additive,
     ),
   ];
