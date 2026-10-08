@@ -41,16 +41,29 @@ class DesktopGame extends FlameGame {
         debugPrint('Animation ${d.id} uses placeholder: $error');
       }
     }
-    Sprite? background;
-    if (bundled.contains(AssetCatalog.background)) {
+    final backgrounds = <Sprite>[];
+    for (final asset in AssetCatalog.backgrounds) {
+      if (!bundled.contains(asset)) continue;
       try {
-        background = await loadSprite(AssetCatalog.background);
+        backgrounds.add(await loadSprite(asset));
       } catch (error) {
-        debugPrint('Background uses placeholder: $error');
+        debugPrint('Background $asset could not be loaded: $error');
+      }
+    }
+    Sprite? road;
+    if (bundled.contains(AssetCatalog.road)) {
+      try {
+        road = await loadSprite(
+          AssetCatalog.road,
+          srcPosition: Vector2(0, 217),
+          srcSize: Vector2(2172, 290),
+        );
+      } catch (error) {
+        debugPrint('Road could not be loaded: $error');
       }
     }
     await addAll([
-      ScrollingEnvironment(simulation, sprite: background),
+      ScrollingEnvironment(simulation, sprites: backgrounds, road: road),
       ActorComponent(simulation, loaded, hero: true),
       EnemyComponent(simulation, loaded),
     ]);

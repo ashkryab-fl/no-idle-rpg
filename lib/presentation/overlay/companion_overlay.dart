@@ -62,10 +62,10 @@ class _CompanionOverlayState extends ConsumerState<CompanionOverlay>
               child: GameWidget(game: controller.game),
             ),
             Positioned(
-              bottom: 20,
+              bottom: 0,
               left: 68,
               width: 72,
-              height: 96,
+              height: GameBalance.heroHitboxHeight,
               child: GestureDetector(
                 behavior: HitTestBehavior.opaque,
                 onTap: () => controller.show(
@@ -87,9 +87,9 @@ class _CompanionOverlayState extends ConsumerState<CompanionOverlay>
               ),
             ),
             Positioned(
-              bottom: 5,
+              bottom: GameBalance.viewportHeight - 26,
               left: 14,
-              right: 12,
+              right: 56,
               child: IgnorePointer(
                 child: Row(
                   children: [

@@ -8,6 +8,7 @@ import 'package:idle_companion/game/desktop_game.dart';
 import 'package:idle_companion/game/systems/game_simulation.dart';
 import 'package:idle_companion/core/assets/animation_catalog.dart';
 import 'package:idle_companion/game/components/hero/actor_component.dart';
+import 'package:idle_companion/game/components/environment/scrolling_environment.dart';
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 
@@ -18,6 +19,11 @@ Future<void> preloadHeroSprites(DesktopGame game) async {
       await game.images.load(definition.asset!);
     }
   }
+}
+
+Future<void> preloadEnvironment(DesktopGame game) async {
+  game.images.prefix = '';
+  await game.images.loadAll([...AssetCatalog.backgrounds, AssetCatalog.road]);
 }
 
 void main() {
@@ -38,6 +44,7 @@ void main() {
     // Decode outside FakeAsync so the engine image callback can complete.
     await tester.runAsync(() async {
       await preloadHeroSprites(controller.game);
+      await preloadEnvironment(controller.game);
     });
     await tester.pumpWidget(
       UncontrolledProviderScope(
@@ -76,6 +83,10 @@ void main() {
       }),
     );
     final game = DesktopGame(simulation);
+    await tester.runAsync(() async {
+      game.images.prefix = '';
+      await preloadEnvironment(game);
+    });
     await tester.pumpWidget(
       MaterialApp(
         home: SizedBox(width: 400, height: 190, child: GameWidget(game: game)),
@@ -92,12 +103,13 @@ void main() {
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox.shrink());
   });
-  testWidgets('Flame loads walk, attack and combat guard, death', (
+  testWidgets('Flame loads walk, attack and combat guard, death, environment', (
     tester,
   ) async {
     final game = DesktopGame(GameSimulation(random: Random(1)));
     await tester.runAsync(() async {
       await preloadHeroSprites(game);
+      await preloadEnvironment(game);
     });
     await tester.pumpWidget(
       MaterialApp(
@@ -110,6 +122,15 @@ void main() {
     await tester.pump();
     await tester.runAsync(() => game.ready());
     final actor = game.children.whereType<ActorComponent>().first;
+    final environment = game.children.whereType<ScrollingEnvironment>().single;
+    expect(environment.sprites, hasLength(3));
+    expect(environment.road, isNotNull);
+    expect(environment.road!.image.width, 2172);
+    expect(environment.sprites.map((sprite) => sprite.image.width), [
+      2172,
+      2172,
+      2171,
+    ]);
     final walk = actor.animationSprites['hero.walk']!;
     expect(walk.frames, hasLength(10));
     expect(walk.loop, isTrue);

@@ -168,7 +168,7 @@ void FlutterWindow::UpdateClickThrough() {
   const double x = cursor.x / scale, y = cursor.y / scale;
   const double width = client.right / scale, height = client.bottom / scale;
   const bool inside = x >= 0 && x < width && y >= 0 && y < height;
-  const bool hero = x >= 68 && x < 140 && y >= height - 116 && y < height - 20;
+  const bool hero = x >= 68 && x < 140 && y >= height - 96 && y < height;
   const bool menu = x >= width - 46 && x < width - 8 && y >= height - 182 && y < height - 144;
   const bool panel = expanded_ && x >= 8 && x < width - 8 && y >= 8 && y < height - 194;
   const bool interactive = inside && (panel || hero || menu);

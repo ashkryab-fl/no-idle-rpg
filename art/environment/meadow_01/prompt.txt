@@ -1,0 +1,17 @@
+Generated using the built-in image_gen tool.
+Selected: initial generation; the edit increased measured edge differences.
+
+Use case: stylized-concept
+Asset type: horizontally seamless repeating 2D side-scrolling game background, one single panoramic tile, 3:1 aspect ratio, ideally 3072x1024.
+Primary request: a simple peaceful landscape of green meadows, a few widely spaced individual deciduous trees, one small rustic cottage and one traditional windmill. It will move horizontally behind a small chibi fantasy adventurer.
+Style/medium: charming clean hand-painted 2D game illustration, simple readable shapes, restrained detail, gentle crisp outlines, soft shading, no photorealism. Side-on view at ground level, no isometric view.
+Composition: very wide horizontal strip. Pale clear blue sky in upper half, low gently rolling green meadows in lower half, three isolated trees spaced far apart, cottage and windmill in middle distance, all structures and trees entirely contained within the central 75 percent of the width. Foreground grass simple and uncluttered. Small distant landscape features suitable for a 400x120 game viewport.
+CRITICAL HORIZONTAL TILEABILITY: the extreme left and right edges must meet seamlessly when copies are placed side by side, with exactly the same sky colors, meadow colors, horizon elevations, slope and grass shapes at both boundaries. The outermost 12.5 percent on each side should depict the same simple open meadow and sky, with identical matching horizontal color bands and level horizon. Smooth flat untextured color in these edge strips, no trees, bushes, flowers, buildings or clouds intersect either vertical border. Hills return to exactly the same elevation and horizontal slope at the two edges. No lighting gradient from left to right. No decorative frame, no border, no fades, no vignette.
+Colors and mood: fresh green grass, subdued forest green foliage, soft clear light blue sky, warm neutral cottage and mill, calm bright daylight.
+Constraints: landscape only; no people, characters, enemies, text, watermark, interface, arrows, tile grid, multiple panels, contact sheet, or seam markers. A finished single background image with no gutters.
+
+Seam refinement prompt:
+Use case: precise-object-edit
+Edit target: the provided panoramic game landscape.
+Primary request: finish the horizontal repeat seam of this background. Keep the cottage, windmill, trees, central landscape, palette, painterly style, dimensions and composition unchanged.
+CRITICAL: This is a texture tile repeated horizontally. The extreme left and right columns must have identical colors at every Y coordinate. Both borders must connect seamlessly including clouds, distant hills, horizon, meadow bands and foreground grasses. No visible vertical join when copied side by side. Make the outermost 8 percent of the left and right edges simple matching open meadow and sky with the SAME cloud contours, SAME hill contours, SAME horizon heights and slopes, SAME green color bands, SAME foreground grass silhouettes. Treat both boundaries as one continuous periodic landscape, not two unrelated borders. Reduce irregular detail and grass texture at the two edges if necessary for a perfect seam. No fade to transparency, blur seam, gutter, vignette, border or frame. Leave the middle 84 percent intact. Return one finished 3:1 panoramic background, not a tiling preview or multi-panel comparison.

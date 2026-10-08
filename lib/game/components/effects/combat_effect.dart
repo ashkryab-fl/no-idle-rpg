@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:flame/components.dart';
 import 'package:flutter/painting.dart';
 import '../../../core/numbers/number_formatter.dart';
+import '../../../core/balance/game_balance.dart';
 import '../../systems/game_simulation.dart';
 
 class CombatEffect extends Component {
@@ -39,14 +40,17 @@ class CombatEffect extends Component {
       ),
     );
     _text.layout();
-    _text.paint(canvas, Offset(x - _text.width / 2, 95 - elapsed * 34));
+    _text.paint(
+      canvas,
+      Offset(x - _text.width / 2, GameBalance.actorGroundY - 62 - elapsed * 34),
+    );
     if (damage != null && elapsed < .4) {
       for (var i = 0; i < 6; i++) {
         final angle = i * pi / 3;
         canvas.drawCircle(
           Offset(
             x + cos(angle) * elapsed * 70,
-            114 + sin(angle) * elapsed * 70,
+            GameBalance.actorGroundY - 43 + sin(angle) * elapsed * 70,
           ),
           2,
           Paint()..color = color.withValues(alpha: 1 - elapsed * 2),

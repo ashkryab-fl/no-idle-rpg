@@ -45,7 +45,7 @@ class ActorComponent extends Component {
         canvas,
         position: Vector2(
           x - w * definition.anchorX,
-          157 - h * definition.anchorY,
+          GameBalance.actorGroundY - h * definition.anchorY,
         ),
         size: Vector2(w, h),
         overridePaint: hero && simulation.heroHitRemaining > 0
@@ -63,14 +63,19 @@ class ActorComponent extends Component {
     final hp = hero ? simulation.heroHp : simulation.enemy!.hp;
     canvas.drawRRect(
       RRect.fromRectAndRadius(
-        Rect.fromLTWH(x - 28, 68, 56, 5),
+        Rect.fromLTWH(x - 28, GameBalance.actorGroundY - 89, 56, 5),
         const Radius.circular(3),
       ),
       Paint()..color = const Color(0x99111922),
     );
     canvas.drawRRect(
       RRect.fromRectAndRadius(
-        Rect.fromLTWH(x - 28, 68, 56 * hp.ratio(stats.maxHp).clamp(0, 1), 5),
+        Rect.fromLTWH(
+          x - 28,
+          GameBalance.actorGroundY - 89,
+          56 * hp.ratio(stats.maxHp).clamp(0, 1),
+          5,
+        ),
         const Radius.circular(3),
       ),
       Paint()..color = hero ? const Color(0xff79dca3) : const Color(0xffff8a83),
@@ -86,10 +91,18 @@ class ActorComponent extends Component {
       ),
     );
     _label.layout();
-    _label.paint(canvas, Offset(x - _label.width / 2, 49));
+    _label.paint(
+      canvas,
+      Offset(x - _label.width / 2, GameBalance.actorGroundY - 108),
+    );
     if (simulation.hitboxes) {
       canvas.drawRect(
-        Rect.fromLTWH(x - 36, 74, 72, 96),
+        Rect.fromLTWH(
+          x - 36,
+          GameBalance.viewportHeight - GameBalance.heroHitboxHeight,
+          72,
+          GameBalance.heroHitboxHeight,
+        ),
         Paint()
           ..color = const Color(0xffeebc59)
           ..style = PaintingStyle.stroke,
@@ -115,7 +128,7 @@ class ActorComponent extends Component {
         ? sin(elapsed * 3) * 4
         : 0.0;
     canvas.save();
-    canvas.translate(x, 156 + bob);
+    canvas.translate(x, GameBalance.actorGroundY - 1 + bob);
     if (death) {
       canvas.rotate(
         (hero ? -1 : 1) * pi / 2 * (elapsed / definition.duration).clamp(0, 1),

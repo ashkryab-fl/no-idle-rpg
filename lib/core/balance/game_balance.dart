@@ -42,5 +42,9 @@ class GameBalance {
   static const maxCatchupSeconds = 5.0;
   static const viewportWidth = 400.0;
   static const viewportHeight = 190.0;
+  static const actorGroundY = 179.0;
+  static const roadTop = 166.0;
+  static const roadHeight = 24.0;
+  static const heroHitboxHeight = 96.0;
   static const panelHeight = 620.0;
 }
