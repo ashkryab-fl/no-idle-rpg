@@ -96,6 +96,17 @@ class AnimationCatalog {
       anchorY: .875,
       scale: .25,
     );
+    definitions['hero.death'] = const AnimationDefinition(
+      id: 'hero.death',
+      asset: '${AssetCatalog.heroRoot}death.png',
+      frames: 4,
+      frameWidth: 512,
+      frameHeight: 512,
+      stepTime: GameBalance.heroDeathFrameTime,
+      anchorX: .58,
+      anchorY: .875,
+      scale: .25,
+    );
     definitions.addAll(overrides ?? {});
     for (final entry in definitions.entries) {
       entry.value.validate();

@@ -92,7 +92,7 @@ void main() {
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox.shrink());
   });
-  testWidgets('Flame loads walk, attack and combat guard', (
+  testWidgets('Flame loads walk, attack and combat guard, death', (
     tester,
   ) async {
     final game = DesktopGame(GameSimulation(random: Random(1)));
@@ -143,6 +143,19 @@ void main() {
     expect(guard.frames.single.sprite.srcSize.y, 512);
     expect(guard.frames.single.sprite.image.width, 512);
     expect(guard.frames.single.sprite.image.height, 512);
+    final death = actor.animationSprites['hero.death']!;
+    expect(death.frames, hasLength(4));
+    expect(death.loop, isFalse);
+    for (var index = 0; index < death.frames.length; index++) {
+      final frame = death.frames[index];
+      expect(frame.stepTime, .4);
+      expect(frame.sprite.srcPosition.x, index * 512);
+      expect(frame.sprite.srcPosition.y, 0);
+      expect(frame.sprite.srcSize.x, 512);
+      expect(frame.sprite.srcSize.y, 512);
+      expect(frame.sprite.image.width, 2048);
+      expect(frame.sprite.image.height, 512);
+    }
     await tester.pump(const Duration(milliseconds: 125));
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox.shrink());

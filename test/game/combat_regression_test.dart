@@ -89,13 +89,41 @@ void main() {
       game.animations.get(game.enemyAnimation!).duration,
     );
     game.killHero();
-    for (var i = 0; i < 50; i++) {
-      game.advance(1 / 60);
-    }
+    game.advance(game.animations.get('hero.death').duration + .05);
     expect(game.phase, GamePhase.respawn);
     expect(
       game.heroAnimationElapsed(),
       game.animations.get('hero.death').duration,
     );
   });
+  test(
+    'hero death progresses slowly and holds the final pose for one second',
+    () {
+      final game = GameSimulation(random: Random(1));
+      final death = game.animations.get('hero.death');
+      game.killHero();
+      final framesSeen = <int>[];
+      var finalFrameTicks = 0, ticks = 0;
+      while (game.phase != GamePhase.traveling && ticks < 200) {
+        final frame = min(
+          (game.heroAnimationElapsed() / death.stepTime).floor(),
+          death.frames - 1,
+        );
+        if (framesSeen.isEmpty || framesSeen.last != frame) {
+          framesSeen.add(frame);
+        }
+        if (frame == death.frames - 1) {
+          finalFrameTicks++;
+        }
+        game.advance(1 / 60);
+        ticks++;
+      }
+      expect(framesSeen, [0, 1, 2, 3]);
+      expect(finalFrameTicks / 60, closeTo(1, 2 / 60));
+      expect(ticks / 60, closeTo(2.2, 2 / 60));
+      expect(game.phase, GamePhase.traveling);
+      expect(game.heroHp.ratio(game.stats.maxHp), closeTo(1, 1e-8));
+      expect(game.heroAnimation, 'hero.walk');
+    },
+  );
 }

@@ -1,0 +1,110 @@
+{
+  "sheet": "assets/characters/hero/death.png",
+  "frameSize": [
+    512,
+    512
+  ],
+  "frames": 4,
+  "loop": false,
+  "stepTime": 0.4,
+  "visibleFrameDurations": [
+    0.4,
+    0.4,
+    0.4,
+    1.0
+  ],
+  "totalSeconds": 2.2,
+  "respawnHoldSeconds": 0.6,
+  "anchor": [
+    0.58,
+    0.875
+  ],
+  "scale": 0.25,
+  "sourceSheet": "art/hero/death_v1/source-sheet.png",
+  "commonCanvas": [
+    940,
+    940
+  ],
+  "frameDetails": [
+    {
+      "index": 0,
+      "pose": "plant-sword",
+      "sourceRect": [
+        0,
+        0,
+        627,
+        660
+      ],
+      "canvasOrigin": [
+        -176,
+        -186
+      ],
+      "bounds": [
+        157,
+        153,
+        393,
+        449
+      ]
+    },
+    {
+      "index": 1,
+      "pose": "bow-head",
+      "sourceRect": [
+        627,
+        0,
+        627,
+        660
+      ],
+      "canvasOrigin": [
+        411,
+        -184
+      ],
+      "bounds": [
+        172,
+        164,
+        399,
+        450
+      ]
+    },
+    {
+      "index": 2,
+      "pose": "sink-to-knees",
+      "sourceRect": [
+        0,
+        660,
+        627,
+        594
+      ],
+      "canvasOrigin": [
+        -148,
+        358
+      ],
+      "bounds": [
+        167,
+        198,
+        391,
+        448
+      ]
+    },
+    {
+      "index": 3,
+      "pose": "kneeling-defeat",
+      "sourceRect": [
+        627,
+        660,
+        627,
+        594
+      ],
+      "canvasOrigin": [
+        455,
+        358
+      ],
+      "bounds": [
+        136,
+        226,
+        391,
+        448
+      ]
+    }
+  ]
+}

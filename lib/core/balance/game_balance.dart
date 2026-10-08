@@ -11,7 +11,11 @@ class GameBalance {
   static const approachDuration = 1.1;
   static const deathDuration = .8;
   static const rewardDuration = .9;
-  static const respawnDuration = 1.2;
+  static const heroDeathFrameTime = .4;
+  static const heroDeathLastFrameDuration = 1.0;
+  // The final death frame already plays for one step before RESPAWN holds it.
+  static const respawnDuration =
+      heroDeathLastFrameDuration - heroDeathFrameTime;
   static const attackDuration = .6;
   static const damageTiming = .35;
   static const hitDuration = .18;
