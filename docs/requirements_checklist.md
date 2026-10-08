@@ -7,16 +7,16 @@
 | № | Вимога | Реалізація / evidence |
 |---|---|---|
 | 1 | Desktop overlay | Swift/AppKit та C++/Win32: borderless, transparency, topmost, lower-right work area. macOS runtime перевірено; Windows і hot-plug matrix не перевірено. Windows використовує binary color-key, monitor picker відсутній. |
-| 2 | Assets без final artwork | AssetCatalog/AnimationCatalog/AnimationDefinition, Flame Canvas placeholders, no-assets startup widget test. |
+| 2 | Asset rendering і fallback | Hero walk: 10×512×512 із alpha, 8 FPS; attack: 4×512×512, 0.15 s/frame, damage 0.35 s на третьому кадрі; idle — перший кадр бойової стійки. Hit flash не перериває swing. No-assets startup і реальний sprite loader перевірені widget tests. Інші assets — placeholders. |
 | 3 | Gameplay loop | GameSimulation, background scrolling, random encounter distance, smooth approach; simulation tests і macOS runtime. |
 | 4 | Combat/event timing | CombatSystem/AttackClock, crit, hit reaction, DamageEvent, HP; tests timing, speed change та chronological ordering. |
-| 5 | Death/respawn | Explicit phases, death duration із AnimationCatalog, final frame hold, NoDeathPenalty; regression tests. |
-| 6 | Procedural enemies | EnemyDefinition/Factory/Spawner, weighted random, exponential tier scaling; scaling tests. |
+| 5 | Death/respawn | Hero death: 4 RGBA кадри по 0.4 s, sword plant → head bow → collapse to knees. Остання поза 1 s (0.4 s кадру + 0.6 s RESPAWN), загалом 2.2 s. Real sprite loading і final-frame timing перевірені tests; full-HP respawn/NoDeathPenalty. |
+| 6 | Procedural enemies | EnemyDefinition/Factory/Spawner, weighted random, exponential tier scaling після перемог; смерть героя знижує tier на 1 (мінімум 0), retry того самого ворога на нижчому tier. Regression tests. |
 | 7 | Global activity | CGEventSource + duration-only IOHIDSystem, Win32 GetLastInputInfo; macOS input у Finder без focus companion перевірено. Windows не перевірено. |
 | 8 | Idle levels | Configurable thresholds 30/120/300s; threshold tests, debug override. |
 | 9 | Idle graph | Data-driven chains/roots, weights, cooldown, loop count; chain/cooldown/invalid graph tests. |
 | 10 | User return | canInterrupt та caught placeholder; both interruption paths tested. |
-| 11 | Idle progression | Orthogonal behavior, configurable movement/DPS/reward multipliers; simulation continues. Debug override не змінює real activity aggregates. |
+| 11 | Idle/rest behavior | Після поточного encounter герой відпочиває: distance/scroll/encounter countdown зупинені, спавну немає. Weighted вибір одного standalone або root chain, cooldown fallback, повернення через caught; simulation/domain tests. Assets відпочинку — placeholders. Debug override не змінює real activity aggregates. |
 | 12 | Click/menu | Hero/menu hit regions, Flutter panel, transparent background click-through; Swift/C++ region bounds narrowed for expanded panel. Windows behavior не перевірено. |
 | 13 | Character statistics | All specified stats у StatisticsPanel; macOS runtime. |
 | 14 | Activity statistics | Aggregates, session means, local midnight, total retention, suspend gaps; unit tests. |
@@ -27,17 +27,17 @@
 | 19 | Gold upgrades | x1/x10/MAX, analytic geometric sum, item effect + total current stat; purchase tests. |
 | 20 | Drops | Independent Reward/DropSystem; Gold guaranteed, Books chance, placeholder visual event; tests 0/1 probabilities. |
 | 21 | Large numbers | Amount log10 abstraction, formatter suffix/scientific notation; huge-number tests. Metadata levels мають technical precision bound 2^53−1, описаний у README. |
-| 22 | Persistence | Repository, synchronous snapshot + serialized I/O, backup, schema v2 migration, single-instance lock, minute autosave / every successful upgrade / lifecycle / exit saves; round-trip/recovery/invalid-state/Exit tests. |
+| 22 | Persistence | Repository, synchronous snapshot + serialized I/O, backup, schema v3 migration із enemyProgressKills, single-instance lock, minute autosave / every successful upgrade / lifecycle / exit saves; round-trip/recovery/invalid-state/Exit tests та збереження зниження складності після смерті. |
 | 23 | Offline infrastructure | OfflineProgressService/Result із duration та майбутніми rewards; no fabricated offline combat; tests. |
 | 24 | Architecture | Pure-Dart domain/systems, Flutter presentation/Riverpod orchestration, Flame components, native service adapters. |
 | 25 | State machine | Explicit tested transition graph; USER_IDLE orthogonal, пояснення у README. |
 | 26 | FPS/energy | Fixed simulation step, actual capped renderer 15/30/60, suspend guard; cross-FPS and invalid-delta tests. |
-| 27 | UI/settings | All panels; topmost/sound/FPS, startup placeholder, confirmed reset, save/exit. |
+| 27 | UI/settings | All panels; topmost/sound/FPS, background/road/overall opacity sliders, persistent settings button and readable Settings at 0%, hidden hero click-through, startup placeholder, confirmed reset, save/exit. |
 | 28 | Debug tools | All specified actions/idle/speed/hitboxes; menu only in debug. Release runtime: Debug Tools відсутні; Quick Menu Exit зберігає стан і завершує процес. |
 | 29 | Balance configs | GameBalance та definition catalogs; cost/effect/combat formulas поза widgets. |
-| 30 | Tests | Original minimum + regression coverage. **46 tests passed**, analyzer no issues. |
+| 30 | Tests | Original minimum + regression coverage. **70 tests passed**, analyzer no issues; перевірено attack/death/guard asset loading, death final-frame hold 1 s, guard pauses, damage на slash frame при різній attack speed, зниження enemy tier після смерті та save migration. |
 | 31 | README | Launch/build instructions, native behavior/limitations, architecture/formulas/catalog extensions. |
-| 32 | Asset example | Concrete walk sprite example 8×128×128, 8 FPS, loop, registration/pubspec. |
+| 32 | Asset example | Реальні walk (10 кадрів), attack/death (по 4 кадри) і статична бойова стійка; registration/pubspec, source artwork, окремі PNG, GIF та повторювані ffmpeg pipelines. |
 | 33 | Working vertical slice | Existing macOS runtime: travel→combat→death→reward, idle, UI, upgrades, save/restart. Assets не потрібні. |
 | 34 | Work order/validation | Architecture і vertical slice завершені; цей audit продовжує fixes, analyzer/tests, builds/runtime і documentation. macOS arm64 release build успішний (20.8 MB), app закрито після runtime-перевірки. Windows build можливий лише на Windows host. |
 

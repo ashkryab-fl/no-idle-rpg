@@ -1,8 +1,8 @@
 # Idle Companion
 
-Робочий desktop idle RPG MVP на Flutter + Flame для macOS та Windows. Герой іде, procedural вороги зупиняють рух, автоматичний бій дає Gold, XP і Knowledge Books. Після смерті герой відроджується. Глобальна бездіяльність користувача перемикає окремий idle animation graph, при цьому прогресія триває.
+Робочий desktop idle RPG MVP на Flutter + Flame для macOS та Windows. Поки користувач активний, герой іде, procedural вороги зупиняють рух, автоматичний бій дає Gold, XP і Knowledge Books. Після смерті герой відроджується. Глобальна бездіяльність користувача переводить героя у відпочинок: після завершення поточного encounter він зупиняється й обирає одну idle animation або один граф.
 
-Sprite assets не потрібні: усі персонажі, рухомий фон, hit particles, damage numbers і drops мають програмні debug placeholders. Фінальне artwork не створювалось.
+Для героїні підключено прозорі RGBA спрайти: ходьба — 10 кадрів 512×512, 8 FPS; атака та смерть — по 4 кадри; бойова стійка — перший кадр атаки. Рухомий фон циклічно показує три панорами: луки з хатиною та млином → струмок → пшеничні поля з дерев’яним парканом. Інші анімації, вороги, hit particles, damage numbers і drops поки мають програмні debug placeholders. Відсутні assets підтримують fallback.
 
 ## Запуск
 
@@ -35,7 +35,7 @@ flutter analyze
 flutter test
 ```
 
-Клік по герою або `…` відкриває Quick Menu. Statistics, Character Upgrades, Equipment, Settings і Debug Tools відкриваються в тому самому Flutter-вікні. Закриття панелі знову зменшує native window. `Quick Menu → Exit` і `Settings → Save & quit` зберігають прогрес перед виходом. macOS Quit / Cmd-Q та Windows WM_CLOSE також проходять через save handshake.
+Клік по герою відкриває Quick Menu, а постійна кнопка-шестерня відкриває Settings. Statistics, Character Upgrades, Equipment, Settings і Debug Tools відкриваються в тому самому Flutter-вікні. Закриття панелі знову зменшує native window. `Quick Menu → Exit` і `Settings → Save & quit` зберігають прогрес перед виходом. macOS Quit / Cmd-Q та Windows WM_CLOSE також проходять через save handshake.
 
 ## Overlay та platform layer
 
@@ -90,7 +90,7 @@ Idle thresholds у `GameBalance`:
 | ≥120 s | level2 |
 | ≥300 s | level3 |
 
-`movement`, `DPS`, `reward` multipliers для кожного idle level зараз 1.0. Їх можна змінити централізовано без змін widgets або rendering.
+`movement`, `DPS`, `reward` multipliers для кожного idle level зараз 1.0. Вони застосовуються до активного gameplay та завершення поточного encounter; під час відпочинку рух завжди зупинений незалежно від multiplier.
 
 ## Структура
 
@@ -128,11 +128,17 @@ BOOT → TRAVELING → ENEMY_APPROACH → COMBAT → ENEMY_DEATH → REWARD → 
 
 Переходи явно перевіряє `GameStateMachine`. Hero death також може бути викликаний debug tools під час travel/approach/reward. Enemy death animation завершується перед розрахунком reward. Death penalty має інтерфейс `DeathPolicy`; MVP використовує `NoDeathPenalty` і full-HP respawn.
 
-**USER_IDLE — orthogonal layer**, а не взаємовиключна combat phase. Користувач може стати idle у будь-який момент, зокрема під час бою; idle animation змінює presentation героя, а бойова симуляція працює далі із configurable multipliers. Death animation має пріоритет перед slacking animation.
+**USER_IDLE** визначає бажання відпочивати незалежно від поточної combat phase. Якщо користувач став idle під час encounter, герой завершує approach, бій, death/reward або власний death/respawn, і лише після повернення до `TRAVELING` запускає відпочинок. Idle animation не перекриває бойові анімації. Якщо активність повернулась до завершення encounter, відпочинок не починається.
+
+`GameSimulation.isResting` зупиняє рух, background scroll, накопичення distance та зменшення encounter distance. Нові вороги не спавняться на жодному idle level, включно з Debug Spawn enemy. Рух і спавн відновлюються після повернення до active та завершення поточної idle animation і `hero.caught`. Під час cooldown між доступними idle animations герой також стоїть (`hero.idle` fallback).
 
 `AnimationDefinition.damageEventTime` задає момент damage. Default attack: 0.6 s, damage на 0.35 s. Якщо attack speed швидша за animation duration, timeline прискорюється пропорційно, разом із damage event. Hit reaction, critical visual event, HP change, damage number походять від того самого `DamageEvent`. Events обох бійців впорядковуються за часом удару всередині step; при однаковому часі герой має deterministic tie priority. Attack clock зберігає progress поточного cycle: upgrade attack speed у combat не повторює історичні удари. Death animation утримує останній frame у reward/respawn паузі.
 
-Simulation використовує delta time accumulator із fixed step, а не frame counts. Traveling distance і background scroll залежать від часу. У approach фон плавно сповільнюється. Після reward фон знову рухається. Великі suspend gaps (>5 s) не проганяють прихований combat catch-up.
+Герой програє 4 кадри атаки по 0.15 s: бойова стійка → замах → удар зі слідом меча → завершення. Damage на 0.35 s припадає на третій кадр. Влучання у героя не перериває його swing: короткий світлий flash накладається поверх спрайта. Між атаками та під час stationary pauses `hero.idle` тримає перший кадр — бойову стійку з мечем напоготові. Якщо hit asset відсутній, реакція на влучання поза swing використовує цю стійку зі спалахом.
+
+Смерть героя: 4 кадри — встромляє меч у землю → опускає голову → осідає на коліна → знесилено тримається за меч. Перші три кадри по 0.4 s, остання поза рівно 1 s, загалом 2.2 s. `hero.death` не зациклюється: 0.4 s останнього кадру в HERO_DEATH і 0.6 s утримання в RESPAWN; потім герой відроджується з повним HP. Attack speed не змінює цей темп. Sprite і preview — у `art/hero/death_v1/`, runtime asset — `assets/characters/hero/death.png`.
+
+Simulation використовує delta time accumulator із fixed step, а не frame counts. Traveling distance і background scroll залежать від часу. У approach фон плавно сповільнюється. Після reward герой продовжує рух або відпочиває залежно від активності користувача. Великі suspend gaps (>5 s) не проганяють прихований combat catch-up.
 
 `DesktopGame` зупиняє стандартний Flame ticker через `pauseEngine`, а Timer викликає `stepEngine` із реальним dt. Settings дає 15/30/60 FPS; default 30, 15 — energy-efficient режим. Це обмежує фактичні rendering ticks, а не тільки ігрову швидкість. Debug speed x5/x20 множить simulation dt; activity statistics залишаються wall-clock.
 
@@ -141,7 +147,9 @@ Simulation використовує delta time accumulator із fixed step, а �
 Центральні coefficients — `lib/core/balance/game_balance.dart`. Base enemy data — `EnemyCatalog`, upgrade costs — `UpgradeCatalog` і `EquipmentCatalog`. Widgets не містять progression formulas.
 
 ```text
-tier = max(floor(distance / 500), kills ~/ 12)
+tier = enemyProgressKills ~/ 12
+onVictory: kills += 1; enemyProgressKills += 1
+onHeroDeath: if tier > 0, enemyProgressKills -= 12
 enemyHP = baseHP × 1.08^tier
 enemyDamage = baseDamage × 1.065^tier
 goldReward = baseGold × 1.07^tier
@@ -153,6 +161,8 @@ upgradeCost(level) = baseCost × costGrowth^level
 batchCost(level, n) = cost(level) × (costGrowth^n - 1) / (costGrowth - 1)
 MAX = floor(log(1 + wallet / cost(level) × (costGrowth - 1)) / log(costGrowth))
 ```
+
+Складність ворогів і rewards зростають після кожних 12 перемог за поточним progression. Пройдена відстань і час не підвищують tier. Кожна смерть героя знижує tier на 1, мінімум — 0; progress усередині tier зберігається. Загальна статистика `kills` не зменшується. Наступний encounter повторює того самого непереможеного ворога з повним HP та характеристиками й rewards нижчого tier; новий випадковий ворог обирається після перемоги. На tier 0 смерть не змінює характеристики ворога.
 
 MAX працює без sequential level loops; після математичного розрахунку є rounding correction. Для costGrowth = 1 використовується flat-cost формула; для growth дуже близько до 1 — чисельно стабільні expm1/log1p series. Ці крайні випадки також покриті tests. x10 купує до 10 доступних рівнів, показуючи фактичну кількість і сумарну ціну.
 
@@ -199,7 +209,7 @@ instance.lock         exclusive OS lock for process lifetime
 
 Main startup бере instance lock: одночасні процеси не повинні перезаписувати progression один одного. Writes serialized, JSON snapshot захоплюється до asynchronous I/O. На macOS rename atomic; на Windows replacement потребує delete + rename, тож backup захищає від crash між ними. Якщо primary пошкоджений, load пробує backup. Перевіряються не тільки JSON syntax, а й finite/nonnegative durations/distance, kill count, character та upgrade levels. Помилка запису backup не замовчується як помилка JSON. Якщо обидва пошкоджені або schema новіша — показується startup error із Retry/confirmed Reset, automatic overwrite немає.
 
-Save schema version 2. `SaveMigrator` мігрує v1 → v2, додаючи missing settings/activity; наступні migrations додаються в одному місці. Зберігаються Level, XP, Books, Gold, upgrades, equipment levels, distance, kills, activity aggregates, settings і UTC timestamp.
+Save schema version 3. `SaveMigrator` мігрує v1 → v2, додаючи missing settings/activity, і v2 → v3, починаючи `enemyProgressKills` зі збереженого `kills`; наступні migrations додаються в одному місці. Зберігаються Level, XP, Books, Gold, upgrades, equipment levels, distance, kills, enemyProgressKills, activity aggregates, settings і UTC timestamp.
 
 Save: раз на хвилину (60 s), після кожного успішного character/equipment upgrade та зміни settings, на lifecycle inactive/paused/detached та перед controlled exit. Exit призупиняє simulation, завершує activity session і чекає save; повторні натискання не запускають паралельний exit. Якщо save або native quit не вдалися, гра відновлюється й показує помилку. Startup error UI теж підтримує native Quit. Force-kill/power-loss може втратити останні ≤60 s. Reset вимагає Flutter confirmation і очищає primary, backup та live progression; instance lock зберігається до виходу.
 
@@ -221,13 +231,25 @@ Save: раз на хвилину (60 s), після кожного успішн�
 
 ### Animation / sprite sheet
 
-Покладіть, наприклад, `assets/characters/hero/walk.png`: **8 горизонтальних frames, 128×128, 8 FPS**. Зареєструйте тільки наявний файл у pubspec:
+`assets/characters/hero/walk.png` уже містить **10 горизонтальних frames, 512×512, 8 FPS** і зареєстрований у pubspec. Окремі кадри збережено в `assets/characters/hero/walk_frames/`, оригінальний sheet, перші 10 кадрів і GIF preview — у `art/hero/walk_v2/`. Повторне складання (потрібні ffmpeg і ffprobe):
+
+```sh
+cd /Users/artemshkryab/dev/proj/idle_companion
+python3 tool/build_hero_walk.py
+python3 tool/build_hero_attack.py
+python3 tool/build_hero_death.py
+```
+
+Walk-скрипт бере перші два ряди оригінального sheet зліва направо, збільшує кожну повну комірку вдвічі через Lanczos, зберігає позиції та alpha, створює sheet 5120×512 та GIF preview. Attack-скрипт збирає 4×512×512 зі source artwork у `art/hero/attack_v1/`, копіює sheet до `assets/characters/hero/attack.png`, а перший кадр — до `ready.png`. Scale атаки/стійки 0.25 узгоджує висоту героїні з walk (0.20). PNG зареєстровані так:
 
 ```yaml
 flutter:
   uses-material-design: true
   assets:
     - assets/characters/hero/walk.png
+    - assets/characters/hero/attack.png
+    - assets/characters/hero/ready.png
+    - assets/characters/hero/death.png
 ```
 
 У `AnimationCatalog` замініть definition або передайте override під час створення simulation:
@@ -237,21 +259,36 @@ final animations = AnimationCatalog({
   'hero.walk': const AnimationDefinition(
     id: 'hero.walk',
     asset: 'assets/characters/hero/walk.png',
-    frames: 8,
-    frameWidth: 128,
-    frameHeight: 128,
+    frames: 10,
+    frameWidth: 512,
+    frameHeight: 512,
     stepTime: 1 / 8,
     loop: true,
-    anchorX: .5,
-    anchorY: 1,
-    scale: .55,
+    anchorX: .62,
+    anchorY: .875,
+    scale: .20,
   ),
   'hero.attack': const AnimationDefinition(
     id: 'hero.attack',
     asset: 'assets/characters/hero/attack.png',
-    frames: 6,
-    stepTime: .1,
+    frames: 4,
+    frameWidth: 512,
+    frameHeight: 512,
+    stepTime: .15,
+    anchorX: .58,
+    anchorY: .875,
+    scale: .25,
     damageEventTime: .35,
+  ),
+  'hero.idle': const AnimationDefinition(
+    id: 'hero.idle',
+    asset: 'assets/characters/hero/ready.png',
+    frameWidth: 512,
+    frameHeight: 512,
+    loop: true,
+    anchorX: .58,
+    anchorY: .875,
+    scale: .25,
   ),
 });
 final simulation = GameSimulation(animations: animations);
@@ -269,12 +306,13 @@ assets/
     caught_slacking.png
   enemies/enemy_01/
     idle.png attack.png hit.png death.png
-  environment/background_01.png
+  environment/
+    background_meadow_01.png background_stream_02.png background_wheat_03.png
   effects/
   ui/
 ```
 
-Paths не пов'язані із combat logic: animation IDs і enemy prefixes є stable contracts. `background_01.png`, якщо bundled, автоматично замінить scrolling environment placeholder. Effects/UI files додаються до власних visual components.
+Paths не пов'язані із combat logic: animation IDs і enemy prefixes є stable contracts. `AssetCatalog.backgrounds` задає порядок трьох bundled панорам. Кожна відображається у viewport 400×133.33 зі співвідношенням 3:1 та невеликим перекриттям із нижньою доріжкою; цикл довжиною 1200 logical pixels керується `GameSimulation.distance`, тому не скидається на межі кожних 400 pixels та зупиняється під час бою й відпочинку. Якщо жоден фон не завантажився, використовується procedural fallback. Effects/UI files додаються до власних visual components.
 
 ### Idle chains
 
@@ -290,17 +328,23 @@ const IdleAnimationDefinition(
 
 Selection обирає weighted root chain або standalone animation, а не довільний її child. `nextAnimationId` проходиться після завершення configured duration × randomly selected loop count. Cooldown застосовується до наступного вибору root. Конструктор перевіряє thresholds, duplicate IDs, weights, loop counts, cooldowns, наявність next ID та відсутність cycles. AnimationCatalog перевіряє finite timeline/geometry та узгодженість ключа й ID. User return interrupt-ить тільки `canInterrupt` animation; інакше чекає завершення поточного вузла, потім `hero.caught` placeholder і normal gameplay.
 
+Каталог розрахований на багато варіантів відпочинку. Додайте node без `nextAnimationId` для окремої animation або повний chain для графа. Поки користувач idle, після завершення обраного варіанта система знову обирає один доступний root за idle level, weight і cooldown. Поточні `a1/a2/a3/b/c/d` — лише placeholders для майбутніх assets; сидіння, кава та сон ще не намальовані. Власний каталог можна передати через `GameSimulation(idleDefinitions: definitions)`; sprite metadata задається окремо в `AnimationCatalog`.
+
 ## Debug tools
 
-Доступні лише `kDebugMode`: Spawn enemy, Kill enemy, Kill hero, +100 Gold, +100 Books, +100 XP, idle Active/Level1/Level2/Level3/OS, x1/x5/x20, hitboxes, state/idle/animation labels. Override не зберігається; OS повертає native polling. Override змінює visual idle behavior, але activity statistics завжди класифікуються за реальною native activity. Debug tools не входять у release Quick Menu.
+Доступні лише `kDebugMode`: Spawn enemy, Kill enemy, Kill hero, +100 Gold, +100 Books, +100 XP, idle Active/Level1/Level2/Level3/OS, x1/x5/x20, hitboxes, state/idle/animation labels. Override не зберігається; OS повертає native polling. Override керує відпочинком і поверненням до пригод, але activity statistics завжди класифікуються за реальною native activity. Debug tools не входять у release Quick Menu.
+
+Settings має окремі sliders Background opacity, Road opacity та Overall opacity (0–100%). Загальна прозорість множить прозорість персонажів, ефектів, HUD, фону й дороги. При 0% залишається кнопка-шестерня; відкрита панель Settings не згасає, щоб можна було повернути видимість. Прихований герой пропускає кліки на desktop також у native layer. Значення зберігаються після завершення перетягування; старі сейви використовують 100%, а Reset повертає всі три значення до 100%.
+
+Ґрунтова доріжка `assets/environment/road_dirt_01.png` має прозорі краї та відображається вузькою смугою під персонажами поверх ландшафту. Її offset, як і offset фону, залежить від `GameSimulation.distance`, тому обидва рухаються та зупиняються разом.
 
 Sound preference зберігається, але audio playback поки не реалізовано. Launch at startup — видимий disabled placeholder. `flame_audio` буде додано пізніше.
 
 ## Перевірка та відомі межі
 
 - `flutter analyze --no-pub`: без issues (2026-10-08).
-- `flutter test --no-pub`: **46 tests passed**, включно з no-assets Flame startup, Exit/retry/failure/reset collision, invalid saves, chronological combat timing, speed upgrades, death frame hold, idle graph validation та near-linear MAX.
-- macOS debug build: успішний на цьому Mac у попередній перевірці. **Release build успішний**: `flutter build macos --release --no-pub`, app 20.8 MB, arm64. Поточні Release/Profile обирають одну native Flutter-supported architecture через Xcode settings (arm64e host → arm64, Intel → x86_64). На Xcode 27 штатний `lipo -verify_arch arm64 x86_64` fails despite both slices present; universal build потребує окремого сумісного tooling verification. Intel mapping написано, але Intel build на цьому Apple Silicon Mac не перевірено.
+- `flutter test --no-pub`: **70 tests passed**, включно з no-assets Flame startup, hero walk/attack/death/guard asset loading, death sequence 2.2 s з фінальним кадром 1 s, damage на slash frame при звичайній та прискореній атаці, guard між ударами, Exit/retry/failure/reset collision, invalid saves, chronological combat timing, speed upgrades, death frame hold, idle graph validation та near-linear MAX.
+- macOS debug build: успішний для поточних змін (2026-10-08). **Release build успішний**: `flutter build macos --release --no-pub`, app 20.8 MB, arm64. Поточні Release/Profile обирають одну native Flutter-supported architecture через Xcode settings (arm64e host → arm64, Intel → x86_64). На Xcode 27 штатний `lipo -verify_arch arm64 x86_64` fails despite both slices present; universal build потребує окремого сумісного tooling verification. Intel mapping написано, але Intel build на цьому Apple Silicon Mac не перевірено.
 - macOS runtime: перевірено travel/combat/death/reward, панелі Statistics/Upgrades/Equipment/Settings/Debug, purchases, idle override та global idle reset після input у Finder без focus companion. Після Save & quit/restart збережений equipment level відновився; native Quit menu також завершив save handshake. У поточному **release runtime** перевірено Quick Menu без Debug Tools, equipment item effect, відновлення Weapon Lv 1 і Quick Menu **Exit**. Exit записав новий lastSaveTime і завершив app process; гра після перевірки закрита.
 - Windows C++ implementation написано, але Windows build/runtime на macOS **не перевірено**. Потрібен Windows host для validation Win32 transparency, click-through, DPI/taskbar behavior і WM_CLOSE save handshake.
 - Hot-plug кількох monitor, зміна resolution і Dock/taskbar position реалізовані через notifications/messages, але live display-topology matrix не перевірялась. Monitor picker не входить до MVP.
