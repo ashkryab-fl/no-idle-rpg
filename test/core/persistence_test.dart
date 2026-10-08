@@ -13,6 +13,7 @@ void main() {
     for (final modify in <void Function(Map<String, Object?>)>[
       (j) => j['distance'] = double.nan,
       (j) => j['kills'] = -1,
+      (j) => j['enemyProgressKills'] = -1,
       (j) => (j['character'] as Map)['level'] = 0,
       (j) => (j['character'] as Map)['upgrades'] = {'damage': -1},
       (j) => ((j['activity'] as Map)['today'] as Map)['idle'] = -5,
@@ -52,7 +53,8 @@ void main() {
       final repository = FileGameSaveRepository(dir);
       final game = GameSimulation()
         ..distance = 100
-        ..kills = 9;
+        ..kills = 9
+        ..enemyProgressKills = 3;
       game.character.gold = Amount.fromLog(900);
       game.character.equipment['weapon'] = 30;
       game.character.upgrades['damage'] = 4;
@@ -68,6 +70,7 @@ void main() {
       expect(restored.settings.fps, 15);
       expect(restored.distance, 100);
       expect(restored.kills, 9);
+      expect(restored.enemyProgressKills, 3);
       expect(restored.lastSaveTime.toLocal(), now);
     },
   );
@@ -85,6 +88,35 @@ void main() {
       () => GameSave.fromJson(Map<String, dynamic>.from(json)),
       throwsUnsupportedError,
     );
+  });
+  test('legacy saves initialize difficulty from lifetime victories', () {
+    for (final version in [1, 2]) {
+      final json = GameSave.capture(GameSimulation(), DateTime.now()).toJson()
+        ..['saveVersion'] = version
+        ..['kills'] = 25
+        ..remove('enemyProgressKills');
+      final restored = GameSave.fromJson(Map<String, dynamic>.from(json));
+      expect(restored.kills, 25);
+      expect(restored.enemyProgressKills, 25);
+    }
+  });
+
+  test('death difficulty reduction survives save and reload', () {
+    final game = GameSimulation()
+      ..kills = 25
+      ..enemyProgressKills = 25;
+    game.killHero();
+    final save = GameSave.fromJson(
+      Map<String, dynamic>.from(
+        GameSave.capture(game, DateTime.now()).toJson(),
+      ),
+    );
+    final restored = GameSimulation(character: save.character)
+      ..kills = save.kills
+      ..enemyProgressKills = save.enemyProgressKills;
+    expect(restored.kills, 25);
+    expect(restored.enemyProgressKills, 13);
+    expect(restored.enemyTier, 1);
   });
   test('queued snapshots, corrupt primary backup recovery and reset', () async {
     final repository = FileGameSaveRepository(dir), game = GameSimulation();

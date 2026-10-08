@@ -258,6 +258,7 @@ class GameController extends Notifier<AppUiState> {
       hero.equipment.clear();
       simulation.distance = 0;
       simulation.kills = 0;
+      simulation.enemyProgressKills = 0;
       simulation.heroHp = simulation.stats.maxHp;
       simulation.resetEncounter();
       simulation.activity.reset(DateTime.now());

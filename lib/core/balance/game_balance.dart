@@ -22,7 +22,6 @@ class GameBalance {
   static const hpGrowth = 1.08;
   static const damageGrowth = 1.065;
   static const rewardGrowth = 1.07;
-  static const tierDistance = 500.0;
   static const tierKills = 12;
   static const baseXp = 45.0;
   static const xpGrowth = 1.12;

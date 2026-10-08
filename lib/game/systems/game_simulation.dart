@@ -72,16 +72,20 @@ class GameSimulation {
   late final IdleBehaviorSystem idle;
   late Amount heroHp;
   Enemy? enemy;
+  Enemy? _undefeatedEnemy;
   Reward? lastReward;
   double distance = 0, scroll = 0, encounterRemaining = 0;
   double heroHitRemaining = 0, enemyHitRemaining = 0;
   int kills = 0;
+  // Difficulty progress is separate from the lifetime victory statistic.
+  int enemyProgressKills = 0;
   double speed = 1;
   bool hitboxes = false;
   final List<VisualEvent> events = [];
   double _accumulator = 0;
   CombatStats get stats => CharacterStats.calculate(character);
   GamePhase get phase => machine.phase;
+  int get enemyTier => enemyProgressKills ~/ GameBalance.tierKills;
   bool get isResting => phase == GamePhase.traveling && idle.blocksAdventure;
   double get movementMultiplier =>
       GameBalance.idleMovementMultipliers[idle.level.index];
@@ -151,8 +155,7 @@ class GameSimulation {
             heroHp = heroHp - event.amount;
             heroHitRemaining = animations.get('hero.hit').duration;
             if (heroHp.isZero) {
-              deathPolicy.onDeath(character);
-              machine.transition(GamePhase.heroDeath);
+              _heroDied();
             }
           }
         }
@@ -165,6 +168,8 @@ class GameSimulation {
           final levels = progression.addXp(character, lastReward!.xp);
           if (levels > 0) heroHp = stats.maxHp;
           kills++;
+          enemyProgressKills++;
+          _undefeatedEnemy = null;
           events.add(VisualEvent('reward', reward: lastReward));
           machine.transition(GamePhase.reward);
         }
@@ -186,6 +191,7 @@ class GameSimulation {
 
   void resetEncounter() {
     enemy = null;
+    _undefeatedEnemy = null;
     lastReward = null;
     events.clear();
     combat.reset();
@@ -205,7 +211,10 @@ class GameSimulation {
 
   void spawnEnemy() {
     if (phase != GamePhase.traveling || isResting) return;
-    enemy = spawner.spawn(distance, kills);
+    // Retry the same opponent after a loss; only a victory unlocks a new one.
+    enemy = _undefeatedEnemy ?? spawner.spawn(enemyTier);
+    enemy!.hp = enemy!.stats.maxHp;
+    _undefeatedEnemy = enemy;
     machine.transition(GamePhase.enemyApproach);
   }
 
@@ -220,6 +229,18 @@ class GameSimulation {
   void killHero() {
     if (phase == GamePhase.heroDeath || phase == GamePhase.respawn) return;
     heroHp = Amount.zero;
+    _heroDied();
+  }
+
+  void _heroDied() {
+    deathPolicy.onDeath(character);
+    if (enemyTier > 0) {
+      enemyProgressKills -= GameBalance.tierKills;
+      final retry = _undefeatedEnemy;
+      if (retry != null) {
+        _undefeatedEnemy = spawner.factory.create(retry.definition, enemyTier);
+      }
+    }
     machine.transition(GamePhase.heroDeath);
   }
 

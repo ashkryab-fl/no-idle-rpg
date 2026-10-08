@@ -101,7 +101,7 @@ class EnemySpawner {
       GameBalance.encounterMinDistance +
       random.nextDouble() *
           (GameBalance.encounterMaxDistance - GameBalance.encounterMinDistance);
-  Enemy spawn(double distance, int kills) {
+  Enemy spawn(int tier) {
     var roll =
         random.nextDouble() *
         definitions.fold<double>(0, (sum, d) => sum + d.difficultyWeight);
@@ -113,10 +113,6 @@ class EnemySpawner {
         break;
       }
     }
-    final tier = max(
-      (distance / GameBalance.tierDistance).floor(),
-      kills ~/ GameBalance.tierKills,
-    );
     return factory.create(selected, tier);
   }
 }
