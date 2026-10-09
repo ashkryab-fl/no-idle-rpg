@@ -99,17 +99,17 @@ final class HeroAnimationCoordinator {
           graph.snapshot,
           resources,
           generation: _generation,
-          displayLabel: rest.animationId ?? 'rest',
+          displayLabel: graph.snapshot.graphId.value,
         );
       }
-      // Explicit legacy timelines retain their clock until migration stage 5.
-      final id = ClipId(rest.animationId ?? 'hero.idle');
+      // Inactivity may be sampled before the first simulation tick. Resolve
+      // the explicit guard resource until the runner enters its initial node.
       return PlaybackSnapshot.atClip(
         resources,
-        id,
-        rest.animationElapsed,
+        const ClipId('hero.idle'),
+        0,
         generation: _generation,
-        displayLabel: id.value,
+        displayLabel: 'hero.idle',
       );
     }
     if (_request == HeroAnimationRequest.combat) {

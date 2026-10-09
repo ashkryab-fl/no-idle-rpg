@@ -15,7 +15,6 @@ class GameBalance {
   static const damageTiming = .35;
   static const hitDuration = .18;
   static const idleThresholds = [30.0, 120.0, 300.0];
-  static const caughtDuration = .65;
   static const idleMovementMultipliers = [1.0, 1.0, 1.0, 1.0];
   static const saveInterval = Duration(minutes: 1);
   static const activityPollInterval = Duration(seconds: 1);

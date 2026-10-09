@@ -15,7 +15,7 @@ after sit-down and loops until activity returns, without repeating sit-down.
 
 Artwork uses the built-in imagegen tool. `prompt.txt` records pose generation;
 `spacing-prompt.txt` records the layout correction. The exact shared frame,
-source transforms and timeline are in `../sit_down_v1/manifest.json`.
+source transforms are in `manifest.json`; the timeline lives in Dart.
 
 Rebuild/check: `python3 tool/build_hero_rest.py [--verify]`.
 See [random continuations](../../../docs/hero_rest.md).

@@ -14,7 +14,7 @@ The gameplay sheet is assets/characters/hero/walk.png: 5120×512, ten horizontal
 512×512 RGBA cells, 8 FPS, looping (1.25 seconds). The original frame rate stays
 unchanged. Separate runtime PNGs are in assets/characters/hero/walk_frames/.
 walk-preview.gif previews the loop with reduced GIF color/alpha precision.
-manifest.json records source cells, dimensions, bounds and runtime metadata.
+manifest.json contains the ordered source cells, output size/scale and PNG paths.
 The ground anchor is (0.62, 0.875), with scale 0.20 keeping the character around
 its previous displayed height while placing boots on the ground.
 

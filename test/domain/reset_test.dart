@@ -1,8 +1,9 @@
 import 'dart:math';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:idle_companion/core/assets/animation_catalog.dart';
+import 'package:idle_companion/content/animations/animation_resources.dart';
 import 'package:idle_companion/domain/activity/activity_statistics.dart';
-import 'package:idle_companion/domain/activity/idle_animation.dart';
+import 'package:idle_companion/domain/activity/rest_coordinator.dart';
+import 'package:idle_companion/domain/activity/idle_level.dart';
 import 'package:idle_companion/game/systems/game_simulation.dart';
 import 'package:idle_companion/game/systems/game_state_machine.dart';
 
@@ -28,11 +29,11 @@ void main() {
       activity.sample(t.add(const Duration(seconds: 7)), false);
       expect(activity.total.activeSeconds, 0);
       expect(activity.sessionSeconds, 0);
-      final idle = IdleBehaviorSystem(Random(2), AnimationCatalog())
+      final idle = RestCoordinator(Random(2), defaultAnimationResources())
         ..setIdleSeconds(300);
-      idle.update(.1);
+      idle.advance(.1);
       idle.reset();
-      expect(idle.animationId, null);
+      expect(idle.graphRunner, null);
       expect(idle.level, IdleLevel.active);
     },
   );

@@ -9,7 +9,7 @@ import 'components/enemies/enemy_component.dart';
 import 'components/effects/combat_effect.dart';
 import 'systems/game_simulation.dart';
 import 'animation/flame_sprite_frame_cache.dart';
-import '../core/assets/animation_catalog.dart';
+import '../core/assets/asset_catalog.dart';
 
 class DesktopGame extends FlameGame {
   DesktopGame(this.simulation);
@@ -26,7 +26,7 @@ class DesktopGame extends FlameGame {
     images.prefix = '';
     final manifest = await AssetManifest.loadFromAssetBundle(rootBundle);
     final bundled = manifest.listAssets().toSet();
-    frameCache = FlameSpriteFrameCache(simulation.animations.resources, images);
+    frameCache = FlameSpriteFrameCache(simulation.resources, images);
     await frameCache.load(bundled);
     final backgrounds = <Sprite>[];
     for (final asset in AssetCatalog.backgrounds) {

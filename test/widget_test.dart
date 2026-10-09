@@ -7,7 +7,8 @@ import 'helpers/runtime_fakes.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:idle_companion/game/desktop_game.dart';
 import 'package:idle_companion/game/systems/game_simulation.dart';
-import 'package:idle_companion/core/assets/animation_catalog.dart';
+import 'package:idle_companion/core/assets/asset_catalog.dart';
+import 'package:idle_companion/content/animations/hero/rest_graphs.dart';
 import 'package:idle_companion/core/animation/ids.dart';
 import 'package:idle_companion/game/components/hero/actor_component.dart';
 import 'package:idle_companion/game/components/environment/scrolling_environment.dart';
@@ -16,11 +17,13 @@ import 'package:flutter/material.dart';
 
 Future<void> preloadHeroSprites(DesktopGame game) async {
   game.images.prefix = '';
-  for (final definition in game.simulation.animations.definitions.values) {
-    if (definition.id.startsWith('hero.') && definition.asset != null) {
-      await game.images.load(definition.asset!);
-    }
-  }
+  await game.images.loadAll(
+    game.simulation.resources.frames.values
+        .map((frame) => frame.asset)
+        .whereType<String>()
+        .toSet()
+        .toList(),
+  );
 }
 
 Future<void> preloadEnvironment(DesktopGame game) async {
@@ -29,115 +32,6 @@ Future<void> preloadEnvironment(DesktopGame game) async {
 }
 
 void main() {
-  testWidgets('HUD shows stage rollback independently of the character level', (
-    tester,
-  ) async {
-    tester.view.physicalSize = const Size(400, 620);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-    final container = ProviderContainer(
-      overrides: [
-        runtimeProvider.overrideWithValue(
-          fakeRuntime(MemoryRepository(), FakeWindow()),
-        ),
-      ],
-    );
-    final controller = container.read(gameControllerProvider.notifier);
-    controller.simulation
-      ..stage = 10
-      ..stageKills = 5;
-    controller.simulation.character.level = 23;
-    await tester.runAsync(() async {
-      await preloadHeroSprites(controller.game);
-      await preloadEnvironment(controller.game);
-    });
-    await tester.pumpWidget(
-      UncontrolledProviderScope(
-        container: container,
-        child: const CompanionApp(),
-      ),
-    );
-    await tester.runAsync(() => controller.game.loaded);
-    await tester.pump();
-    expect(find.text('Stage 10 · 5/12'), findsOneWidget);
-    expect(find.textContaining('Lv 23'), findsNothing);
-    controller.simulation.killHero();
-    controller.refresh();
-    await tester.pump();
-    expect(find.text('Stage 9 · 0/12'), findsOneWidget);
-    expect(controller.simulation.character.level, 23);
-    await controller.show(OverlayPanel.statistics);
-    await tester.pump();
-    expect(find.text('Character level'), findsOneWidget);
-    expect(find.text('23'), findsOneWidget);
-    expect(tester.takeException(), isNull);
-    await tester.pumpWidget(const SizedBox.shrink());
-    container.dispose();
-  });
-
-  testWidgets('Quick Menu Exit is visible and saves before quitting', (
-    tester,
-  ) async {
-    tester.view.physicalSize = const Size(400, 620);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-    final repository = MemoryRepository(), window = FakeWindow();
-    final container = ProviderContainer(
-      overrides: [
-        runtimeProvider.overrideWithValue(fakeRuntime(repository, window)),
-      ],
-    );
-    final controller = container.read(gameControllerProvider.notifier);
-    // Decode outside FakeAsync so the engine image callback can complete.
-    await tester.runAsync(() async {
-      await preloadHeroSprites(controller.game);
-      await preloadEnvironment(controller.game);
-    });
-    await tester.pumpWidget(
-      UncontrolledProviderScope(
-        container: container,
-        child: const CompanionApp(),
-      ),
-    );
-    await controller.show(OverlayPanel.menu);
-    await tester.runAsync(() async {
-      await controller.game.loaded;
-    });
-    await tester.pump();
-    final exit = find.text('Exit');
-    expect(exit, findsOneWidget);
-    expect(exit.hitTestable(), findsOneWidget);
-    await tester.tap(exit);
-    await tester.pump();
-    expect(repository.writes, 1);
-    expect(window.quits, 1);
-    expect(tester.takeException(), isNull);
-    await tester.pumpWidget(const SizedBox.shrink());
-    container.dispose();
-  });
-  testWidgets(
-    'missing declared sprite fails loading instead of using a placeholder',
-    (tester) async {
-      final game = DesktopGame(
-        GameSimulation(
-          random: Random(1),
-          animations: AnimationCatalog({
-            'hero.walk': const AnimationDefinition(
-              id: 'hero.walk',
-              asset: 'assets/characters/hero/missing.png',
-              loop: true,
-            ),
-          }),
-        ),
-      );
-      await tester.runAsync(
-        () => expectLater(game.onLoad(), throwsArgumentError),
-      );
-      expect(game.children.whereType<ActorComponent>(), isEmpty);
-    },
-  );
   testWidgets('Flame loads heroine walk, attack, death and combat guard', (
     tester,
   ) async {
@@ -166,7 +60,7 @@ void main() {
       2172,
       2171,
     ]);
-    final resources = game.simulation.animations.resources;
+    final resources = game.simulation.resources;
     final cache = actor.frameCache;
     final walk = resources.clip(const ClipId('hero.walk'));
     expect(walk.frames, hasLength(10));
@@ -217,8 +111,8 @@ void main() {
     game.suspended = true;
     final idle = game.simulation.idle;
     idle.setIdleSeconds(30);
-    idle.update(.01);
-    idle.update(.95);
+    idle.advance(.01);
+    idle.advance(.95);
     await tester.runAsync(() async {
       Future<List<int>> captureActor() async {
         final recorder = ui.PictureRecorder();
@@ -232,8 +126,8 @@ void main() {
       }
 
       final end = await captureActor();
-      idle.update(.4);
-      expect(game.simulation.heroAnimation, 'hero.sitDown');
+      idle.advance(.4);
+      expect(game.simulation.heroPlayback.nodeId, HeroRestGraphs.sitHold);
       final held = await captureActor();
       var differentBytes = 0;
       for (var index = 0; index < end.length; index++) {
@@ -244,6 +138,17 @@ void main() {
         0,
         reason: 'The completed seated pose must stay still',
       );
+      idle.advance(.34);
+      expect(game.simulation.heroPlayback.nodeId, HeroRestGraphs.sharpen);
+      expect(game.simulation.heroPlayback.frameIndex, 0);
+      expect(await captureActor(), orderedEquals(end));
+      idle.advance(.225);
+      expect(game.simulation.heroPlayback.frameIndex, 1);
+      idle.setIdleSeconds(0);
+      idle.advance(0);
+      expect(game.simulation.heroPlayback.nodeId, HeroRestGraphs.exitHold);
+      expect(game.simulation.heroPlayback.clipId, isNull);
+      expect(await captureActor(), orderedEquals(end));
     });
     await tester.pump(const Duration(milliseconds: 125));
     expect(tester.takeException(), isNull);

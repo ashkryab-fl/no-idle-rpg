@@ -13,7 +13,7 @@ shows three sharpening cycles; it restarts the whole sequence for review.
 The game stays in sharpening until user activity returns.
 
 `prompt.txt` records the built-in imagegen prompt. `manifest.json` records
-source transforms, the shared pose hash and both animation timelines.
+only source crops, scale, placement and the shared pose copy. Timelines live in Dart.
 
 Rebuild/check: `python3 tool/build_hero_rest.py [--verify]`.
 See [the extension guide](../../../docs/hero_rest.md).

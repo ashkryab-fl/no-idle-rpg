@@ -2,7 +2,11 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
-import 'package:idle_companion/core/assets/animation_catalog.dart';
+import 'package:idle_companion/content/animations/animation_resources.dart';
+import 'package:idle_companion/content/animations/enemies/procedural_timelines.dart';
+import 'package:idle_companion/core/animation/animation_clip.dart';
+import 'package:idle_companion/core/animation/attack_playback.dart';
+import 'package:idle_companion/core/animation/ids.dart';
 import 'package:idle_companion/core/balance/game_balance.dart';
 import 'package:idle_companion/core/balance/progression_balance.dart';
 import 'package:idle_companion/core/numbers/amount.dart';
@@ -26,7 +30,11 @@ class ProgressionSimulation {
     this.upgradeInterval = 3600,
   }) : random = Random(seed) {
     spawner = EnemySpawner(random);
-    combat = CombatSystem(random, animations);
+    combat = CombatSystem(
+      random,
+      heroPlayback: AttackPlayback(resources.clip(const ClipId('hero.attack'))),
+      enemyPlayback: AttackPlayback(ProceduralEnemyTimelines.attack),
+    );
     drops = DropSystem(random);
     stats = CharacterStats.calculate(hero);
     hp = stats.maxHp;
@@ -36,7 +44,7 @@ class ProgressionSimulation {
   final Random random;
   final hero = CharacterProgress();
   final progression = ProgressionSystem();
-  final animations = AnimationCatalog();
+  final resources = defaultAnimationResources();
   late final EnemySpawner spawner;
   late final CombatSystem combat;
   late final DropSystem drops;
@@ -66,16 +74,15 @@ class ProgressionSimulation {
       final start = elapsed;
       final heroPeriod = 1 / stats.attackSpeed;
       final enemyPeriod = 1 / enemy.stats.attackSpeed;
-      final heroAttack = animations.get('hero.attack');
-      final enemyAttack = animations.get(
-        '${enemy.definition.animations}.attack',
-      );
-      var nextHero =
-          (heroAttack.damageEventTime ?? 0) *
-          min(1, heroPeriod / heroAttack.duration);
-      var nextEnemy =
-          (enemyAttack.damageEventTime ?? 0) *
-          min(1, enemyPeriod / enemyAttack.duration);
+      final heroAttack = resources.clip(const ClipId('hero.attack'));
+      final enemyAttack = enemy.definition.animations.attack(resources);
+      double firstHit(AnimationClipDefinition clip, double period) =>
+          clip.markers
+              .firstWhere((m) => m.kind == AnimationMarkerKind.damage)
+              .time *
+          min(1, period / clip.duration);
+      var nextHero = firstHit(heroAttack, heroPeriod);
+      var nextEnemy = firstHit(enemyAttack, enemyPeriod);
       var finished = false;
       while (!finished) {
         final fromHero = nextHero <= nextEnemy;
@@ -99,9 +106,7 @@ class ProgressionSimulation {
               hp = stats.maxHp;
             }
             elapsed +=
-                animations
-                    .get('${enemy.definition.animations}.death')
-                    .duration +
+                enemy.definition.animations.death(resources).duration +
                 GameBalance.rewardDuration;
             kills++;
             killSeconds.add(hitTime);
@@ -125,7 +130,7 @@ class ProgressionSimulation {
             stage = max(1, stage - 1);
             stageKills = 0;
             elapsed +=
-                animations.get('hero.death').duration +
+                resources.clip(const ClipId('hero.death')).duration +
                 GameBalance.respawnDuration;
             hp = stats.maxHp;
             finished = true;

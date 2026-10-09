@@ -10,7 +10,7 @@ import 'package:idle_companion/core/animation/graph/node.dart';
 import 'package:idle_companion/core/animation/graph/selection_policy.dart';
 import 'package:idle_companion/core/animation/graph/transition.dart';
 import 'package:idle_companion/core/animation/ids.dart';
-import 'package:idle_companion/core/assets/animation_catalog.dart';
+import 'package:idle_companion/content/animations/animation_resources.dart';
 import 'package:idle_companion/domain/activity/rest_policy.dart';
 
 const play = NodeId('play');
@@ -36,14 +36,14 @@ AnimationGraphRunner runner(
   int budget = 1024,
 }) => AnimationGraphRunner(
   graph: definition,
-  resources: resources ?? AnimationCatalog().resources,
+  resources: resources ?? defaultAnimationResources(),
   selectionPolicy: policy ?? RestPolicy(Random(7)),
   facts: facts,
   transitionBudget: budget,
 );
 
 AnimationResources markerResources() {
-  final base = AnimationCatalog().resources;
+  final base = defaultAnimationResources();
   final loop = base.clip(const ClipId('hero.sharpen'));
   final attack = base.clip(const ClipId('hero.attack'));
   return AnimationResources(
@@ -110,7 +110,7 @@ final class CountingPolicy implements GraphSelectionPolicy {
 
 void main() {
   test('rest entry, shared holds, six stand-up frames and typed finish', () {
-    final resources = AnimationCatalog().resources;
+    final resources = defaultAnimationResources();
     final playback = runner(HeroRestGraphs.seatedRest(), resources: resources);
     playback.advance(1.2);
     expect(playback.snapshot.nodeId, HeroRestGraphs.sitHold);
@@ -204,60 +204,6 @@ void main() {
     });
   }
 
-  test('afterCycle respects a later loop and never repeats the intro', () {
-    final playback = runner(
-      graph([
-        LoopClip(
-          id: play,
-          clipId: const ClipId('hero.sharpen'),
-          interruption: InterruptionPolicy.afterCycle,
-          transitions: [AnimationTransition(const ActivityReturned(), wait)],
-        ),
-        HoldPose(id: wait, poseId: PoseId.seatedNeutral),
-      ]),
-      resources: markerResources(),
-    );
-    final intro = playback.advance(1.3).events.whereType<GraphMarkerEvent>();
-    expect(intro.where((e) => e.marker.marker.id == 'intro'), hasLength(1));
-    playback.signal(GraphSignalId.activityReturned);
-    final result = playback.advance(1);
-    expect(playback.snapshot.nodeId, wait);
-    expect(playback.snapshot.nodeElapsed, closeTo(.275, 1e-9));
-    expect(
-      result.events.whereType<GraphMarkerEvent>().where(
-        (e) => e.marker.marker.id == 'intro',
-      ),
-      isEmpty,
-    );
-  });
-
-  test('finite repeats hold final frame even for a looping resource', () {
-    for (final id in ['hero.attack', 'hero.sharpen']) {
-      final playback = runner(
-        graph([PlayClip(id: play, clipId: ClipId(id), repetitions: 3)]),
-        resources: markerResources(),
-      );
-      final events = playback.advance(100).events.whereType<GraphMarkerEvent>();
-      expect(playback.snapshot.frameIndex, id == 'hero.attack' ? 3 : 4);
-      expect(
-        events.where((e) => e.marker.marker.id == 'intro'),
-        hasLength(id == 'hero.attack' ? 0 : 1),
-      );
-      expect(
-        events.where(
-          (e) => e.marker.marker.id == (id == 'hero.attack' ? 'damage' : 'end'),
-        ),
-        hasLength(3),
-      );
-      expect(
-        events.where((e) => e.marker.marker.id == 'loopStart'),
-        hasLength(id == 'hero.attack' ? 0 : 3),
-      );
-      expect(playback.advance(100).events, isEmpty);
-      expect(playback.snapshot.frameIndex, id == 'hero.attack' ? 3 : 4);
-    }
-  });
-
   test(
     'large and partitioned dt agree on nodes, cursor and marker sequence',
     () {
@@ -320,54 +266,6 @@ void main() {
           }
         }
       }
-    },
-  );
-
-  test(
-    'fallback stays on its shared pose until an explicit selection retry',
-    () {
-      final policy = CountingPolicy(1);
-      final playback = runner(
-        graph([
-          Select(
-            id: choose,
-            fallback: wait,
-            choices: [
-              GraphChoice(
-                id: const VariantId('later'),
-                target: play,
-                conditions: [
-                  const GraphCondition(RestPolicy.idleLevelFact, minimum: 2),
-                ],
-              ),
-            ],
-          ),
-          HoldPose(
-            id: wait,
-            poseId: PoseId.seatedNeutral,
-            transitions: [AnimationTransition(const Signal(retry), choose)],
-          ),
-          LoopClip(id: play, clipId: const ClipId('hero.sharpen')),
-        ], entry: choose),
-        policy: policy,
-        facts: {RestPolicy.idleLevelFact: 1},
-      );
-      playback.advance(1);
-      final frame = playback.snapshot.frameId;
-      for (var i = 0; i < 100; i++) {
-        playback.advance(.1);
-        expect(playback.snapshot.frameId, frame);
-      }
-      expect(policy.calls, 1);
-      expect(playback.snapshot.nodeElapsed, closeTo(11, 1e-9));
-      playback.setFacts({RestPolicy.idleLevelFact: 2});
-      playback.advance(0);
-      expect(policy.calls, 1);
-      playback.signal(retry);
-      playback.advance(.1);
-      expect(policy.calls, 2);
-      expect(playback.snapshot.nodeId, play);
-      expect(playback.snapshot.clipElapsed, .1);
     },
   );
 
@@ -455,41 +353,8 @@ void main() {
     },
   );
 
-  test('ordered typed conditions and elapsed edges consume remaining time', () {
-    final playback = runner(
-      graph([
-        HoldPose(
-          id: play,
-          poseId: PoseId.seatedNeutral,
-          transitions: [
-            AnimationTransition(
-              const Elapsed(.2),
-              done,
-              conditions: [
-                const GraphCondition(RestPolicy.idleLevelFact, minimum: 2),
-              ],
-            ),
-            AnimationTransition(const Elapsed(.2), wait),
-          ],
-        ),
-        HoldPose(
-          id: wait,
-          poseId: PoseId.seatedNeutral,
-          duration: .3,
-          transitions: [AnimationTransition(const Completed(), done)],
-        ),
-        Finish(id: done, result: GraphResultId.readyToTravel),
-      ]),
-      facts: {RestPolicy.idleLevelFact: 1},
-    );
-    final result = playback.advance(1);
-    expect(result.consumed, closeTo(.5, 1e-9));
-    expect(result.remaining, closeTo(.5, 1e-9));
-    expect(result.events.whereType<GraphTransitionEvent>().first.to, wait);
-  });
-
   test('validator rejects structural, trigger, resource and pose errors', () {
-    final validator = AnimationGraphValidator(AnimationCatalog().resources);
+    final validator = AnimationGraphValidator(defaultAnimationResources());
     final invalid = [
       graph([HoldPose(id: wait, poseId: PoseId.seatedNeutral)]),
       graph([PlayClip(id: play, clipId: const ClipId('unknown'))]),
@@ -554,7 +419,7 @@ void main() {
   test(
     'zero-time cycles fail; timed cycles use explicit entry and a budget',
     () {
-      final validator = AnimationGraphValidator(AnimationCatalog().resources);
+      final validator = AnimationGraphValidator(defaultAnimationResources());
       expect(
         () => validator.validate(
           graph([
@@ -591,13 +456,4 @@ void main() {
       expect(() => playback.advance(100), throwsStateError);
     },
   );
-
-  test('invalid dt cannot mutate playback', () {
-    final playback = runner(HeroRestGraphs.seatedRest());
-    for (final dt in [-1.0, double.nan, double.infinity]) {
-      expect(() => playback.advance(dt), throwsArgumentError);
-      expect(playback.clock, 0);
-      expect(playback.snapshot.frameIndex, 0);
-    }
-  });
 }

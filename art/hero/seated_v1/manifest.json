@@ -1,0 +1,9 @@
+{
+  "source": "../sharpen_v1/source-sheet.png",
+  "size": 512,
+  "scale": 0.49,
+  "crop": [0, 0, 627, 627],
+  "offset": [85, 156],
+  "output": "art/hero/seated_v1/reference.png",
+  "copies": ["assets/characters/hero/seated.png"]
+}

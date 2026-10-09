@@ -1,79 +1,56 @@
-import 'dart:io';
 import 'dart:math';
+import 'package:idle_companion/core/animation/enemy_animation_content.dart';
+import 'package:idle_companion/game/animation/enemy_animation_coordinator.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:idle_companion/content/animations/hero/rest_graphs.dart';
 import 'package:idle_companion/core/animation/animation_clip.dart';
 import 'package:idle_companion/core/animation/attack_playback.dart';
 import 'package:idle_companion/core/animation/ids.dart';
-import 'package:idle_companion/core/animation/graph/graph_runner.dart';
-import 'package:idle_companion/core/assets/animation_catalog.dart';
+import 'package:idle_companion/content/animations/animation_resources.dart';
 import 'package:idle_companion/domain/activity/rest_coordinator.dart';
 import 'package:idle_companion/game/animation/hero_animation_coordinator.dart';
 import 'package:idle_companion/game/systems/game_simulation.dart';
 import 'package:idle_companion/game/systems/game_state_machine.dart';
 
 HeroAnimationCoordinator coordinator() {
-  final catalog = AnimationCatalog();
+  final catalog = defaultAnimationResources();
   return HeroAnimationCoordinator(
-    catalog.resources,
+    catalog,
     rest: RestCoordinator(Random(7), catalog),
   );
 }
 
 void main() {
-  test('production sprite catalog contains only installed hero assets', () {
-    final resources = AnimationCatalog().resources;
-    expect(resources.clips.keys.map((id) => id.value).toSet(), {
-      'hero.walk',
-      'hero.attack',
-      'hero.idle',
-      'hero.death',
-      'hero.sitDown',
-      'hero.seated',
-      'hero.sharpen',
-      'hero.standUp',
-    });
-    for (final frame in resources.frames.values) {
-      expect(frame.debugPlaceholder, false);
-      expect(File(frame.asset!).existsSync(), true, reason: frame.asset);
+  test('sprite enemy channels resolve strictly and share the combat clock', () {
+    final resources = defaultAnimationResources();
+    final enemy = EnemyAnimationCoordinator(resources);
+    for (final missing in ['idle', 'attack', 'death']) {
+      expect(
+        () => enemy.synchronize(
+          SpriteEnemyAnimationContent(
+            idleId: ClipId(missing == 'idle' ? 'missing' : 'hero.idle'),
+            attackId: ClipId(missing == 'attack' ? 'missing' : 'hero.attack'),
+            deathId: ClipId(missing == 'death' ? 'missing' : 'hero.death'),
+          ),
+          EnemyAnimationRequest.combat,
+        ),
+        throwsArgumentError,
+      );
+      expect(enemy.snapshot, isNull);
     }
-    for (final removed in [
-      'hero.a1',
-      'hero.a2',
-      'hero.a3',
-      'hero.b',
-      'hero.c',
-      'hero.d',
-      'hero.hit',
-      'hero.caught',
-      'slime.walk',
-      'slime.attack',
-      'slime.death',
-      'sentinel.idle',
-      'wisp.hit',
-    ]) {
-      expect(() => resources.clip(ClipId(removed)), throwsArgumentError);
-    }
-  });
-
-  test('rest completion passes remaining time to a fresh walking clock', () {
-    final hero = coordinator();
-    hero.advance(3.7);
-    hero.rest.setIdleSeconds(30);
-    expect(hero.advance(2), 0);
-    expect(hero.snapshot.nodeId, HeroRestGraphs.sharpen);
-    hero.rest.setIdleSeconds(0);
-    expect(hero.advance(1.85), closeTo(.05, 1e-9));
-    expect(hero.blocksAdventure, false);
-    expect(
-      hero.rest.events.whereType<GraphCompletionEvent>().single.result,
-      GraphResultId.readyToTravel,
+    const content = SpriteEnemyAnimationContent(
+      idleId: ClipId('hero.idle'),
+      attackId: ClipId('hero.attack'),
+      deathId: ClipId('hero.death'),
     );
-    expect(hero.snapshot.clipId, const ClipId('hero.walk'));
-    expect(hero.snapshot.elapsed, closeTo(.05, 1e-9));
-    expect(hero.snapshot.frameIndex, 0);
-    hero.advance(.075);
-    expect(hero.snapshot.frameIndex, 1);
+    enemy.synchronize(content, EnemyAnimationRequest.combat);
+    enemy.combatPlayback.advance(.36, 1);
+    expect(enemy.snapshot!.frameIndex, 2);
+    expect(enemy.snapshot!.elapsed, enemy.combatPlayback.elapsed);
+    enemy.synchronize(content, EnemyAnimationRequest.death);
+    enemy.advance(5);
+    expect(enemy.snapshot!.completed, true);
+    expect(enemy.snapshot!.frameIndex, 3);
   });
 
   test('partitioned rest/exit and walking match 30/60 FPS at x1/x5/x20', () {
@@ -172,7 +149,7 @@ void main() {
   });
 
   test('attack retiming retains hits and chronological multiple markers', () {
-    final resource = AnimationCatalog().resources.clip(
+    final resource = defaultAnimationResources().clip(
       const ClipId('hero.attack'),
     );
     final playback = AttackPlayback(resource);

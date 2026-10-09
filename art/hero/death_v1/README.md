@@ -27,4 +27,4 @@ python3 tool/build_hero_death.py
 ```
 
 The build checks transparent cell borders and exact frame-to-sheet pixels.
-`manifest.json` records source rectangles, translations, bounds and timing.
+`manifest.json` contains only source crops, placement and PNG output paths.

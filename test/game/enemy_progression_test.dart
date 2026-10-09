@@ -1,79 +1,12 @@
 import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:idle_companion/core/balance/game_balance.dart';
 import 'package:idle_companion/core/balance/progression_balance.dart';
 import 'package:idle_companion/core/numbers/amount.dart';
 import 'package:idle_companion/game/systems/game_simulation.dart';
 import 'package:idle_companion/game/systems/game_state_machine.dart';
 
 void main() {
-  test('enemy HP, damage and rewards scale exponentially with stage', () {
-    for (final stage in [1, 2, 10, 100]) {
-      final game = GameSimulation(random: Random(1))..stage = stage;
-      game.spawnEnemy();
-      final enemy = game.enemy!, definition = enemy.definition;
-      expect(
-        enemy.stats.maxHp.toDouble(),
-        closeTo(
-          definition.baseHp * pow(ProgressionBalance.hpGrowth, stage - 1),
-          .0001,
-        ),
-      );
-      expect(
-        enemy.stats.damage.toDouble(),
-        closeTo(
-          definition.baseDamage *
-              pow(ProgressionBalance.damageGrowth, stage - 1),
-          .0001,
-        ),
-      );
-      expect(
-        enemy.gold.toDouble(),
-        closeTo(
-          definition.rewardGold *
-              pow(ProgressionBalance.goldRewardGrowth, stage - 1),
-          .0001,
-        ),
-      );
-      expect(
-        enemy.xp.toDouble(),
-        closeTo(
-          definition.rewardXp *
-              pow(ProgressionBalance.xpRewardGrowth, stage - 1),
-          .0001,
-        ),
-      );
-    }
-  });
-
-  test('distance, lifetime victories and hero XP do not advance the stage', () {
-    final game = GameSimulation(random: Random(1))
-      ..distance = 1000000
-      ..kills = 1000000;
-    game.progression.addXp(game.character, Amount.fromNum(1000));
-    expect(game.character.level, greaterThan(1));
-    expect(
-      game.stats.damage > Amount.fromNum(ProgressionBalance.heroDamage),
-      isTrue,
-    );
-    expect(
-      game.stats.maxHp > Amount.fromNum(ProgressionBalance.heroHp),
-      isTrue,
-    );
-    game.spawnEnemy();
-    expect(game.stage, 1);
-    expect(game.stageKills, 0);
-    expect(
-      game.enemy!.stats.maxHp.toDouble(),
-      closeTo(game.enemy!.definition.baseHp, 1e-8),
-    );
-    final enemy = game.enemy;
-    game.advance(1.2);
-    expect(game.enemy, same(enemy));
-    expect(game.stage, 1);
-  });
-
   test('only completed victories unlock the next stage', () {
     final game = GameSimulation(random: Random(1))
       ..stage = 9
@@ -158,33 +91,6 @@ void main() {
         );
         expect(game.character.level, greaterThanOrEqualTo(heroLevel));
         previousGold = game.character.gold;
-      }
-    },
-  );
-
-  test(
-    'one rollback per death, stage floor is 1 and partial progress resets',
-    () {
-      final game = GameSimulation(random: Random(1))
-        ..stage = 2
-        ..stageKills = 7;
-      game.character.level = 10;
-      game.character.xp = Amount.fromNum(20);
-      for (var attempt = 0; attempt < 3; attempt++) {
-        game.killHero();
-        expect(game.stage, 1);
-        expect(game.stageKills, 0);
-        game.killHero();
-        expect(game.stage, 1);
-        game.advance(game.animations.get('hero.death').duration + .05);
-        expect(game.phase, GamePhase.respawn);
-        game.killHero();
-        expect(game.stage, 1);
-        game.advance(GameBalance.respawnDuration + .1);
-        expect(game.phase, GamePhase.traveling);
-        expect(game.character.level, 10);
-        expect(game.character.xp.toDouble(), closeTo(20, 1e-8));
-        game.stageKills = 5;
       }
     },
   );

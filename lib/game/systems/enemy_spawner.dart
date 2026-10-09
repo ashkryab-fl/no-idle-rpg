@@ -1,4 +1,6 @@
 import 'dart:math';
+import '../../content/animations/enemies/procedural_timelines.dart';
+import '../../core/animation/enemy_animation_content.dart';
 import '../../core/balance/game_balance.dart';
 import '../../core/balance/progression_balance.dart';
 import '../../core/numbers/amount.dart';
@@ -20,7 +22,8 @@ class EnemyDefinition {
     this.rewardBooks = ProgressionBalance.baseBookReward,
     this.difficultyWeight = ProgressionBalance.enemyWeight,
   });
-  final String id, name, animations;
+  final String id, name;
+  final EnemyAnimationContent animations;
   final double baseHp,
       baseDamage,
       attackSpeed,
@@ -34,7 +37,7 @@ class EnemyDefinition {
 }
 
 abstract final class EnemyCatalog {
-  static const definitions = [
+  static final definitions = List<EnemyDefinition>.unmodifiable([
     EnemyDefinition(
       id: 'slime',
       name: 'Moss slime',
@@ -44,7 +47,7 @@ abstract final class EnemyCatalog {
       rewardGold: ProgressionBalance.slimeGold,
       rewardXp: ProgressionBalance.slimeXp,
       difficultyWeight: ProgressionBalance.slimeWeight,
-      animations: 'slime',
+      animations: ProceduralEnemyTimelines.content,
     ),
     EnemyDefinition(
       id: 'sentinel',
@@ -54,7 +57,7 @@ abstract final class EnemyCatalog {
       attackSpeed: ProgressionBalance.sentinelAttackSpeed,
       rewardGold: ProgressionBalance.sentinelGold,
       rewardXp: ProgressionBalance.sentinelXp,
-      animations: 'sentinel',
+      animations: ProceduralEnemyTimelines.content,
       difficultyWeight: ProgressionBalance.sentinelWeight,
     ),
     EnemyDefinition(
@@ -65,10 +68,10 @@ abstract final class EnemyCatalog {
       attackSpeed: ProgressionBalance.wispAttackSpeed,
       rewardGold: ProgressionBalance.wispGold,
       rewardXp: ProgressionBalance.wispXp,
-      animations: 'wisp',
+      animations: ProceduralEnemyTimelines.content,
       difficultyWeight: ProgressionBalance.wispWeight,
     ),
-  ];
+  ]);
 }
 
 class Enemy {
@@ -108,7 +111,8 @@ class EnemyFactory {
 }
 
 class EnemySpawner {
-  EnemySpawner(this.random, {this.definitions = EnemyCatalog.definitions});
+  EnemySpawner(this.random, {List<EnemyDefinition>? definitions})
+    : definitions = definitions ?? EnemyCatalog.definitions;
   final Random random;
   final List<EnemyDefinition> definitions;
   final factory = EnemyFactory();

@@ -1,13 +1,15 @@
 import 'dart:math';
-import '../../core/assets/animation_catalog.dart';
+import '../../content/animations/animation_resources.dart';
+import '../../core/animation/animation_resources.dart';
 import '../../core/animation/playback_snapshot.dart';
+import '../../core/animation/graph/graph_definition.dart';
 import '../animation/hero_animation_coordinator.dart';
 import '../animation/enemy_animation_coordinator.dart';
 import '../../core/balance/game_balance.dart';
 import '../../core/balance/progression_balance.dart';
 import '../../core/numbers/amount.dart';
 import '../../domain/activity/activity_statistics.dart';
-import '../../domain/activity/idle_animation.dart';
+import '../../domain/activity/rest_coordinator.dart';
 import '../../domain/character/character.dart';
 import '../../domain/economy/reward.dart';
 import '../../domain/settings.dart';
@@ -38,32 +40,28 @@ class GameSimulation {
   GameSimulation({
     Random? random,
     Random? idleRandom,
-    AnimationCatalog? animations,
-    List<IdleAnimationDefinition>? idleDefinitions,
+    AnimationResources? resources,
+    AnimationGraphDefinition? restGraph,
     CharacterProgress? character,
     ActivityStatisticsService? activity,
     GameSettings? settings,
     this.deathPolicy = const NoDeathPenalty(),
   }) : random = random ?? Random(),
-       animations = animations ?? AnimationCatalog(),
+       resources = resources ?? defaultAnimationResources(),
        character = character ?? CharacterProgress(),
        activity = activity ?? ActivityStatisticsService(),
        settings = settings ?? GameSettings() {
     spawner = EnemySpawner(this.random);
     drops = DropSystem(this.random);
-    final rest = IdleBehaviorSystem(
+    final rest = RestCoordinator(
       idleRandom ?? Random(this.random.nextInt(1 << 32)),
-      this.animations,
-      definitions: idleDefinitions,
+      this.resources,
+      graph: restGraph,
     );
-    heroAnimations = HeroAnimationCoordinator(
-      this.animations.resources,
-      rest: rest,
-    );
-    enemyAnimations = EnemyAnimationCoordinator(this.animations.resources);
+    heroAnimations = HeroAnimationCoordinator(this.resources, rest: rest);
+    enemyAnimations = EnemyAnimationCoordinator(this.resources);
     combat = CombatSystem(
       this.random,
-      this.animations,
       heroPlayback: heroAnimations.combatPlayback,
       enemyPlayback: enemyAnimations.combatPlayback,
     );
@@ -72,7 +70,7 @@ class GameSimulation {
     machine.transition(GamePhase.traveling);
   }
   final Random random;
-  final AnimationCatalog animations;
+  final AnimationResources resources;
   final CharacterProgress character;
   final ActivityStatisticsService activity;
   final GameSettings settings;
@@ -84,7 +82,7 @@ class GameSimulation {
   late final DropSystem drops;
   late final HeroAnimationCoordinator heroAnimations;
   late final EnemyAnimationCoordinator enemyAnimations;
-  IdleBehaviorSystem get idle => heroAnimations.rest;
+  RestCoordinator get idle => heroAnimations.rest;
   late Amount heroHp;
   Enemy? enemy;
   Reward? lastReward;
@@ -117,14 +115,16 @@ class GameSimulation {
             (1 - machine.elapsed / GameBalance.approachDuration).clamp(0, 1)
       : 0;
   void advance(double seconds) {
-    // Drop long suspend gaps. OfflineProgressService owns that interval.
+    // Discard suspend gaps: rewards only come from running simulation ticks.
     if (!seconds.isFinite ||
         seconds > GameBalance.maxCatchupSeconds ||
         seconds < 0) {
       return;
     }
     _accumulator += seconds * speed;
-    while (_accumulator >= GameBalance.fixedStep) {
+    // Floating-point partitions must not lose a tick at x5/x20 boundaries.
+    // Keep the tiny residual debt so tolerance never adds elapsed time.
+    while (_accumulator + 1e-12 >= GameBalance.fixedStep) {
       _tick(GameBalance.fixedStep);
       _accumulator -= GameBalance.fixedStep;
     }
@@ -159,7 +159,6 @@ class GameSimulation {
           dt,
           stats,
           foe.stats,
-          foe.definition.animations,
           dpsMultiplier,
         )) {
           if (phase != GamePhase.combat) break;
@@ -287,28 +286,5 @@ class GameSimulation {
 
   PlaybackSnapshot? get enemyPlayback {
     return enemyAnimations.snapshot?.withDamageFlash(enemyHitRemaining > 0);
-  }
-
-  // Compatibility presentation APIs. Rendering now consumes snapshots only.
-  String get heroAnimation {
-    _synchronizeAnimations();
-    return heroPlayback.displayLabel;
-  }
-
-  String? get enemyAnimation {
-    _synchronizeAnimations();
-    return enemyPlayback?.displayLabel;
-  }
-
-  double heroAnimationElapsed() {
-    _synchronizeAnimations();
-    return heroPlayback.graphId != null
-        ? idle.animationElapsed
-        : heroPlayback.elapsed;
-  }
-
-  double enemyAnimationElapsed() {
-    _synchronizeAnimations();
-    return enemyPlayback?.elapsed ?? 0;
   }
 }

@@ -5,10 +5,11 @@ import 'package:flame/cache.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:idle_companion/core/animation/animation_clip.dart';
+import 'package:idle_companion/content/animations/animation_resources.dart';
+import 'package:idle_companion/content/animations/hero/clips.dart';
 import 'package:idle_companion/core/animation/animation_resources.dart';
 import 'package:idle_companion/core/animation/ids.dart';
 import 'package:idle_companion/core/animation/sprite_frame.dart';
-import 'package:idle_companion/core/assets/animation_catalog.dart';
 import 'package:idle_companion/game/animation/flame_sprite_frame_cache.dart';
 import 'package:idle_companion/game/systems/game_simulation.dart';
 
@@ -26,41 +27,38 @@ class TrackingImages extends Images {
 
 void main() {
   testWidgets(
-    'frame cache loads each atlas once and reuses exact shared poses',
+    'content variants reuse the eight installed PNGs and cleanup pose',
     (tester) async {
-      final resources = AnimationCatalog().resources;
+      final resources = demoAnimationResources();
       final images = TrackingImages();
       final cache = FlameSpriteFrameCache(resources, images);
       await tester.runAsync(() async {
         final manifest = await AssetManifest.loadFromAssetBundle(rootBundle);
         await cache.load(manifest.listAssets().toSet());
       });
-      expect(images.requests, hasLength(8));
       expect(images.requests.toSet(), hasLength(8));
-      final id = resources.pose(PoseId.seatedNeutral).frameId;
-      final sprite = cache.sprite(id);
-      expect(
-        identical(
-          cache.sprite(
-            resources.clip(const ClipId('hero.sitDown')).frames.last.frameId,
-          ),
-          sprite,
-        ),
-        true,
-      );
-      expect(
-        identical(
-          cache.sprite(
-            resources.clip(const ClipId('hero.sharpen')).frames.first.frameId,
-          ),
-          sprite,
-        ),
-        true,
-      );
-      await tester.runAsync(() => cache.load({}));
-      expect(identical(cache.sprite(id), sprite), true);
       expect(images.requests, hasLength(8));
-      expect(() => cache.sprite(const FrameId('unknown')), throwsStateError);
+      final neutral = cache.sprite(
+        resources.pose(PoseId.seatedNeutral).frameId,
+      );
+      expect(
+        identical(
+          cache.sprite(
+            resources.clip(HeroClips.sharpenSlow).frames.first.frameId,
+          ),
+          neutral,
+        ),
+        true,
+      );
+      expect(
+        identical(
+          cache.sprite(
+            resources.clip(HeroClips.sharpenCleanup).frames.last.frameId,
+          ),
+          neutral,
+        ),
+        true,
+      );
       images.clearCache();
     },
   );
@@ -70,7 +68,7 @@ void main() {
   ) async {
     final game = GameSimulation(random: Random(1));
     final images = TrackingImages()..gate = Completer<void>();
-    final cache = FlameSpriteFrameCache(game.animations.resources, images);
+    final cache = FlameSpriteFrameCache(game.resources, images);
     await tester.runAsync(() async {
       final manifest = await AssetManifest.loadFromAssetBundle(rootBundle);
       final pending = cache.load(manifest.listAssets().toSet());
@@ -91,9 +89,9 @@ void main() {
   });
 
   testWidgets(
-    'invalid atlas rectangles fail instead of rendering empty pixels',
+    'missing atlases and invalid rectangles fail instead of rendering empty pixels',
     (tester) async {
-      final original = AnimationCatalog().resources;
+      final original = defaultAnimationResources();
       final frame = original.frame(
         original.clip(const ClipId('hero.idle')).frames.single.frameId,
       );
@@ -116,9 +114,10 @@ void main() {
       );
       final images = TrackingImages();
       final cache = FlameSpriteFrameCache(resources, images);
-      await tester.runAsync(
-        () => expectLater(cache.load({frame.asset!}), throwsArgumentError),
-      );
+      await tester.runAsync(() async {
+        await expectLater(cache.load({}), throwsArgumentError);
+        await expectLater(cache.load({frame.asset!}), throwsArgumentError);
+      });
       expect(cache.length, 0);
       images.clearCache();
     },

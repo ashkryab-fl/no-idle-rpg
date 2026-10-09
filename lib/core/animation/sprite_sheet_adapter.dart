@@ -4,11 +4,11 @@ import 'ids.dart';
 import 'sprite_frame.dart';
 import 'sprite_rig.dart';
 
-/// Uniform horizontal sheets are the legacy authoring format. The resulting
+/// Preparation helper for uniform horizontal sheets. The resulting
 /// resources use explicit rectangles and durations, with no FPS at runtime.
 AnimationResources spriteSheetResources({
   required ClipId id,
-  String? asset,
+  required String asset,
   int frames = 1,
   double frameWidth = 128,
   double frameHeight = 128,
@@ -38,20 +38,13 @@ AnimationResources spriteSheetResources({
       frameWidth,
       frameHeight,
     );
-    return asset == null
-        ? SpriteFrameDefinition.debugPlaceholder(
-            id: frameId,
-            rigId: rigId,
-            source: source,
-            scaleMultiplier: scaleMultiplier,
-          )
-        : SpriteFrameDefinition(
-            id: frameId,
-            rigId: rigId,
-            source: source,
-            asset: asset,
-            scaleMultiplier: scaleMultiplier,
-          );
+    return SpriteFrameDefinition(
+      id: frameId,
+      rigId: rigId,
+      source: source,
+      asset: asset,
+      scaleMultiplier: scaleMultiplier,
+    );
   });
   return AnimationResources(
     rigs: [

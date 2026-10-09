@@ -116,6 +116,14 @@ final class AnimationGraphRunner {
 
   double get clock => _clock;
   AnimationGraphNode get currentNode => _node;
+
+  /// Lets an external policy schedule wakeups without duplicating clip clocks.
+  double get timeToNextBoundary => !isRunning
+      ? double.infinity
+      : _node is Select || _node is Finish || _matchingTransition() != null
+      ? 0
+      : _untilNextBoundary();
+
   bool get isCompleted => _status == GraphPlaybackStatus.completed;
   bool get isRunning => _status == GraphPlaybackStatus.running;
 

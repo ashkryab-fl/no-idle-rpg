@@ -1,121 +1,15 @@
 {
-  "sheet": "assets/characters/hero/stand_up.png",
-  "frames": 6,
-  "frameSize": [
-    512,
-    512
-  ],
-  "stepTime": 0.25,
-  "loop": false,
-  "anchor": [
-    0.5,
-    0.875
-  ],
-  "scale": 0.25,
-  "scaleMultiplier": 1.05,
-  "sourceScale": 0.59,
-  "layout": [
-    [
-      [
-        0,
-        0,
-        512,
-        506
-      ],
-      [
-        73,
-        154
-      ]
-    ],
-    [
-      [
-        512,
-        0,
-        512,
-        506
-      ],
-      [
-        73,
-        152
-      ]
-    ],
-    [
-      [
-        1024,
-        0,
-        512,
-        506
-      ],
-      [
-        66,
-        151
-      ]
-    ],
-    [
-      [
-        0,
-        506,
-        535,
-        518
-      ],
-      [
-        24,
-        157
-      ]
-    ],
-    [
-      [
-        535,
-        506,
-        489,
-        518
-      ],
-      [
-        29,
-        157
-      ]
-    ],
-    [
-      [
-        1024,
-        506,
-        512,
-        518
-      ],
-      [
-        15,
-        157
-      ]
-    ]
-  ],
-  "neutralHold": {
-    "animationId": "hero.seated",
-    "duration": 0.3,
-    "includedInStandUpFrames": false
-  },
-  "seatedReferenceSha256": "a0518877720854133d3b30acdb82a162e4d8d7a726282c817f66a27844c76f48",
-  "walkEntrySha256": "2f6298b0f699c8c02cd16bad25e49b32d00e84cae43060822c4d1d348b971c01",
-  "followingAnimation": "hero.walk",
-  "followingFrame": 0,
-  "previewWalkTransform": {
-    "size": [
-      390,
-      390
-    ],
-    "offset": [
-      14,
-      107
-    ]
-  },
-  "generator": "built-in image_gen",
-  "prompts": [
-    "prompt.txt",
-    "layout-prompt.txt"
-  ],
-  "correctionEditor": "PhotoCraft MCP",
-  "correctionRecipe": "photocraft-correction.json",
-  "hairPaletteReference": "assets/characters/hero/sit_down.png",
-  "hairPaletteReferenceSha256": "5968679a13576ca957d1da49d51f3c61cd3a269cc21ace1313450ef6da2b876e",
   "source": "source-corrected.png",
-  "sourceSha256": "cfda30a779bedd2c31e8642f2c47d9af8771d5da04a07ed87a6bcac7dcc21175"
+  "size": 512,
+  "scale": 0.59,
+  "frames": [
+    {"crop": [0, 0, 512, 506], "offset": [73, 154]},
+    {"crop": [512, 0, 512, 506], "offset": [73, 152]},
+    {"crop": [1024, 0, 512, 506], "offset": [66, 151]},
+    {"crop": [0, 506, 535, 518], "offset": [24, 157]},
+    {"crop": [535, 506, 489, 518], "offset": [29, 157]},
+    {"crop": [1024, 506, 512, 518], "offset": [15, 157]}
+  ],
+  "output": "assets/characters/hero/stand_up.png",
+  "copies": ["art/hero/stand_up_v1/stand_up.png"]
 }

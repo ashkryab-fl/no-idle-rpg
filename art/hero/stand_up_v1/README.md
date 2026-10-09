@@ -41,7 +41,7 @@ The three primary design references use the same sit-down palette. Their poses
 and the already corrected stand-up head proportions are preserved.
 `photocraft-correction.json` records the exact selections, curves and warp
 meshes for replay through PhotoCraft's `command_batch`. A normal rebuild only
-requires the corrected PNG and ffmpeg. The manifest fingerprints that input.
+requires the corrected PNG and ffmpeg. The manifest selects that input and lists crop/placement parameters.
 `head-size-comparison.png` shows the original first three frames above the
 corrected frames. All previews and extracted cells use the corrected source.
 

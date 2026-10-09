@@ -1,107 +1,14 @@
 {
-  "sheet": "art/hero/attack_v1/attack.png",
-  "frameSize": [
-    512,
-    512
+  "source": "source-sheet.png",
+  "size": 512,
+  "sourceCanvas": 800,
+  "frames": [
+    {"source": "source-ready.png", "scale": 0.4082934609250399, "offset": [0, -8]},
+    {"crop": [650, 153, 420, 496], "offset": [181, 211]},
+    {"crop": [99, 688, 565, 464], "offset": [204, 255]},
+    {"crop": [678, 772, 576, 424], "offset": [208, 335]}
   ],
-  "frames": 4,
-  "order": "left-to-right",
-  "alpha": true,
-  "previewDurationsSeconds": [
-    0.4,
-    0.15,
-    0.1,
-    0.15
-  ],
-  "sourceSheet": "art/hero/attack_v1/source-sheet.png",
-  "commonCanvas": [
-    800,
-    800
-  ],
-  "anchor": [
-    0.58,
-    0.875
-  ],
-  "frameDetails": [
-    {
-      "index": 0,
-      "pose": "ready",
-      "sourceFrame": "art/hero/attack_v1/source-ready.png",
-      "verticalShiftPixels": -8,
-      "bounds": [
-        128,
-        156,
-        441,
-        449
-      ]
-    },
-    {
-      "index": 1,
-      "pose": "backswing",
-      "sourceRect": [
-        650,
-        153,
-        420,
-        496
-      ],
-      "canvasOrigin": [
-        469,
-        -58
-      ],
-      "bounds": [
-        127,
-        141,
-        359,
-        449
-      ]
-    },
-    {
-      "index": 2,
-      "pose": "strike",
-      "sourceRect": [
-        99,
-        688,
-        565,
-        464
-      ],
-      "canvasOrigin": [
-        -105,
-        433
-      ],
-      "bounds": [
-        137,
-        189,
-        477,
-        446
-      ]
-    },
-    {
-      "index": 3,
-      "pose": "follow-through",
-      "sourceRect": [
-        678,
-        772,
-        576,
-        424
-      ],
-      "canvasOrigin": [
-        470,
-        437
-      ],
-      "bounds": [
-        146,
-        228,
-        474,
-        449
-      ]
-    }
-  ],
-  "gameplayRegistered": true,
-  "runtime": {
-    "attackSheet": "assets/characters/hero/attack.png",
-    "guardFrame": "assets/characters/hero/ready.png",
-    "attackStepTime": 0.15,
-    "damageEventTime": 0.35,
-    "scale": 0.25
-  }
+  "output": "assets/characters/hero/attack.png",
+  "exportFrames": {"0": "assets/characters/hero/ready.png"},
+  "copies": ["art/hero/attack_v1/attack.png"]
 }

@@ -14,7 +14,7 @@ edited stationary combat stance. `frames/attack_00.png` through `attack_03.png` 
 `attack-preview.gif` previews the sequence with a longer hold on the ready pose;
 GIF has reduced color and alpha precision. Use the PNGs for the full alpha.
 
-`manifest.json` records dimensions, frame order, bounds and preview timing.
+`manifest.json` contains only source crops, placement and PNG output paths.
 `prompts.txt` preserves the image_gen prompts and reference path.
 
 Rebuild the frame files, horizontal sheet and GIF from the selected source:

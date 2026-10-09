@@ -3,7 +3,7 @@ import '../../core/animation/animation_clip.dart';
 import '../../core/animation/animation_player.dart';
 import '../../core/animation/animation_resources.dart';
 import '../../core/animation/attack_playback.dart';
-import '../../core/animation/ids.dart';
+import '../../core/animation/enemy_animation_content.dart';
 import '../../core/animation/playback_snapshot.dart';
 
 enum EnemyAnimationRequest { idle, combat, death }
@@ -14,33 +14,36 @@ final class EnemyAnimationCoordinator {
   final AnimationResources resources;
   final AttackPlayback combatPlayback;
   AnimationPlayer? _death;
-  String? _prefix;
+  EnemyAnimationContent? _content;
   EnemyAnimationRequest _request = EnemyAnimationRequest.idle;
   int _generation = 0;
   double combatPeriod = 1;
   bool get deathCompleted => _death?.completed ?? false;
 
-  void synchronize(String? prefix, EnemyAnimationRequest request) {
-    if (prefix != _prefix) {
-      _prefix = prefix;
+  void synchronize(
+    EnemyAnimationContent? content,
+    EnemyAnimationRequest request,
+  ) {
+    if (content != _content) {
+      // Validate every declared sprite channel before switching generations.
+      if (content is SpriteEnemyAnimationContent) {
+        resources.clip(content.idleId);
+        content.death(resources);
+      }
+      final attack = content?.attack(resources);
+      _content = content;
       _death = null;
-      combatPlayback.reset(
-        clip:
-            resources.clips[ClipId('$prefix.attack')] ??
-            ProceduralEnemyTimelines.attack,
-      );
+      combatPlayback.reset(clip: attack);
       _generation++;
       _request = EnemyAnimationRequest.idle;
     }
+    if (content == null) return;
     if (request == _request) return;
     _generation++;
     _request = request;
     switch (request) {
       case EnemyAnimationRequest.death:
-        _death = AnimationPlayer(
-          resources.clips[ClipId('$prefix.death')] ??
-              ProceduralEnemyTimelines.death,
-        );
+        _death = AnimationPlayer(content.death(resources));
       case EnemyAnimationRequest.combat:
         combatPlayback.reset();
       case EnemyAnimationRequest.idle:
@@ -54,7 +57,8 @@ final class EnemyAnimationCoordinator {
   }
 
   PlaybackSnapshot? get snapshot {
-    if (_prefix == null) return null;
+    final content = _content;
+    if (content == null) return null;
     final attacking =
         _request == EnemyAnimationRequest.combat &&
         combatPlayback.attacking(combatPeriod);
@@ -63,6 +67,8 @@ final class EnemyAnimationCoordinator {
         ? _death!.clip
         : attacking
         ? combatPlayback.clip
+        : content is SpriteEnemyAnimationContent
+        ? resources.clip(content.idleId)
         : null;
     final elapsed = _request == EnemyAnimationRequest.death
         ? _death!.elapsed
@@ -74,16 +80,11 @@ final class EnemyAnimationCoordinator {
         : attacking
         ? ProceduralPose.striking
         : ProceduralPose.standing;
-    final label =
-        '$_prefix.${switch (pose) {
-          ProceduralPose.fallen => 'death',
-          ProceduralPose.striking => 'attack',
-          _ => 'idle',
-        }}';
-    if (clip != null && resources.clips.containsKey(clip.id)) {
+    final label = clip?.id.value ?? 'canvas.enemy.idle';
+    if (content is SpriteEnemyAnimationContent) {
       return PlaybackSnapshot.atClip(
         resources,
-        clip.id,
+        clip!.id,
         elapsed,
         generation: _generation,
         displayLabel: label,
@@ -102,7 +103,7 @@ final class EnemyAnimationCoordinator {
   }
 
   void reset() {
-    _prefix = null;
+    _content = null;
     _death = null;
     combatPlayback.reset();
     _request = EnemyAnimationRequest.idle;

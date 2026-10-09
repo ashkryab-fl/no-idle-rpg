@@ -1,10 +1,15 @@
 import '../../../core/animation/animation_clip.dart';
+import '../../../core/animation/enemy_animation_content.dart';
 import '../../../core/animation/ids.dart';
 import '../../../core/balance/game_balance.dart';
 
 /// These timelines drive the existing Canvas enemy body, not missing sprites.
 /// The body reference is resolved by the procedural renderer, outside PNG rigs.
 abstract final class ProceduralEnemyTimelines {
+  static final content = ProceduralEnemyAnimationContent(
+    attackClip: attack,
+    deathClip: death,
+  );
   static const body = FrameId('canvas.enemy.body');
   static final attack = AnimationClipDefinition(
     id: const ClipId('canvas.enemy.attack'),

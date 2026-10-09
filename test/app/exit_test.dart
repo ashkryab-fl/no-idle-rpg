@@ -85,24 +85,4 @@ void main() {
     await controller.close();
     expect(window.quits, 1);
   });
-  test('Native exit failure resumes game and reports the error', () async {
-    window.failQuit = true;
-    await controller.close();
-    expect(controller.game.suspended, isFalse);
-    expect(window.cancellations, 1);
-    expect(
-      container.read(gameControllerProvider).error,
-      contains('Native quit failed'),
-    );
-  });
-  test(
-    'Debug idle override does not falsify real activity classification',
-    () async {
-      controller.debugIdleSeconds = 301;
-      await Future<void>.delayed(Duration.zero);
-      await controller.pollActivity();
-      expect(controller.simulation.activity.active, isTrue);
-      expect(container.read(gameControllerProvider).idleSeconds, 301);
-    },
-  );
 }

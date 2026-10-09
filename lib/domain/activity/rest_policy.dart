@@ -44,12 +44,35 @@ final class RestPolicy implements GraphSelectionPolicy {
     double clock,
   ) => selector.choose([
     for (final choice in choices)
-      if (choice.conditions.every((c) => c.matches(facts)) &&
-          (choice.cooldown == null ||
-              clock - (_cooldowns[choice.cooldown!.key] ?? -double.infinity) >=
-                  choice.cooldown!.seconds))
-        choice,
+      if (isEligible(choice, facts, clock)) choice,
   ]);
+  bool isEligible(
+    GraphChoice choice,
+    Map<GraphFactId, double> facts,
+    double clock,
+  ) =>
+      choice.conditions.every((c) => c.matches(facts)) &&
+      (choice.cooldown == null || clock >= _availableAt(choice.cooldown!));
+
+  double _availableAt(VariantCooldown cooldown) =>
+      (_cooldowns[cooldown.key] ?? -double.infinity) + cooldown.seconds;
+
+  /// No RNG is consumed while checking a waiting Select's eligibility.
+  double? nextEligibilityChange(
+    List<GraphChoice> choices,
+    Map<GraphFactId, double> facts,
+    double clock,
+  ) {
+    double? next;
+    for (final choice in choices) {
+      if (!choice.conditions.every((c) => c.matches(facts))) continue;
+      if (isEligible(choice, facts, clock)) return clock;
+      final available = _availableAt(choice.cooldown!);
+      next = next == null ? available : min(next, available);
+    }
+    return next;
+  }
+
   @override
   void started(GraphChoice choice, double clock) {
     if (choice.cooldown?.start == CooldownStart.started) {
