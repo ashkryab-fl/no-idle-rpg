@@ -72,11 +72,6 @@ class StatisticsPanel extends StatelessWidget {
           'Averages use completed sessions. Offline time is excluded.',
           style: TextStyle(fontSize: 11, color: Colors.white54),
         ),
-        if (controller.runtime.offline.duration.inSeconds > 0)
-          Text(
-            'Last offline interval: ${NumberFormatter.duration(controller.runtime.offline.duration.inSeconds.toDouble())}',
-            style: const TextStyle(fontSize: 11, color: Colors.white54),
-          ),
       ],
     );
   }

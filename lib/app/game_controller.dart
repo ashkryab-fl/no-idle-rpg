@@ -5,8 +5,7 @@ import '../core/balance/game_balance.dart';
 import '../core/numbers/amount.dart';
 import '../core/persistence/game_save.dart';
 import '../core/persistence/game_save_repository.dart';
-import '../core/persistence/offline_progress_service.dart';
-import '../domain/activity/idle_animation.dart';
+import '../domain/activity/idle_level.dart';
 import '../domain/progression/infinite_upgrade.dart';
 import '../game/desktop_game.dart';
 import '../game/systems/game_simulation.dart';
@@ -16,18 +15,11 @@ import '../platform/user_activity_service.dart';
 enum OverlayPanel { menu, statistics, upgrades, equipment, settings, debug }
 
 class AppRuntime {
-  AppRuntime(
-    this.simulation,
-    this.repository,
-    this.window,
-    this.activity,
-    this.offline,
-  );
+  AppRuntime(this.simulation, this.repository, this.window, this.activity);
   final GameSimulation simulation;
   final GameSaveRepository repository;
   final DesktopWindowService window;
   final UserActivityService activity;
-  final OfflineProgressResult offline;
 }
 
 final runtimeProvider = Provider<AppRuntime>(

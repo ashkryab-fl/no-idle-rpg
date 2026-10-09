@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:idle_companion/app/game_controller.dart';
 import 'package:idle_companion/core/persistence/game_save.dart';
 import 'package:idle_companion/core/persistence/game_save_repository.dart';
-import 'package:idle_companion/core/persistence/offline_progress_service.dart';
 import 'package:idle_companion/game/systems/game_simulation.dart';
 import 'package:idle_companion/platform/desktop_window_service.dart';
 import 'package:idle_companion/platform/user_activity_service.dart';
@@ -75,5 +74,4 @@ AppRuntime fakeRuntime(
   repository,
   window,
   activity ?? FakeActivity(),
-  const OfflineProgressResult(Duration.zero),
 );

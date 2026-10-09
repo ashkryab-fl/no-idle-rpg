@@ -7,7 +7,6 @@ import 'app/companion_app.dart';
 import 'app/game_controller.dart';
 import 'core/persistence/game_save_repository.dart';
 import 'core/persistence/app_instance_lock.dart';
-import 'core/persistence/offline_progress_service.dart';
 import 'game/systems/game_simulation.dart';
 import 'platform/desktop_window_service.dart';
 import 'platform/user_activity_service.dart';
@@ -53,10 +52,6 @@ Future<void> bootstrap() async {
               repository,
               window,
               UserActivityService.native(),
-              OfflineProgressService().calculate(
-                save?.lastSaveTime,
-                DateTime.now(),
-              ),
             ),
           ),
         ],
