@@ -1,6 +1,6 @@
 # Idle Companion
 
-Робочий desktop idle RPG MVP на Flutter + Flame для macOS та Windows. Поки користувач активний, герой іде, procedural вороги зупиняють рух, автоматичний бій дає Gold, XP і Knowledge Books. Після смерті герой відроджується. Глобальна бездіяльність користувача переводить героя у відпочинок: після завершення поточного encounter він зупиняється й обирає одну idle animation або один граф.
+Робочий desktop idle RPG MVP на Flutter + Flame для macOS та Windows. Поки користувач активний, герой іде, procedural вороги зупиняють рух, автоматичний бій дає Gold, XP і Knowledge Books. Після смерті герой відроджується. Глобальна бездіяльність користувача переводить героя у відпочинок: після завершення поточного encounter він зупиняється й запускає типізований граф відпочинку.
 
 Для героїні підключено прозорі RGBA спрайти: ходьба — 10 кадрів 512×512, 8 FPS; атака та смерть — по 4 кадри; бойова стійка — перший кадр атаки; відпочинок — сідання та цикл точіння меча зі спільною статичною позою. Рухомий фон циклічно показує три панорами: луки з хатиною та млином → струмок → пшеничні поля з дерев’яним парканом. Вороги, hit particles, damage numbers і drops малюються процедурно. Sprite-каталог містить лише встановлені PNG; відсутній заявлений sprite спричиняє помилку завантаження.
 
@@ -99,17 +99,17 @@ lib/
   app/                  Riverpod controller, runtime dependencies, lifecycle orchestration
   core/
     animation/          Pure Dart resources, playback snapshot, players, graph/validator/runner
-    assets/             AssetCatalog; legacy AnimationCatalog/Definition facade
+    assets/             AssetCatalog; environment asset paths
     balance/            ProgressionBalance coefficients; GameBalance timing/rendering
     numbers/            Amount, NumberFormatter
-    persistence/        GameSave, migration, repository, instance lock, offline infrastructure
+    persistence/        GameSave, migration, repository, instance lock
   content/animations/   Installed sprites, hero rest graph, procedural enemy timelines
   game/animation/       Semantic coordinators and Flame SpriteFrameCache
   domain/
     character/          CharacterProgress, CombatStats, stat calculations
     progression/        InfiniteUpgradeDefinition, character upgrade catalog
     equipment/          Fixed equipment definitions
-    activity/           Rest coordinator/policy/selector, legacy adapter, activity statistics
+    activity/           Rest coordinator/policy/selector, activity statistics
     economy/            Reward model
     settings.dart
   game/
@@ -135,7 +135,7 @@ BOOT → TRAVELING → ENEMY_APPROACH → COMBAT → ENEMY_DEATH → REWARD → 
 
 `GameSimulation.isResting` зупиняє рух, background scroll, накопичення distance та зменшення encounter distance. Нові вороги не спавняться на жодному idle level, включно з Debug Spawn enemy. Рух і спавн відновлюються після повернення до active та завершення поточної idle animation та її exit sequence (для сидячого відпочинку: `hero.seated → hero.standUp`). Під час cooldown між доступними idle animations герой також стоїть (`hero.idle` fallback).
 
-`AnimationDefinition.damageEventTime` задає момент damage. Default attack: 0.6 s, damage на 0.35 s. Якщо attack speed швидша за animation duration, timeline прискорюється пропорційно, разом із damage event. Hit reaction, critical visual event, HP change, damage number походять від того самого `DamageEvent`. Events обох бійців впорядковуються за часом удару всередині step; при однаковому часі герой має deterministic tie priority. Attack clock зберігає progress поточного cycle: програмна зміна attack speed у combat не повторює історичні удари. Death animation утримує останній frame у reward/respawn паузі.
+`AnimationMarker(kind: AnimationMarkerKind.damage)` у clip задає момент damage. Default attack: 0.6 s, damage на 0.35 s. Якщо attack speed швидша за animation duration, timeline прискорюється пропорційно, разом із damage event. Hit reaction, critical visual event, HP change, damage number походять від того самого `DamageEvent`. Events обох бійців впорядковуються за часом удару всередині step; при однаковому часі герой має deterministic tie priority. Attack clock зберігає progress поточного cycle: програмна зміна attack speed у combat не повторює історичні удари. Death animation утримує останній frame у reward/respawn паузі.
 
 Герой програє 4 кадри атаки по 0.15 s: бойова стійка → замах → удар зі слідом меча → завершення. Damage на 0.35 s припадає на третій кадр. Влучання у героя не перериває його swing: короткий світлий flash накладається поверх спрайта. Між атаками та під час stationary pauses `hero.idle` тримає перший кадр — бойову стійку з мечем напоготові. Якщо hit asset відсутній, реакція на влучання поза swing використовує цю стійку зі спалахом.
 
@@ -205,7 +205,7 @@ Gold гарантований, Books мають per-enemy configured chance (def
 - poll/suspend gap >10 s або clock rollback закриває session і не вигадує computer activity за пропущений час;
 - точність classification boundary обмежена 1-second polling interval.
 
-## Persistence та offline infrastructure
+## Persistence
 
 `GameSaveRepository` дозволяє замінити storage backend. `FileGameSaveRepository` використовує application support directory через `path_provider`, підкаталог `idle_companion`:
 
@@ -222,13 +222,13 @@ Save schema version 5. Зберігаються stage/stageKills, character Leve
 
 Save: раз на хвилину (60 s), після кожного успішного character/equipment upgrade та зміни settings, на lifecycle inactive/paused/detached та перед controlled exit. Exit призупиняє simulation, завершує activity session і чекає save; повторні натискання не запускають паралельний exit. Якщо save або native quit не вдалися, гра відновлюється й показує помилку. Startup error UI теж підтримує native Quit. Force-kill/power-loss може втратити останні ≤60 s. Reset вимагає Flutter confirmation і очищає primary, backup та live progression; instance lock зберігається до виходу.
 
-`OfflineProgressService` повертає `OfflineProgressResult(duration, distance, kills, gold, books)`. MVP обчислює offline duration, але не симулює offline combat і не нараховує offline rewards. Timestamp і result contract уже готові до майбутнього offline model.
+Валюта (Gold/Books) та XP нараховуються тільки під час роботи симуляції в запущеному додатку. Після закриття й повторного запуску відновлюється збережений прогрес без нагород за час відсутності. Тривалі паузи під час сну комп’ютера відкидаються без симуляції боїв.
 
 ## Як розширювати catalogs
 
 ### Новий enemy
 
-Додайте числові base values/weights/rewards у `ProgressionBalance`, а `EnemyDefinition` у `EnemyCatalog.definitions` у `game/systems/enemy_spawner.dart`: id/name/baseHp/baseDamage/attackSpeed/critChance/critDamage/rewardGold/rewardXp/rewardBooks/rewardBookChance/difficultyWeight/animations prefix. Factory застосує незалежне HP/damage/Gold/Books/XP scaling; spawner обере definition через weighted random. Зареєструйте animation IDs `prefix.idle/attack/hit/death` у `AnimationCatalog`. Зміни combat не потрібні.
+Додайте числові base values/weights/rewards у `ProgressionBalance`, а `EnemyDefinition` у `EnemyCatalog.definitions` у `game/systems/enemy_spawner.dart`: id/name/baseHp/baseDamage/attackSpeed/critChance/critDamage/rewardGold/rewardXp/rewardBooks/rewardBookChance/difficultyWeight та typed `EnemyAnimationContent`. Factory застосує незалежне HP/damage/Gold/Books/XP scaling; spawner обере definition через weighted random. Поточні Canvas вороги явно посилаються на `ProceduralEnemyTimelines.content`. Для PNG ворога додайте clips/frames/rigs у resources і задайте `SpriteEnemyAnimationContent(idleId: ..., attackId: ..., deathId: ...)`. Усі три ClipId перевіряються строго; відсутній ресурс спричиняє помилку. Hit reaction лишається overlay.
 
 ### Character upgrade
 
@@ -265,46 +265,22 @@ flutter:
     - assets/characters/hero/stand_up.png
 ```
 
-У `AnimationCatalog` замініть definition або передайте override під час створення simulation:
+Production resources зібрані у `lib/content/animations/hero/{poses,clips}.dart`.
+`AnimationResources` містить immutable maps із окремими `FrameId`, `RigId`,
+`PoseId`, `ClipId`; unknown ID або unresolved reference спричиняє помилку.
+`AnimationClipDefinition` задає durations, loop range, pose contracts і markers.
+Для горизонтального PNG `spriteSheetResources(asset: ..., id: ClipId(...), ...)`
+готує явні rectangles; asset є обов’язковим. Debug placeholders створюються
+лише явним `SpriteFrameDefinition.debugPlaceholder` у test/debug content.
+
+Контент інжектується без adapter:
 
 ```dart
-final animations = AnimationCatalog({
-  'hero.walk': const AnimationDefinition(
-    id: 'hero.walk',
-    asset: 'assets/characters/hero/walk.png',
-    frames: 10,
-    frameWidth: 512,
-    frameHeight: 512,
-    stepTime: 1 / 8,
-    loop: true,
-    anchorX: .62,
-    anchorY: .875,
-    scale: .20,
-  ),
-  'hero.attack': const AnimationDefinition(
-    id: 'hero.attack',
-    asset: 'assets/characters/hero/attack.png',
-    frames: 4,
-    frameWidth: 512,
-    frameHeight: 512,
-    stepTime: .15,
-    anchorX: .58,
-    anchorY: .875,
-    scale: .25,
-    damageEventTime: .35,
-  ),
-  'hero.idle': const AnimationDefinition(
-    id: 'hero.idle',
-    asset: 'assets/characters/hero/ready.png',
-    frameWidth: 512,
-    frameHeight: 512,
-    loop: true,
-    anchorX: .58,
-    anchorY: .875,
-    scale: .25,
-  ),
-});
-final simulation = GameSimulation(animations: animations);
+final resources = demoAnimationResources();
+final simulation = GameSimulation(
+  resources: resources,
+  restGraph: HeroRestGraphs.authoringDemo(),
+);
 ```
 
 `DesktopGame` читає Flutter asset manifest і завантажує кадри/атласи в `FlameSpriteFrameCache`, без SpriteAnimation/FPS/loop metadata. `HeroAnimationCoordinator` обирає death/respawn → combat → rest/exit → locomotion; `ActorComponent` малює лише frame/rig/effects із `PlaybackSnapshot`. Shared FrameId має один Sprite. Відсутній заявлений PNG або rectangle за межами atlas — помилка. Процедурні вороги мають явний Canvas timeline. Hit flash — overlay, а не вигаданий hit clip. Бій використовує той самий `AttackPlayback` clock для видимого кадру і damage marker; retiming зберігає cycle progress та вже виконані події.
@@ -322,7 +298,29 @@ assets/
   ui/
 ```
 
-Paths не пов'язані із combat logic: animation IDs і enemy prefixes є stable contracts. `AssetCatalog.backgrounds` задає порядок трьох bundled панорам. Кожна відображається у viewport 400×133.33 зі співвідношенням 3:1 та невеликим перекриттям із нижньою доріжкою; цикл довжиною 1200 logical pixels керується `GameSimulation.distance`, тому не скидається на межі кожних 400 pixels та зупиняється під час бою й відпочинку. Якщо жоден фон не завантажився, використовується procedural fallback. Effects/UI files додаються до власних visual components.
+Paths не пов'язані із combat logic: typed clip/frame/pose IDs є stable contracts. `AssetCatalog.backgrounds` задає порядок трьох bundled панорам. Кожна відображається у viewport 400×133.33 зі співвідношенням 3:1 та невеликим перекриттям із нижньою доріжкою; цикл довжиною 1200 logical pixels керується `GameSimulation.distance`, тому не скидається на межі кожних 400 pixels та зупиняється під час бою й відпочинку. Якщо жоден фон не завантажився, використовується procedural fallback. Effects/UI files додаються до власних visual components.
+
+### Sprite asset pipeline
+
+`lib/content/animations/hero/{poses,clips,variants,rest_graphs}.dart` розділяє
+статичні пози, таймлайни й variant metadata. PNG ворогів додаються лише разом
+із реальним artwork; поточні вороги мають окремий procedural timeline.
+Універсальний `tool/sprite_assets/{build,verify}.py` читає versioned manifests
+лише з параметрами пакування: source, crop, scale, offset, size та output.
+Референси й промпти залишаються окремими файлами; rig і таймлайни живуть у Dart.
+Прев’ю використовують ті самі Dart-описи. Старі `build_hero_*.py` — thin wrappers.
+
+```sh
+python3 tool/sprite_assets/build.py --output-root /tmp/idle-companion-sprites --no-previews
+python3 tool/sprite_assets/verify.py --output-root /tmp/idle-companion-sprites
+python3 tool/sprite_assets/verify.py --previews
+```
+
+Поточні PNG відтворюються байт у байт; shared seated кадр, первинні references,
+prompts і selected raw art збережені. [Manifest/CLI контракт](tool/sprite_assets/README.md).
+[Демо другої seated activity та вставання](art/hero/rest_variants_v1/README.md)
+використовує окремі описи над наявними PNG, з cleanup до exact seatedNeutral.
+Демо вмикається через resources/graph injection і не змінює default choices.
 
 ### Idle graphs
 
@@ -343,17 +341,21 @@ movement і spawn залишаються заблокованими до `readyT
 GameSimulation володіє encounter, спавном і застосуванням damage; playback
 clock більше не походить із phase elapsed.
 
-Нові seated/stand-up variants додаються через clip resources, graph nodes та
-`GraphChoice`. `RestPolicy` контролює eligibility і explicit cooldown key з
+Нові seated/stand-up variants додаються через clip resources і
+`HeroRestVariant` metadata; graph nodes/GraphChoice збираються контентом. `RestPolicy` контролює eligibility і explicit cooldown key з
 точкою початку started/completed; injected `WeightedVariantSelector` обирає
-лише при вході в Select. Waiting fallback тримає позу до явного retry signal.
+лише при вході в Select. Waiting fallback тримає позу; RestCoordinator автоматично сигналізує retry при
+зміні eligibility/cooldown expiry, без lottery кожного кадру.
 [Референси, authoring API і перевірки](docs/hero_rest.md).
 
-Явно передані `GameSimulation(idleDefinitions: definitions)` зберігають старий
-adapter `LegacyIdleBehaviorSystem`, nextAnimationId/nextAnimationIds та legacy
-return delay на існуючій guard pose до етапу 5. Legacy test clips мають бути
-явно зареєстровані; невідомі definitions відхиляються. `AnimationCatalog` також лишається compatibility facade.
-[План і поточний статус міграції](docs/animation_architecture_plan.md).
+Production і tests використовують один graph/player API. `GameSimulation.resources`
+інжектує typed content, `heroPlayback`/`enemyPlayback` повертають resolved
+`PlaybackSnapshot`. HoldPose має FrameId/PoseId і не маскується під clip;
+renderer не виконує string lookup або власний playback. CombatSystem отримує
+спільні AttackPlayback із coordinators. Death/reset скасовують pending signals,
+інкрементують generation; image cache не змінює simulation playback.
+Поточний playback не входить у save; міграція saves не потрібна.
+[Статус міграції та окремі live/platform перевірки](docs/animation_architecture_plan.md).
 
 ## Debug tools
 
@@ -367,8 +369,10 @@ Sound preference зберігається, але audio playback поки не �
 
 ## Перевірка та відомі межі
 
-- Етап 3 анімацій (2026-10-09): **143 tests passed** у повному `flutter test --no-pub`; `dart analyze lib test tool` і `git diff --check` без issues. Shared sprite cache/реальні PNG, strict missing-asset/rectangle errors, immutable snapshot, late loading/generation, rest leftover dt, FPS/speed parity, damage timing/retiming, hit overlay і death hold перевірені headless та widget/pixel tests. Build/live desktop/native alpha для цієї інтеграції не проводились.
-- Етап 2 анімацій (2026-10-09): **133 tests passed** у повному `flutter test --no-pub`; `dart analyze lib test tool` і `git diff --check` без issues. Graph transitions, interrupts, cooldown scope, FPS/speed parity, markers, death/reset та rest → six-frame stand → walk_00 перевірені headless. Build/live desktop/native alpha для цієї зміни не перевірялися.
+- Етап 5 анімацій (2026-10-09): legacy player, adapters, presentation aliases,
+  string-prefix fallback і compatibility fixtures видалені. Suite скорочено
+  до критичних regressions. Актуальні результати перевірок наведено в
+  [статусі міграції](docs/animation_architecture_plan.md).
 
 - `flutter analyze --no-pub`: без issues (2026-10-08).
 - Попередня повна перевірка `flutter test --no-pub`: **72 tests passed**, включно зі stage scaling, HUD rollback, повторним farming Stage 10 → 9 → 10, save migration, no-assets Flame startup, hero walk/attack/death/guard asset loading, death sequence 2.2 s з фінальним кадром 1 s, damage на slash frame при звичайній та прискореній атаці, guard між ударами, Exit/retry/failure/reset collision, invalid saves, chronological combat timing, програмні зміни швидкості, death frame hold, idle graph validation та near-linear MAX.
@@ -379,10 +383,10 @@ Sound preference зберігається, але audio playback поки не �
 - Windows C++ implementation написано, але Windows build/runtime на macOS **не перевірено**. Потрібен Windows host для validation Win32 transparency, click-through, DPI/taskbar behavior і WM_CLOSE save handshake.
 - Hot-plug кількох monitor, зміна resolution і Dock/taskbar position реалізовані через notifications/messages, але live display-topology matrix не перевірялась. Monitor picker не входить до MVP.
 - macOS alpha та Windows binary transparency різняться; Windows per-pixel alpha compositing — описане вище обмеження.
-- Final sprite sheets, production balancing, audio, auto-launch і offline combat — наступні етапи.
+- Final sprite sheets, production balancing, audio, auto-launch — наступні етапи.
 
 [Checklist усіх 34 пунктів і pending platform matrix](docs/requirements_checklist.md).
 
-Tests покривають XP/level-up, upgrade cost/x10/MAX, crit/event timing, enemy/reward scaling, book drop chance, idle thresholds/chains/interruption, activity sessions/local midnight/suspend, save/load/backup/migration, offline infrastructure, enormous number formatting і FPS-independent simulation outcomes.
+Tests покривають XP/level-up, upgrade cost/x10/MAX, crit/event timing, enemy/reward scaling, book drop chance, graph/variant eligibility і interruption, activity sessions/local midnight/suspend, save/load/backup/migration, відсутність офлайн-нарахувань, enormous number formatting і FPS-independent simulation outcomes.
 
 API references: [FlameGame](https://docs.flame-engine.org/latest/flame/game.html), [Flame image/animation API](https://docs.flame-engine.org/latest/flame/rendering/images.html), [Flutter macOS controller](https://api.flutter.dev/macos-embedder/interface_flutter_view_controller.html), [Apple idle timestamps](https://developer.apple.com/documentation/coregraphics/cgeventsource/secondssincelasteventtype(_:eventtype:)), [Win32 GetLastInputInfo](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getlastinputinfo).

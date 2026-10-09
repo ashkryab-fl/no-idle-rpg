@@ -25,7 +25,7 @@ use anchor `(0.5, 0.875)` and scale `0.25`. Future seated activities should
 use this same canvas, scale and ground contact, and copy this exact reference
 as their first frame. Do not independently fit each pose to the canvas.
 
-`AnimationDefinition.scaleMultiplier` defaults to `1` and corrects the rendered
+`SpriteFrameDefinition.scaleMultiplier` defaults to `1` and corrects the rendered
 size around the sprite anchor. Sharpening and the static seated pose use `1.05`.
 The final sit-down frame and all graph holds reference `PoseId.seatedNeutral`;
 its frame geometry applies the seated multiplier while preserving ground contact.
@@ -43,72 +43,69 @@ pose is selected from the same rig as the moving hands to preserve continuity.
 
 ## Add an activity or stand-up variant
 
-Register the clip/frames in `lib/content/animations/animation_resources.dart`
-and add a node plus a `GraphChoice` in
-`lib/content/animations/hero/rest_graphs.dart`. Both Select nodes have explicit
-waiting HoldPose fallbacks. For example, after authoring reading artwork, the
-activity Select can contain:
+Static resources live in `lib/content/animations/hero/poses.dart`, timelines in
+`hero/clips.dart`, and selection metadata in `hero/variants.dart`. The default
+resources still contains the original eight real PNG clips; procedural enemies
+retain their explicit Canvas timeline outside the sprite catalog.
 
-```dart
-GraphChoice(id: const VariantId('hero.sharpen.seated'),
-  target: HeroRestGraphs.sharpen, weight: 3),
-GraphChoice(id: const VariantId('hero.read.seated'),
-  target: const NodeId('rest.read'), weight: 1),
-```
+`HeroRestVariant` declares a stable VariantId, separate NodeId/ClipId,
+entry/exit pose contracts, weight, allowed typed facts (`rest.idleLevel`),
+interruption policy and optional cooldown. Cooldown has an explicit key and
+started/completed timing; variants sharing one clip never implicitly share it.
+An optional cleanupClip/cleanupNode returns an activity to exact seatedNeutral,
+and completed cooldown timing waits until that cleanup node exits.
 
-Add `LoopClip(id: NodeId('rest.read'), clipId: ClipId('hero.read'), ...)` and an
-ordered `ActivityReturned` edge to its cleanup or the shared exit hold. Reading
-and sharpening then have 25% and 75% weights among eligible choices. Exact pose
-contracts refer to a shared frame; family contracts establish compatible pose
-geometry. An activity with a different exit pose needs a cleanup clip back to
-`seatedNeutral`. The validator checks contracts through Select branches too.
+`HeroRestGraphs.seatedRest(activities: ..., standUps: ..., resources: ...)`
+assembles LoopClip/cleanup and PlayClip nodes from those descriptions. It validates
+metadata against actual clip pose contracts and validates all graph branches.
+No change to the generic runner, semantic coordinator or renderer is needed
+for another descriptor. Runtime content remains typed Dart; asset manifests
+contain only PNG packing parameters. References/prompts stay in separate files;
+preview frames, rigs and timing are read from Dart by
+`tool/export_animation_previews.dart`.
 
-`RestPolicy` supplies eligibility and `WeightedVariantSelector` uses injected
-Random. Choice conditions use typed facts, such as `rest.idleLevel`; core playback
-has no idle thresholds. Cooldown declares its own `CooldownKey`, duration and
-`CooldownStart.started` or `.completed`. The optional `completionNode` names the
-last cleanup node; by default completion is when the selected target exits,
-including an interruption. Nodes sharing a clip never implicitly share cooldown.
+RestPolicy controls eligibility and the injected WeightedVariantSelector draws
+only on Select entry. A blocked selection stays in one waiting HoldPose;
+RestCoordinator emits selectionChanged once conditions become eligible, including
+an exact cooldown expiry inside a large dt. Checking eligibility consumes no RNG.
+The runner exposes its next time boundary so the policy scheduler does not
+reimplement clip clocks. Returning during a wait still takes the normal exit.
 
-Selection happens once at Select entry. When all candidates are blocked, the
-fallback holds the same pose without re-entry or a lottery every render frame.
-Author an explicit signal edge from fallback back to Select when eligibility
-changes. The default graph uses `rest.selectionChanged`; the compatibility
-adapter emits it on idle-level changes. A caller enabling cooldown-limited
-variants must also signal retry when cooldown eligibility changes.
-
-The entry lasts 4 × 0.3 s plus a 0.5 s shared HoldPose. Returning during entry
-queues activityReturned until both complete. Sharpening interrupts immediately;
-its 0.225 s neutral intro plays only once, then frames 1–4 loop every 0.9 s.
+The default entry lasts 4 × 0.3 s plus a 0.5 s shared HoldPose. Returning during
+entry queues activityReturned until both complete. Ordinary sharpening interrupts
+immediately; its 0.225 s neutral intro plays once, then frames 1–4 loop every 0.9 s.
 Return goes through a separate 0.3 s neutral HoldPose, stand-up Select,
-6 × 0.25 s PlayClip and `Finish(readyToTravel)`. Neutral is outside those six
-stand-up frames. Duplicate return signals do not restart exit, and new inactivity
-cannot jump from a half-standing pose into sitting. Death/reset cancel playback
-and pending signals; a new rest starts from the entry.
+6 × 0.25 s PlayClip and Finish(readyToTravel). Neutral is outside those six frames.
+Duplicate returns do not restart exit; new inactivity finishes standing before a
+new sit. Death/reset discard playback/signals and increment generation.
 
-The runner carries remaining dt between nodes and reports any remainder after
-Finish. RestCoordinator keeps adventure blocked until the typed `readyToTravel` event.
-HeroAnimationCoordinator starts walking at `walk_00`, advances it by the remaining
-part of the step and returns exactly that travel time for distance/scroll/spawn.
-Inactivity during exit finishes standing before a new rest entry consumes the
-remaining time. Death/reset cancel graph signals and bump playback generation.
+RestCoordinator blocks adventure until readyToTravel and passes remaining dt to
+HeroAnimationCoordinator. Walking starts at walk_00 and consumes only that
+remainder; distance/scroll/countdown use exactly the returned travel time.
+ActorComponent draws PlaybackSnapshot frame/rig/overlay. SpriteFrameCache loads
+each PNG once and shares canonical seated Sprite across sit-down, hold, intro
+and cleanup. AttackPlayback owns both attack visuals and damage marker timing.
 
-ActorComponent reads a resolved PlaybackSnapshot with frame, rig and overlay;
-it never computes frameIndex or elapsed time. FlameSpriteFrameCache loads each
-PNG once and shares the same Sprite for sit-down end, HoldPose and sharpening
-intro. No synthetic SpriteAnimation is created for a hold. Damage flash is an
-independent overlay; combat uses one AttackPlayback clock for frame and marker.
-Installed PNGs/geometry remain unchanged. Real-asset loading and pixel hold
-regressions passed in widget tests; no live desktop/native alpha check was run.
+The opt-in [second activity and stand-up demo](../art/hero/rest_variants_v1/README.md)
+uses real existing frames at different cadences, with a cleanup back to neutral.
+`demoAnimationResources()` and `HeroRestGraphs.authoringDemo()` enable it through
+content injection; the ordinary game keeps its original variant choices.
+Automated tests cover source/rig contracts, weighted eligibility, cooldown retry,
+cleanup timing, eight-PNG cache reuse and 30/60 FPS × x1/x5/x20 parity.
 
-Explicit `GameSimulation(idleDefinitions: ...)` still uses the separate legacy
-adapter, including nextAnimationId/nextAnimationIds and a legacy return delay
-on the existing guard pose. Unregistered legacy nodes fail validation; test
-fixtures declare debug frames explicitly outside production content.
-These compatibility APIs will be removed in stage 5. The current default graph
-uses the typed catalog. See [the refactoring plan](animation_architecture_plan.md).
-Artwork, prompts and complete seam preview:
-[stand-up v1](../art/hero/stand_up_v1/README.md).
+Inject `GameSimulation(resources: ..., restGraph: ...)` for alternative content.
+RestCoordinator uses only the graph API; there are no idle definitions, exit
+sequences, compatibility clocks or return delays. A HoldPose snapshot exposes
+PoseId/FrameId with null ClipId. Display labels describe the rest graph and stay
+stable across its seams; debug UI exposes the actual clip/node/pose separately.
+Strict resource lookup never creates fallback content; sprite sheets require an
+asset and debug placeholders require an explicit debug frame declaration.
+Sprite enemies declare typed idle/attack/death IDs; procedural enemies explicitly
+declare their Canvas attack/death timelines. CombatSystem advances the injected
+coordinator clocks and does not resolve content by enemy prefix.
+See [migration status and remaining live checks](animation_architecture_plan.md).
+New visual seams still need live desktop review. A pose-family label or a local
+world-scale preview does not prove matching head proportions or smooth motion.
 
 ## Rebuild and check
 
@@ -117,6 +114,7 @@ python3 tool/build_hero_rest.py
 python3 tool/build_hero_rest.py --verify
 python3 tool/build_hero_stand_up.py
 python3 tool/build_hero_stand_up.py --verify
+python3 tool/sprite_assets/verify.py --previews
 ```
 
 The script uses ffmpeg for extraction, common scaling, transparent padding,
@@ -133,3 +131,9 @@ Previews:
 Regression tests cover final-frame holding, indefinite playback, weighted
 branch choice, child eligibility/cooldown, interruption, cycle validation,
 sprite loading and paused adventure progress.
+
+All previous build commands are thin wrappers over the
+[shared manifest pipeline](../tool/sprite_assets/README.md). Exact current PNGs
+were reproduced in a separate output tree; primary references, prompts and raw
+art remain untouched. Previews align actual anchors and world scale rather than
+fitting each silhouette independently. Live native desktop checks remain pending.

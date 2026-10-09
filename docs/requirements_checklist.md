@@ -2,7 +2,7 @@
 
 Дата: 2026-10-08. Відповідає 34 пунктам наданого specification.
 
-**Реалізовано** означає наявність робочого code path і зазначеного evidence. **Native без live перевірки** означає, що implementation є, але поточний Mac не доводить Windows runtime або multi-monitor matrix. Assets/audio/offline combat не належать до обов'язкової реалізації цієї версії.
+**Реалізовано** означає наявність робочого code path і зазначеного evidence. **Native без live перевірки** означає, що implementation є, але поточний Mac не доводить Windows runtime або multi-monitor matrix. Assets/audio не належать до обов'язкової реалізації цієї версії.
 
 | № | Вимога | Реалізація / evidence |
 |---|---|---|
@@ -14,7 +14,7 @@
 | 6 | Procedural enemies | EnemyDefinition/Factory/Spawner, weighted random, exponential HP/damage/rewards від Stage. Stage зростає після 12 перемог; смерть відкочує на початок попереднього Stage (мінімум 1), потрібні всі 12 перемог заново. Formula/scenario tests, джерела у stage_balance.md. |
 | 7 | Global activity | CGEventSource + duration-only IOHIDSystem, Win32 GetLastInputInfo; macOS input у Finder без focus companion перевірено. Windows не перевірено. |
 | 8 | Idle levels | Configurable thresholds 30/120/300s; threshold tests, debug override. |
-| 9 | Idle graph | Data-driven chains/roots і weighted continuations, cooldown, loop count, final-pose hold та loop до активності; branch/cooldown/cycle/interruption tests. |
+| 9 | Idle graph | Typed poses/clips/variant metadata і graph fragments; weight/allowed facts, explicit started/completed cooldown keys, cleanup до seatedNeutral. Select-only lottery; RestCoordinator retry при eligibility/cooldown expiry без перезапуску waiting hold кожного кадру. Default і opt-in demo, large/partitioned dt та FPS/speed tests; legacy chains лишаються до етапу 5. |
 | 10 | User return | Typed immediate/afterCycle/afterClip; shared neutral pose → six-frame stand → readyToTravel. Duplicate samples не restart-ять exit; inactivity завершує вставання перед новим rest. Legacy return delay використовує наявну guard pose. |
 | 11 | Idle/rest behavior | Після encounter distance/scroll/countdown/spawn зупинені. Стандартний typed graph: sit → shared HoldPose → weighted activity → neutral HoldPose → six-frame stand → readyToTravel/walk_00. HeroAnimationCoordinator/RestCoordinator передають залишок dt у walk/travel; policy/selector мають explicit cooldown scope; graph/domain/simulation тести. Explicit legacy idleDefinitions лишаються adapter до етапу 5. Debug override не змінює real activity aggregates; live desktop playback інтеграції ще не перевірено. |
 | 12 | Click/menu | Hero/menu hit regions, Flutter panel, transparent background click-through; Swift/C++ region bounds narrowed for expanded panel. Windows behavior не перевірено. |
@@ -28,7 +28,7 @@
 | 20 | Drops | Independent Reward/DropSystem; Gold/Books +10% за Stage, XP +7%, Books chance default 28%. Activity multiplier впливає на Gold/Books. Formula/farming/large-number tests. |
 | 21 | Large numbers | Amount log10 abstraction, formatter suffix/scientific notation; huge-number tests. Metadata levels мають technical precision bound 2^53−1, описаний у README. |
 | 22 | Persistence | Repository, synchronous snapshot + serialized I/O, backup, schema v5 із stage/stageKills та migration v1–v4, single-instance lock, minute autosave / every successful upgrade / lifecycle / exit saves; round-trip/recovery/invalid-state/Exit tests та збереження відкоту Stage після смерті. |
-| 23 | Offline infrastructure | OfflineProgressService/Result із duration та майбутніми rewards; no fabricated offline combat; tests. |
+| 23 | Прогрес тільки в запущеному додатку | Gold/Books/XP лише за поточні бої; старий save не додає нагород, тривалі suspend gaps відкидаються. |
 | 24 | Architecture | Pure-Dart domain/systems, Flutter presentation/Riverpod orchestration, Flame components, native service adapters. |
 | 25 | State machine | Explicit tested transition graph; USER_IDLE orthogonal, пояснення у README. |
 | 26 | FPS/energy | Fixed simulation step, actual capped renderer 15/30/60, suspend guard; cross-FPS and invalid-delta tests. |
@@ -47,4 +47,4 @@
 - macOS: hot-plug/disconnect monitors, resolution scaling, Dock position/autohide changes, fullscreen Spaces, pointer boundaries.
 - Universal macOS distribution: Flutter 3.44 + Xcode 27 `lipo -verify_arch arm64 x86_64` fails despite both slices present. MVP Release/Profile обирають одну Flutter-supported native architecture (arm64/arm64e → arm64, x86_64 → x86_64); universal assembly needs a verified compatible tooling version.
 
-Ці перевірки не позначено як успішні без evidence. Audio, launch-at-startup native integration, final art і offline combat — explicit future stages.
+Ці перевірки не позначено як успішні без evidence. Audio, launch-at-startup native integration, final art — explicit future stages.
