@@ -7,7 +7,7 @@
 | № | Вимога | Реалізація / evidence |
 |---|---|---|
 | 1 | Desktop overlay | Swift/AppKit та C++/Win32: borderless, transparency, topmost, lower-right work area. macOS runtime перевірено; Windows і hot-plug matrix не перевірено. Windows використовує binary color-key, monitor picker відсутній. |
-| 2 | Asset rendering і fallback | Hero walk: 10×512×512 із alpha, 8 FPS; attack: 4×512×512, 0.15 s/frame, damage 0.35 s на третьому кадрі; idle — перший кадр бойової стійки. Hit flash не перериває swing. No-assets startup і реальний sprite loader перевірені widget tests. Інші assets — placeholders. |
+| 2 | Asset rendering | Installed hero PNGs only; SpriteFrameCache loads real frames by FrameId and shares canonical seated Sprite. ActorComponent renders snapshot frame/rig/overlay, без frameIndex або SpriteAnimation. Missing declared PNG/invalid atlas rectangle відхиляються; widget loading/pixel tests. Вороги — explicit procedural Canvas timeline. |
 | 3 | Gameplay loop | GameSimulation, background scrolling, random encounter distance, smooth approach; simulation tests і macOS runtime. |
 | 4 | Combat/event timing | CombatSystem/AttackClock, crit, hit reaction, DamageEvent, HP; tests timing, speed change та chronological ordering. |
 | 5 | Death/respawn | Hero death: 4 RGBA кадри по 0.4 s, sword plant → head bow → collapse to knees. Остання поза 1 s (0.4 s кадру + 0.6 s RESPAWN), загалом 2.2 s. Full-HP respawn, попередній Stage із 0/12; character level/XP/currencies/upgrades зберігаються. Timing/farming regression tests. |
@@ -15,8 +15,8 @@
 | 7 | Global activity | CGEventSource + duration-only IOHIDSystem, Win32 GetLastInputInfo; macOS input у Finder без focus companion перевірено. Windows не перевірено. |
 | 8 | Idle levels | Configurable thresholds 30/120/300s; threshold tests, debug override. |
 | 9 | Idle graph | Data-driven chains/roots і weighted continuations, cooldown, loop count, final-pose hold та loop до активності; branch/cooldown/cycle/interruption tests. |
-| 10 | User return | canInterrupt та caught placeholder; both interruption paths tested. |
-| 11 | Idle/rest behavior | Після поточного encounter герой відпочиває: distance/scroll/encounter countdown зупинені, спавну немає. Weighted вибір одного standalone або root chain, cooldown fallback, повернення через caught; simulation/domain tests. RGBA сідання, спільна статична поза і loop точіння меча; інші продовження додаються через nextAnimationIds. Debug override не змінює real activity aggregates. |
+| 10 | User return | Typed immediate/afterCycle/afterClip; shared neutral pose → six-frame stand → readyToTravel. Duplicate samples не restart-ять exit; inactivity завершує вставання перед новим rest. Legacy return delay використовує наявну guard pose. |
+| 11 | Idle/rest behavior | Після encounter distance/scroll/countdown/spawn зупинені. Стандартний typed graph: sit → shared HoldPose → weighted activity → neutral HoldPose → six-frame stand → readyToTravel/walk_00. HeroAnimationCoordinator/RestCoordinator передають залишок dt у walk/travel; policy/selector мають explicit cooldown scope; graph/domain/simulation тести. Explicit legacy idleDefinitions лишаються adapter до етапу 5. Debug override не змінює real activity aggregates; live desktop playback інтеграції ще не перевірено. |
 | 12 | Click/menu | Hero/menu hit regions, Flutter panel, transparent background click-through; Swift/C++ region bounds narrowed for expanded panel. Windows behavior не перевірено. |
 | 13 | Character statistics | Damage/HP/crit та progression у StatisticsPanel; attack speed прихована й зафіксована програмно на 1 атаці/с. |
 | 14 | Activity statistics | Aggregates, session means, local midnight, total retention, suspend gaps; unit tests. |
