@@ -1,30 +1,22 @@
 import 'dart:math';
 import 'package:flame/components.dart';
 import 'package:flutter/painting.dart';
-import '../../../core/assets/animation_catalog.dart';
+import '../../../core/animation/playback_snapshot.dart';
+import '../../animation/flame_sprite_frame_cache.dart';
 import '../../systems/game_simulation.dart';
 import '../../../core/balance/game_balance.dart';
 import '../../systems/game_state_machine.dart';
 
 class ActorComponent extends Component {
-  ActorComponent(this.simulation, this.animationSprites, {required this.hero});
+  ActorComponent(this.simulation, this.frameCache, {required this.hero});
   final GameSimulation simulation;
-  final Map<String, SpriteAnimation> animationSprites;
+  final FlameSpriteFrameCache frameCache;
   final bool hero;
   final _label = TextPainter(textDirection: TextDirection.ltr);
   @override
   void render(Canvas canvas) {
     if (!hero && simulation.enemy == null) return;
-    final id = hero ? simulation.heroAnimation : simulation.enemyAnimation!;
-    final elapsed = hero
-        ? simulation.heroAnimationElapsed()
-        : simulation.enemyAnimationElapsed();
-    // Until a dedicated hit sprite exists, flash the combat guard instead.
-    final spriteId =
-        hero && id == 'hero.hit' && !animationSprites.containsKey(id)
-        ? 'hero.idle'
-        : id;
-    final definition = simulation.animations.get(spriteId);
+    final snapshot = hero ? simulation.heroPlayback : simulation.enemyPlayback!;
     final approach = (simulation.machine.elapsed / GameBalance.approachDuration)
         .clamp(0, 1);
     final x = hero
@@ -32,35 +24,31 @@ class ActorComponent extends Component {
         : simulation.phase == GamePhase.enemyApproach
         ? 386.0 - approach * 132
         : 254.0;
-    final spriteAnimation = animationSprites[spriteId];
-    if (spriteAnimation != null) {
-      // A rest entry is a one-shot; only its seated activity loops.
-      final index = definition.frameIndex(elapsed);
-      // The final sit-down frame is the shared static seated pose.
-      final scaleMultiplier = spriteId == 'hero.sitDown' &&
-              index == definition.frames - 1
-          ? simulation.animations.get('hero.seated').scaleMultiplier
-          : definition.scaleMultiplier;
-      final renderScale = definition.scale * scaleMultiplier;
-      final w = definition.frameWidth * renderScale,
-          h = definition.frameHeight * renderScale;
-      spriteAnimation.frames[index].sprite.render(
-        canvas,
-        position: Vector2(
-          x - w * definition.anchorX,
-          GameBalance.actorGroundY - h * definition.anchorY,
-        ),
-        size: Vector2(w, h),
-        overridePaint: hero && simulation.heroHitRemaining > 0
-            ? (Paint()
-                ..colorFilter = const ColorFilter.mode(
-                  Color(0x99fff4d6),
-                  BlendMode.srcATop,
-                ))
-            : null,
-      );
+    final frame = snapshot.frame;
+    if (frame != null && !frame.debugPlaceholder) {
+      final rig = snapshot.rig!;
+      final renderScale = rig.worldUnitsPerPixel * frame.scaleMultiplier;
+      final w = rig.canvasWidth * renderScale,
+          h = rig.canvasHeight * renderScale;
+      frameCache
+          .sprite(frame.id)
+          .render(
+            canvas,
+            position: Vector2(
+              x - w * rig.anchorX,
+              GameBalance.actorGroundY - h * rig.anchorY,
+            ),
+            size: Vector2(w, h),
+            overridePaint: snapshot.damageFlash
+                ? (Paint()
+                    ..colorFilter = const ColorFilter.mode(
+                      Color(0x99fff4d6),
+                      BlendMode.srcATop,
+                    ))
+                : null,
+          );
     } else {
-      _placeholder(canvas, x, id, elapsed, definition);
+      _procedural(canvas, x, snapshot);
     }
     final stats = hero ? simulation.stats : simulation.enemy!.stats;
     final hp = hero ? simulation.heroHp : simulation.enemy!.hp;
@@ -85,7 +73,7 @@ class ActorComponent extends Component {
     );
     _label.text = TextSpan(
       text: hero
-          ? id.replaceFirst('hero.', '')
+          ? snapshot.displayLabel.split('.').last
           : simulation.enemy!.definition.name,
       style: const TextStyle(
         fontSize: 10,
@@ -113,28 +101,18 @@ class ActorComponent extends Component {
     }
   }
 
-  void _placeholder(
-    Canvas canvas,
-    double x,
-    String id,
-    double elapsed,
-    AnimationDefinition definition,
-  ) {
-    final death = id.endsWith('.death');
-    final attack = id.endsWith('.attack');
-    final hit = id.endsWith('.hit');
-    final walk = id.endsWith('.walk');
-    final slacking = hero && simulation.idle.animationId != null;
-    final bob = walk
-        ? sin(elapsed * 12) * 2
-        : slacking
-        ? sin(elapsed * 3) * 4
-        : 0.0;
+  void _procedural(Canvas canvas, double x, PlaybackSnapshot snapshot) {
+    final elapsed = snapshot.elapsed;
+    final death = snapshot.proceduralPose == ProceduralPose.fallen;
+    final attack = snapshot.proceduralPose == ProceduralPose.striking;
+    final hit = snapshot.damageFlash;
+    final walk = snapshot.proceduralPose == ProceduralPose.moving;
+    final bob = walk ? sin(elapsed * 12) * 2 : 0.0;
     canvas.save();
     canvas.translate(x, GameBalance.actorGroundY - 1 + bob);
     if (death) {
       canvas.rotate(
-        (hero ? -1 : 1) * pi / 2 * (elapsed / definition.duration).clamp(0, 1),
+        (hero ? -1 : 1) * pi / 2 * (elapsed / snapshot.duration).clamp(0, 1),
       );
     }
     if (hit) canvas.translate(hero ? -5 : 5, 0);
@@ -165,7 +143,7 @@ class ActorComponent extends Component {
     }
     if (attack) {
       final direction = hero ? 1 : -1;
-      final thrust = sin((elapsed / definition.duration).clamp(0, 1) * pi) * 16;
+      final thrust = sin((elapsed / snapshot.duration).clamp(0, 1) * pi) * 16;
       canvas.drawLine(
         Offset(direction * 14.0, -38),
         Offset(direction * (40 + thrust), -38),
@@ -173,21 +151,6 @@ class ActorComponent extends Component {
           ..color = const Color(0xffedd898)
           ..strokeWidth = 5
           ..strokeCap = StrokeCap.round,
-      );
-    }
-    if (slacking && !death) {
-      final level = simulation.idle.level.index;
-      canvas.drawCircle(
-        Offset(-4, -65 + level * 2),
-        2,
-        Paint()..color = const Color(0xff253b48),
-      );
-      canvas.drawLine(
-        const Offset(2, -63),
-        const Offset(8, -63),
-        Paint()
-          ..color = const Color(0xff253b48)
-          ..strokeWidth = 2,
       );
     }
     canvas.restore();

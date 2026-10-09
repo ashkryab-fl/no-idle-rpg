@@ -9,7 +9,12 @@ class DebugPanel extends StatelessWidget {
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
       Text(
-        'State: ${controller.simulation.phase.name}\nIdle: ${controller.simulation.idle.level.name}\nAnimation: ${controller.simulation.heroAnimation}',
+        'State: ${controller.simulation.phase.name}\nIdle: ${controller.simulation.idle.level.name}\nAnimation: ${controller.simulation.heroAnimation}\n'
+        'Frame: ${controller.simulation.heroPlayback.frameId}\n'
+        'Graph/node: ${controller.simulation.heroPlayback.graphId} / ${controller.simulation.heroPlayback.nodeId}\n'
+        'Local time: ${controller.simulation.heroPlayback.elapsed.toStringAsFixed(3)} s\n'
+        'Transition: ${controller.simulation.heroPlayback.lastTransition?.reason.name ?? '-'}\n'
+        'Generation: ${controller.simulation.heroPlayback.generation}',
       ),
       const SizedBox(height: 12),
       Wrap(

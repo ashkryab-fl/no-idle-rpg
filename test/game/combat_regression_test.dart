@@ -84,10 +84,7 @@ void main() {
       game.advance(1 / 60);
     }
     expect(game.phase, GamePhase.reward);
-    expect(
-      game.enemyAnimationElapsed(),
-      game.animations.get(game.enemyAnimation!).duration,
-    );
+    expect(game.enemyAnimationElapsed(), game.enemyPlayback!.duration);
     game.killHero();
     game.advance(game.animations.get('hero.death').duration + .05);
     expect(game.phase, GamePhase.respawn);

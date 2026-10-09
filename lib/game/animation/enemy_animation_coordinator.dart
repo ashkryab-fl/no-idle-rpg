@@ -1,0 +1,111 @@
+import '../../content/animations/enemies/procedural_timelines.dart';
+import '../../core/animation/animation_clip.dart';
+import '../../core/animation/animation_player.dart';
+import '../../core/animation/animation_resources.dart';
+import '../../core/animation/attack_playback.dart';
+import '../../core/animation/ids.dart';
+import '../../core/animation/playback_snapshot.dart';
+
+enum EnemyAnimationRequest { idle, combat, death }
+
+final class EnemyAnimationCoordinator {
+  EnemyAnimationCoordinator(this.resources)
+    : combatPlayback = AttackPlayback(ProceduralEnemyTimelines.attack);
+  final AnimationResources resources;
+  final AttackPlayback combatPlayback;
+  AnimationPlayer? _death;
+  String? _prefix;
+  EnemyAnimationRequest _request = EnemyAnimationRequest.idle;
+  int _generation = 0;
+  double combatPeriod = 1;
+  bool get deathCompleted => _death?.completed ?? false;
+
+  void synchronize(String? prefix, EnemyAnimationRequest request) {
+    if (prefix != _prefix) {
+      _prefix = prefix;
+      _death = null;
+      combatPlayback.reset(
+        clip:
+            resources.clips[ClipId('$prefix.attack')] ??
+            ProceduralEnemyTimelines.attack,
+      );
+      _generation++;
+      _request = EnemyAnimationRequest.idle;
+    }
+    if (request == _request) return;
+    _generation++;
+    _request = request;
+    switch (request) {
+      case EnemyAnimationRequest.death:
+        _death = AnimationPlayer(
+          resources.clips[ClipId('$prefix.death')] ??
+              ProceduralEnemyTimelines.death,
+        );
+      case EnemyAnimationRequest.combat:
+        combatPlayback.reset();
+      case EnemyAnimationRequest.idle:
+        _death = null;
+    }
+  }
+
+  void advance(double dt) {
+    if (!dt.isFinite || dt < 0) throw ArgumentError.value(dt, 'dt');
+    if (_request == EnemyAnimationRequest.death) _death!.advance(dt);
+  }
+
+  PlaybackSnapshot? get snapshot {
+    if (_prefix == null) return null;
+    final attacking =
+        _request == EnemyAnimationRequest.combat &&
+        combatPlayback.attacking(combatPeriod);
+    final AnimationClipDefinition? clip =
+        _request == EnemyAnimationRequest.death
+        ? _death!.clip
+        : attacking
+        ? combatPlayback.clip
+        : null;
+    final elapsed = _request == EnemyAnimationRequest.death
+        ? _death!.elapsed
+        : attacking
+        ? combatPlayback.clipElapsed(combatPeriod)
+        : 0.0;
+    final pose = _request == EnemyAnimationRequest.death
+        ? ProceduralPose.fallen
+        : attacking
+        ? ProceduralPose.striking
+        : ProceduralPose.standing;
+    final label =
+        '$_prefix.${switch (pose) {
+          ProceduralPose.fallen => 'death',
+          ProceduralPose.striking => 'attack',
+          _ => 'idle',
+        }}';
+    if (clip != null && resources.clips.containsKey(clip.id)) {
+      return PlaybackSnapshot.atClip(
+        resources,
+        clip.id,
+        elapsed,
+        generation: _generation,
+        displayLabel: label,
+        pose: pose,
+      );
+    }
+    return PlaybackSnapshot(
+      clipId: clip?.id,
+      elapsed: elapsed,
+      duration: clip?.duration ?? 0,
+      displayLabel: label,
+      generation: _generation,
+      completed: _death?.completed ?? false,
+      proceduralPose: pose,
+    );
+  }
+
+  void reset() {
+    _prefix = null;
+    _death = null;
+    combatPlayback.reset();
+    _request = EnemyAnimationRequest.idle;
+    _generation++;
+  }
+}

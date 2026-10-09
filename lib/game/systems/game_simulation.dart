@@ -1,5 +1,8 @@
 import 'dart:math';
 import '../../core/assets/animation_catalog.dart';
+import '../../core/animation/playback_snapshot.dart';
+import '../animation/hero_animation_coordinator.dart';
+import '../animation/enemy_animation_coordinator.dart';
 import '../../core/balance/game_balance.dart';
 import '../../core/balance/progression_balance.dart';
 import '../../core/numbers/amount.dart';
@@ -36,8 +39,7 @@ class GameSimulation {
     Random? random,
     Random? idleRandom,
     AnimationCatalog? animations,
-    List<IdleAnimationDefinition> idleDefinitions =
-        IdleAnimationCatalog.definitions,
+    List<IdleAnimationDefinition>? idleDefinitions,
     CharacterProgress? character,
     ActivityStatisticsService? activity,
     GameSettings? settings,
@@ -48,12 +50,22 @@ class GameSimulation {
        activity = activity ?? ActivityStatisticsService(),
        settings = settings ?? GameSettings() {
     spawner = EnemySpawner(this.random);
-    combat = CombatSystem(this.random, this.animations);
     drops = DropSystem(this.random);
-    idle = IdleBehaviorSystem(
+    final rest = IdleBehaviorSystem(
       idleRandom ?? Random(this.random.nextInt(1 << 32)),
       this.animations,
       definitions: idleDefinitions,
+    );
+    heroAnimations = HeroAnimationCoordinator(
+      this.animations.resources,
+      rest: rest,
+    );
+    enemyAnimations = EnemyAnimationCoordinator(this.animations.resources);
+    combat = CombatSystem(
+      this.random,
+      this.animations,
+      heroPlayback: heroAnimations.combatPlayback,
+      enemyPlayback: enemyAnimations.combatPlayback,
     );
     heroHp = stats.maxHp;
     encounterRemaining = spawner.nextDistance();
@@ -70,7 +82,9 @@ class GameSimulation {
   late final EnemySpawner spawner;
   late final CombatSystem combat;
   late final DropSystem drops;
-  late final IdleBehaviorSystem idle;
+  late final HeroAnimationCoordinator heroAnimations;
+  late final EnemyAnimationCoordinator enemyAnimations;
+  IdleBehaviorSystem get idle => heroAnimations.rest;
   late Amount heroHp;
   Enemy? enemy;
   Reward? lastReward;
@@ -117,11 +131,15 @@ class GameSimulation {
   }
 
   void _tick(double dt) {
-    idle.update(dt, canRest: phase == GamePhase.traveling);
+    _synchronizeAnimations();
+    final travelTime = heroAnimations.advance(dt);
+    enemyAnimations.advance(dt);
     heroHitRemaining = max(0, heroHitRemaining - dt);
     enemyHitRemaining = max(0, enemyHitRemaining - dt);
     machine.elapsed += dt;
-    final movement = scrollSpeed * dt;
+    final movement = phase == GamePhase.traveling
+        ? GameBalance.movementSpeed * movementMultiplier * travelTime
+        : scrollSpeed * dt;
     distance += movement;
     scroll = (scroll + movement) % GameBalance.viewportWidth;
     switch (phase) {
@@ -148,21 +166,18 @@ class GameSimulation {
           events.add(VisualEvent('hit', damage: event));
           if (event.fromHero) {
             foe.hp = foe.hp - event.amount;
-            enemyHitRemaining = animations
-                .get('${foe.definition.animations}.hit')
-                .duration;
+            enemyHitRemaining = GameBalance.hitDuration;
             if (foe.hp.isZero) machine.transition(GamePhase.enemyDeath);
           } else {
             heroHp = heroHp - event.amount;
-            heroHitRemaining = animations.get('hero.hit').duration;
+            heroHitRemaining = GameBalance.hitDuration;
             if (heroHp.isZero) {
               _heroDied();
             }
           }
         }
       case GamePhase.enemyDeath:
-        if (machine.elapsed >=
-            animations.get('${enemy!.definition.animations}.death').duration) {
+        if (enemyAnimations.deathCompleted) {
           lastReward = drops.roll(enemy!, multiplier: rewardMultiplier);
           character.gold = character.gold + lastReward!.gold;
           character.books = character.books + lastReward!.books;
@@ -180,8 +195,9 @@ class GameSimulation {
       case GamePhase.reward:
         if (machine.elapsed >= GameBalance.rewardDuration) _travel();
       case GamePhase.heroDeath:
-        if (machine.elapsed >= animations.get('hero.death').duration) {
+        if (heroAnimations.deathCompleted) {
           machine.transition(GamePhase.respawn);
+          machine.elapsed = travelTime;
         }
       case GamePhase.respawn:
         if (machine.elapsed >= GameBalance.respawnDuration) {
@@ -189,11 +205,14 @@ class GameSimulation {
           _travel();
         }
     }
+    _synchronizeAnimations();
     // A renderer is optional; bound the event queue for headless simulation.
     if (events.length > 100) events.removeRange(0, events.length - 100);
   }
 
   void resetEncounter() {
+    heroAnimations.reset();
+    enemyAnimations.reset();
     enemy = null;
     lastReward = null;
     events.clear();
@@ -216,6 +235,7 @@ class GameSimulation {
     if (phase != GamePhase.traveling || isResting) return;
     enemy = spawner.spawn(enemyTier);
     machine.transition(GamePhase.enemyApproach);
+    _synchronizeAnimations();
   }
 
   void killEnemy() {
@@ -223,6 +243,7 @@ class GameSimulation {
         (phase == GamePhase.combat || phase == GamePhase.enemyApproach)) {
       enemy!.hp = Amount.zero;
       machine.transition(GamePhase.enemyDeath);
+      _synchronizeAnimations();
     }
   }
 
@@ -237,67 +258,57 @@ class GameSimulation {
     if (stage > 1) stage--;
     stageKills = 0;
     machine.transition(GamePhase.heroDeath);
+    _synchronizeAnimations();
   }
 
+  void _synchronizeAnimations() {
+    heroAnimations.combatPeriod = 1 / stats.attackSpeed;
+    heroAnimations.synchronize(switch (phase) {
+      GamePhase.heroDeath => HeroAnimationRequest.death,
+      GamePhase.respawn => HeroAnimationRequest.respawn,
+      GamePhase.combat => HeroAnimationRequest.combat,
+      GamePhase.traveling => HeroAnimationRequest.travel,
+      GamePhase.enemyApproach => HeroAnimationRequest.approach,
+      _ => HeroAnimationRequest.idle,
+    });
+    enemyAnimations.combatPeriod = enemy == null
+        ? 1
+        : 1 / enemy!.stats.attackSpeed;
+    enemyAnimations.synchronize(enemy?.definition.animations, switch (phase) {
+      GamePhase.enemyDeath || GamePhase.reward => EnemyAnimationRequest.death,
+      GamePhase.combat => EnemyAnimationRequest.combat,
+      _ => EnemyAnimationRequest.idle,
+    });
+  }
+
+  PlaybackSnapshot get heroPlayback {
+    return heroAnimations.snapshot.withDamageFlash(heroHitRemaining > 0);
+  }
+
+  PlaybackSnapshot? get enemyPlayback {
+    return enemyAnimations.snapshot?.withDamageFlash(enemyHitRemaining > 0);
+  }
+
+  // Compatibility presentation APIs. Rendering now consumes snapshots only.
   String get heroAnimation {
-    if (phase == GamePhase.heroDeath || phase == GamePhase.respawn) {
-      return 'hero.death';
-    }
-    // Stand still even before selection or when all roots are on cooldown.
-    if (isResting) return idle.animationId ?? 'hero.idle';
-    // Damage flashes over the current swing; it does not cancel the attack.
-    if (phase == GamePhase.combat && combat.attacking(true, stats, 'hero')) {
-      return 'hero.attack';
-    }
-    if (heroHitRemaining > 0) return 'hero.hit';
-    return phase == GamePhase.traveling || phase == GamePhase.enemyApproach
-        ? 'hero.walk'
-        : 'hero.idle';
+    _synchronizeAnimations();
+    return heroPlayback.displayLabel;
   }
 
   String? get enemyAnimation {
-    if (enemy == null) return null;
-    final prefix = enemy!.definition.animations;
-    if (phase == GamePhase.enemyDeath || phase == GamePhase.reward) {
-      return '$prefix.death';
-    }
-    if (enemyHitRemaining > 0) return '$prefix.hit';
-    if (phase == GamePhase.combat &&
-        combat.attacking(false, enemy!.stats, prefix)) {
-      return '$prefix.attack';
-    }
-    return '$prefix.idle';
+    _synchronizeAnimations();
+    return enemyPlayback?.displayLabel;
   }
 
   double heroAnimationElapsed() {
-    if (phase == GamePhase.respawn) {
-      return animations.get('hero.death').duration;
-    }
-    if (heroAnimation == idle.animationId) return idle.animationElapsed;
-    if (heroAnimation == 'hero.attack') {
-      return combat.attackElapsed(true, stats, 'hero');
-    }
-    if (heroAnimation == 'hero.hit') {
-      return animations.get('hero.hit').duration - heroHitRemaining;
-    }
-    return machine.elapsed;
+    _synchronizeAnimations();
+    return heroPlayback.graphId != null
+        ? idle.animationElapsed
+        : heroPlayback.elapsed;
   }
 
   double enemyAnimationElapsed() {
-    if (phase == GamePhase.reward && enemy != null) {
-      return animations.get('${enemy!.definition.animations}.death').duration;
-    }
-    if (enemyAnimation?.endsWith('.attack') ?? false) {
-      return combat.attackElapsed(
-        false,
-        enemy!.stats,
-        enemy!.definition.animations,
-      );
-    }
-    if (enemyAnimation?.endsWith('.hit') ?? false) {
-      return animations.get('${enemy!.definition.animations}.hit').duration -
-          enemyHitRemaining;
-    }
-    return machine.elapsed;
+    _synchronizeAnimations();
+    return enemyPlayback?.elapsed ?? 0;
   }
 }

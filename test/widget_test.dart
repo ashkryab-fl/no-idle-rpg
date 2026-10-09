@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:idle_companion/game/desktop_game.dart';
 import 'package:idle_companion/game/systems/game_simulation.dart';
 import 'package:idle_companion/core/assets/animation_catalog.dart';
+import 'package:idle_companion/core/animation/ids.dart';
 import 'package:idle_companion/game/components/hero/actor_component.dart';
 import 'package:idle_companion/game/components/environment/scrolling_environment.dart';
 import 'package:flame/game.dart';
@@ -116,42 +117,27 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
     container.dispose();
   });
-  testWidgets('Flame viewport starts without a hero sprite asset', (
-    tester,
-  ) async {
-    final simulation = GameSimulation(
-      random: Random(1),
-      animations: AnimationCatalog({
-        for (final definition in AnimationCatalog().definitions.values)
-          if (definition.asset != null)
-            definition.id: AnimationDefinition(
-              id: definition.id,
+  testWidgets(
+    'missing declared sprite fails loading instead of using a placeholder',
+    (tester) async {
+      final game = DesktopGame(
+        GameSimulation(
+          random: Random(1),
+          animations: AnimationCatalog({
+            'hero.walk': const AnimationDefinition(
+              id: 'hero.walk',
               asset: 'assets/characters/hero/missing.png',
-              loop: definition.loop,
+              loop: true,
             ),
-      }),
-    );
-    final game = DesktopGame(simulation);
-    await tester.runAsync(() async {
-      game.images.prefix = '';
-      await preloadEnvironment(game);
-    });
-    await tester.pumpWidget(
-      MaterialApp(
-        home: SizedBox(width: 400, height: 190, child: GameWidget(game: game)),
-      ),
-    );
-    await tester.runAsync(() async {
-      await game.loaded;
-    });
-    await tester.pump(const Duration(milliseconds: 100));
-    await tester.runAsync(() => game.ready());
-    expect(game.isLoaded, isTrue);
-    final actor = game.children.whereType<ActorComponent>().first;
-    expect(actor.animationSprites, isEmpty);
-    expect(tester.takeException(), isNull);
-    await tester.pumpWidget(const SizedBox.shrink());
-  });
+          }),
+        ),
+      );
+      await tester.runAsync(
+        () => expectLater(game.onLoad(), throwsArgumentError),
+      );
+      expect(game.children.whereType<ActorComponent>(), isEmpty);
+    },
+  );
   testWidgets('Flame loads heroine walk, attack, death and combat guard', (
     tester,
   ) async {
@@ -180,65 +166,52 @@ void main() {
       2172,
       2171,
     ]);
-    final walk = actor.animationSprites['hero.walk']!;
+    final resources = game.simulation.animations.resources;
+    final cache = actor.frameCache;
+    final walk = resources.clip(const ClipId('hero.walk'));
     expect(walk.frames, hasLength(10));
-    expect(walk.loop, isTrue);
     for (var index = 0; index < walk.frames.length; index++) {
-      final frame = walk.frames[index];
-      expect(frame.stepTime, .125);
-      expect(frame.sprite.srcPosition.x, index * 512);
-      expect(frame.sprite.srcPosition.y, 0);
-      expect(frame.sprite.srcSize.x, 512);
-      expect(frame.sprite.srcSize.y, 512);
-      expect(frame.sprite.image.width, 5120);
-      expect(frame.sprite.image.height, 512);
+      final sprite = cache.sprite(walk.frames[index].frameId);
+      expect(sprite.srcPosition.x, index * 512);
+      expect(sprite.srcPosition.y, 0);
+      expect(sprite.srcSize.x, 512);
+      expect(sprite.srcSize.y, 512);
+      expect(sprite.image.width, 5120);
+      expect(sprite.image.height, 512);
     }
-    final attack = actor.animationSprites['hero.attack']!;
-    expect(attack.frames, hasLength(4));
-    expect(attack.loop, isFalse);
-    for (var index = 0; index < attack.frames.length; index++) {
-      final frame = attack.frames[index];
-      expect(frame.stepTime, .15);
-      expect(frame.sprite.srcPosition.x, index * 512);
-      expect(frame.sprite.srcPosition.y, 0);
-      expect(frame.sprite.srcSize.x, 512);
-      expect(frame.sprite.srcSize.y, 512);
-      expect(frame.sprite.image.width, 2048);
-      expect(frame.sprite.image.height, 512);
+    for (final (id, count, sheetWidth) in [
+      ('hero.attack', 4, 2048),
+      ('hero.death', 4, 2048),
+      ('hero.standUp', 6, 3072),
+    ]) {
+      final clip = resources.clip(ClipId(id));
+      expect(clip.frames, hasLength(count));
+      for (var index = 0; index < count; index++) {
+        final sprite = cache.sprite(clip.frames[index].frameId);
+        expect(sprite.srcPosition.x, index * 512);
+        expect(sprite.srcPosition.y, 0);
+        expect(sprite.srcSize.x, 512);
+        expect(sprite.srcSize.y, 512);
+        expect(sprite.image.width, sheetWidth);
+        expect(sprite.image.height, 512);
+      }
     }
-    final guard = actor.animationSprites['hero.idle']!;
-    expect(guard.frames, hasLength(1));
-    expect(guard.loop, isTrue);
-    expect(guard.frames.single.sprite.srcSize.x, 512);
-    expect(guard.frames.single.sprite.srcSize.y, 512);
-    expect(guard.frames.single.sprite.image.width, 512);
-    expect(guard.frames.single.sprite.image.height, 512);
-    final death = actor.animationSprites['hero.death']!;
-    expect(death.frames, hasLength(4));
-    expect(death.loop, isFalse);
-    for (var index = 0; index < death.frames.length; index++) {
-      final frame = death.frames[index];
-      expect(frame.stepTime, .4);
-      expect(frame.sprite.srcPosition.x, index * 512);
-      expect(frame.sprite.srcPosition.y, 0);
-      expect(frame.sprite.srcSize.x, 512);
-      expect(frame.sprite.srcSize.y, 512);
-      expect(frame.sprite.image.width, 2048);
-      expect(frame.sprite.image.height, 512);
-    }
-    final sitDown = actor.animationSprites['hero.sitDown']!;
-    expect(sitDown.frames, hasLength(4));
-    expect(sitDown.loop, isFalse);
-    expect(sitDown.frames.first.stepTime, .3);
-    expect(sitDown.frames.first.sprite.image.width, 2048);
-    final seated = actor.animationSprites['hero.seated']!;
-    expect(seated.frames, hasLength(1));
-    expect(seated.frames.single.sprite.image.width, 512);
-    final sharpen = actor.animationSprites['hero.sharpen']!;
-    expect(sharpen.frames, hasLength(5));
-    expect(sharpen.loop, isTrue);
-    expect(sharpen.frames.first.stepTime, .225);
-    expect(sharpen.frames.first.sprite.image.width, 2560);
+    final guard = cache.sprite(
+      resources.clip(const ClipId('hero.idle')).frames.single.frameId,
+    );
+    expect(guard.image.width, 512);
+    expect(guard.image.height, 512);
+    final seated = cache.sprite(resources.pose(PoseId.seatedNeutral).frameId);
+    final sit = resources.clip(const ClipId('hero.sitDown'));
+    final sharpen = resources.clip(const ClipId('hero.sharpen'));
+    expect(identical(cache.sprite(sit.frames.last.frameId), seated), isTrue);
+    expect(
+      identical(cache.sprite(sharpen.frames.first.frameId), seated),
+      isTrue,
+    );
+    expect(seated.image.width, 512);
+    expect(cache.sprite(sharpen.frames[1].frameId).image.width, 2560);
+    expect(cache.sprite(sit.frames.first.frameId).image.width, 2048);
     // Render real sprite pixels across the end hold. The earlier renderer
     // wrapped every idle sprite here and replayed the standing entry frame.
     game.suspended = true;

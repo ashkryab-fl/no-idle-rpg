@@ -1,4 +1,8 @@
 import 'dart:math';
+import '../../content/animations/enemies/procedural_timelines.dart';
+import '../../core/animation/animation_clip.dart';
+import '../../core/animation/attack_playback.dart';
+import '../../core/animation/ids.dart';
 import '../../core/assets/animation_catalog.dart';
 import '../../core/numbers/amount.dart';
 import '../../domain/character/character.dart';
@@ -15,31 +19,22 @@ class DamageEvent {
   final double timeWithinStep;
 }
 
-/// Time within the current attack cycle, rather than time since combat began.
-/// A speed change preserves cycle progress without replaying historic hits.
-class AttackClock {
-  double elapsed = 0;
-  double? period;
-  bool damageEmitted = false;
-  void reset() {
-    elapsed = 0;
-    period = null;
-    damageEmitted = false;
-  }
-
-  double elapsedFor(double nextPeriod) =>
-      period == null ? elapsed : elapsed * nextPeriod / period!;
-  void setPeriod(double nextPeriod) {
-    elapsed = elapsedFor(nextPeriod);
-    period = nextPeriod;
-  }
-}
-
 class CombatSystem {
-  CombatSystem(this.random, this.animations);
+  CombatSystem(
+    this.random,
+    this.animations, {
+    AttackPlayback? heroPlayback,
+    AttackPlayback? enemyPlayback,
+  }) : heroClock =
+           heroPlayback ??
+           AttackPlayback(
+             animations.resources.clip(const ClipId('hero.attack')),
+           ),
+       enemyClock =
+           enemyPlayback ?? AttackPlayback(ProceduralEnemyTimelines.attack);
   final Random random;
   final AnimationCatalog animations;
-  final heroClock = AttackClock(), enemyClock = AttackClock();
+  final AttackPlayback heroClock, enemyClock;
   void reset() {
     heroClock.reset();
     enemyClock.reset();
@@ -64,15 +59,11 @@ class CombatSystem {
 
   double cycleDuration(CombatStats stats, String prefix) =>
       1 / stats.attackSpeed;
-  double attackElapsed(bool hero, CombatStats stats, String prefix) {
-    final period = cycleDuration(stats, prefix);
-    return (hero ? heroClock : enemyClock).elapsedFor(period) *
-        max(1, animations.get('$prefix.attack').duration / period);
-  }
+  double attackElapsed(bool hero, CombatStats stats, String prefix) =>
+      (hero ? heroClock : enemyClock).clipElapsed(cycleDuration(stats, prefix));
 
   bool attacking(bool hero, CombatStats stats, String prefix) =>
-      attackElapsed(hero, stats, prefix) <
-      animations.get('$prefix.attack').duration;
+      (hero ? heroClock : enemyClock).attacking(cycleDuration(stats, prefix));
   List<DamageEvent> update(
     double dt,
     CombatStats hero,
@@ -86,40 +77,23 @@ class CombatSystem {
       (heroClock, hero, 'hero', true),
       (enemyClock, enemy, enemyPrefix, false),
     ]) {
-      final definition = animations.get('${item.$3}.attack');
-      final period = cycleDuration(item.$2, item.$3);
-      if (!period.isFinite || period <= 0) {
-        throw ArgumentError('Attack speed must be positive and finite');
-      }
-      final hitTime =
-          (definition.damageEventTime ?? 0) *
-          min(1, period / definition.duration);
-      final clock = item.$1..setPeriod(period);
-      var remaining = dt, consumed = 0.0;
-      while (remaining > 1e-12) {
-        final boundary = clock.damageEmitted ? period : hitTime;
-        final toBoundary = max(0.0, boundary - clock.elapsed);
-        if (toBoundary > remaining + 1e-12) {
-          clock.elapsed += remaining;
-          break;
-        }
-        remaining = max(0.0, remaining - toBoundary);
-        consumed += toBoundary;
-        clock.elapsed = boundary;
-        if (!clock.damageEmitted) {
-          clock.damageEmitted = true;
-          events.add(
-            calculate(
-              item.$2,
-              item.$4,
-              multiplier: item.$4 ? multiplier : 1,
-              timeWithinStep: consumed,
-            ),
-          );
-        } else {
-          clock.elapsed = 0;
-          clock.damageEmitted = false;
-        }
+      final clip =
+          animations.resources.clips[ClipId('${item.$3}.attack')] ??
+          ProceduralEnemyTimelines.attack;
+      if (item.$1.clip != clip) item.$1.reset(clip: clip);
+      for (final marker in item.$1.advance(
+        dt,
+        cycleDuration(item.$2, item.$3),
+      )) {
+        if (marker.marker.kind != AnimationMarkerKind.damage) continue;
+        events.add(
+          calculate(
+            item.$2,
+            item.$4,
+            multiplier: item.$4 ? multiplier : 1,
+            timeWithinStep: marker.timeWithinStep,
+          ),
+        );
       }
     }
     events.sort((a, b) {

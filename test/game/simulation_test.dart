@@ -1,6 +1,6 @@
+import '../helpers/animation_fakes.dart';
 import 'dart:math';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:idle_companion/core/assets/animation_catalog.dart';
 import 'package:idle_companion/core/numbers/amount.dart';
 import 'package:idle_companion/domain/activity/idle_animation.dart';
 import 'package:idle_companion/domain/character/character.dart';
@@ -13,7 +13,10 @@ import 'package:idle_companion/game/systems/game_state_machine.dart';
 void main() {
   for (final idleSeconds in [30.0, 120.0, 300.0]) {
     test('rest at $idleSeconds seconds stops adventure progress', () {
-      final game = GameSimulation(random: Random(1));
+      final game = GameSimulation(
+        animations: legacyTestAnimations(),
+        random: Random(1),
+      );
       game.advance(1);
       final distance = game.distance;
       final scroll = game.scroll;
@@ -42,6 +45,7 @@ void main() {
   }
   test('spawns resume only after rest and the caught animation finish', () {
     final game = GameSimulation(
+      animations: legacyTestAnimations(),
       random: Random(1),
       idleDefinitions: const [
         IdleAnimationDefinition(
@@ -75,9 +79,9 @@ void main() {
       expect(game.enemy, isNull);
       expect(game.distance, distance);
       expect(game.scroll, scroll);
-      if (game.idle.animationId == 'hero.caught') break;
+      if (game.idle.animationId == 'hero.idle') break;
     }
-    expect(game.idle.animationId, 'hero.caught');
+    expect(game.idle.animationId, 'hero.idle');
     game.spawnEnemy();
     expect(game.enemy, isNull);
     game.advance(.1);
@@ -93,7 +97,10 @@ void main() {
     expect(game.isResting, false);
   });
   test('rest animations wait for the existing encounter and rewards', () {
-    final game = GameSimulation(random: Random(1));
+    final game = GameSimulation(
+      animations: legacyTestAnimations(),
+      random: Random(1),
+    );
     game.spawnEnemy();
     final enemy = game.enemy;
     game.idle.setIdleSeconds(300);
@@ -125,6 +132,7 @@ void main() {
   });
   test('rest cooldown gaps remain stationary until user activity returns', () {
     final game = GameSimulation(
+      animations: legacyTestAnimations(),
       random: Random(1),
       idleDefinitions: const [
         IdleAnimationDefinition(
@@ -153,7 +161,10 @@ void main() {
     expect(game.encounterRemaining, lessThan(encounterDistance));
   });
   test('returning during combat cancels the pending rest', () {
-    final game = GameSimulation(random: Random(1));
+    final game = GameSimulation(
+      animations: legacyTestAnimations(),
+      random: Random(1),
+    );
     game.spawnEnemy();
     game.idle.setIdleSeconds(300);
     game.advance(1.2);
@@ -169,7 +180,10 @@ void main() {
     expect(game.distance, greaterThan(distance));
   });
   test('death and respawn finish before rest resumes', () {
-    final game = GameSimulation(random: Random(1));
+    final game = GameSimulation(
+      animations: legacyTestAnimations(),
+      random: Random(1),
+    );
     game.idle.setIdleSeconds(300);
     game.advance(.1);
     game.killHero();
@@ -184,7 +198,10 @@ void main() {
     expect(game.heroHp.ratio(game.stats.maxHp), closeTo(1, 1e-8));
   });
   test('invalid frame deltas cannot poison the simulation accumulator', () {
-    final game = GameSimulation(random: Random(1));
+    final game = GameSimulation(
+      animations: legacyTestAnimations(),
+      random: Random(1),
+    );
     for (final dt in [double.nan, double.infinity, -1.0, 20.0]) {
       game.advance(dt);
     }
@@ -200,7 +217,7 @@ void main() {
     critDamage: 2,
   );
   test('critical calculation and damage event timing', () {
-    final combat = CombatSystem(Random(1), AnimationCatalog());
+    final combat = CombatSystem(Random(1), legacyTestAnimations());
     expect(
       combat.calculate(stats(1), true).amount.toDouble(),
       closeTo(20, 1e-8),
@@ -217,7 +234,7 @@ void main() {
       critChance: 0,
       critDamage: 1,
     );
-    final combat = CombatSystem(Random(1), AnimationCatalog());
+    final combat = CombatSystem(Random(1), legacyTestAnimations());
     expect(combat.update(1, fast, fast, 'slime', 1).length, 10);
   });
   test('enemy HP, damage and gold scale exponentially', () {
@@ -261,7 +278,10 @@ void main() {
     },
   );
   test('vertical slice travels, fights, rewards, continues and respawns', () {
-    final game = GameSimulation(random: Random(3));
+    final game = GameSimulation(
+      animations: legacyTestAnimations(),
+      random: Random(3),
+    );
     for (var i = 0; i < 1200; i++) {
       game.advance(1 / 30);
     }
@@ -277,8 +297,14 @@ void main() {
     expect(game.heroHp.ratio(game.stats.maxHp), closeTo(1, 1e-8));
   });
   test('fixed-step outcomes match across refresh rates', () {
-    final a = GameSimulation(random: Random(9)),
-        b = GameSimulation(random: Random(9));
+    final a = GameSimulation(
+          animations: legacyTestAnimations(),
+          random: Random(9),
+        ),
+        b = GameSimulation(
+          animations: legacyTestAnimations(),
+          random: Random(9),
+        );
     for (var i = 0; i < 3600; i++) {
       a.advance(1 / 60);
     }

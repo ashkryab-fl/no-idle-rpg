@@ -8,11 +8,13 @@ import 'components/hero/actor_component.dart';
 import 'components/enemies/enemy_component.dart';
 import 'components/effects/combat_effect.dart';
 import 'systems/game_simulation.dart';
+import 'animation/flame_sprite_frame_cache.dart';
 import '../core/assets/animation_catalog.dart';
 
 class DesktopGame extends FlameGame {
   DesktopGame(this.simulation);
   final GameSimulation simulation;
+  late final FlameSpriteFrameCache frameCache;
   async.Timer? _frameTimer;
   final _clock = Stopwatch();
   int _lastMicroseconds = 0;
@@ -22,25 +24,10 @@ class DesktopGame extends FlameGame {
   @override
   Future<void> onLoad() async {
     images.prefix = '';
-    final loaded = <String, SpriteAnimation>{};
     final manifest = await AssetManifest.loadFromAssetBundle(rootBundle);
     final bundled = manifest.listAssets().toSet();
-    for (final d in simulation.animations.definitions.values) {
-      if (d.asset == null || !bundled.contains(d.asset)) continue;
-      try {
-        loaded[d.id] = await loadSpriteAnimation(
-          d.asset!,
-          SpriteAnimationData.sequenced(
-            amount: d.frames,
-            stepTime: d.stepTime,
-            textureSize: Vector2(d.frameWidth, d.frameHeight),
-            loop: d.loop,
-          ),
-        );
-      } catch (error) {
-        debugPrint('Animation ${d.id} uses placeholder: $error');
-      }
-    }
+    frameCache = FlameSpriteFrameCache(simulation.animations.resources, images);
+    await frameCache.load(bundled);
     final backgrounds = <Sprite>[];
     for (final asset in AssetCatalog.backgrounds) {
       if (!bundled.contains(asset)) continue;
@@ -64,8 +51,8 @@ class DesktopGame extends FlameGame {
     }
     await addAll([
       ScrollingEnvironment(simulation, sprites: backgrounds, road: road),
-      ActorComponent(simulation, loaded, hero: true),
-      EnemyComponent(simulation, loaded),
+      ActorComponent(simulation, frameCache, hero: true),
+      EnemyComponent(simulation, frameCache),
     ]);
   }
 
