@@ -66,6 +66,7 @@ flutter:
     - assets/characters/hero/sit_down.png
     - assets/characters/hero/seated.png
     - assets/characters/hero/sharpen.png
+    - assets/characters/hero/stand_up.png
     - assets/environment/background_meadow_01.png
     - assets/environment/background_stream_02.png
     - assets/environment/background_wheat_03.png
