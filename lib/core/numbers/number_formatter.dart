@@ -8,12 +8,12 @@ abstract final class NumberFormatter {
     'M',
     'B',
     'T',
-    'Qa',
-    'Qi',
-    'Sx',
-    'Sp',
-    'Oc',
-    'No',
+    'aa',
+    'ab',
+    'ac',
+    'ba',
+    'bb',
+    'bc',
   ];
   static String amount(Amount value) {
     if (value.isZero) return '0';
