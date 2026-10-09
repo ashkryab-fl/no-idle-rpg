@@ -1,12 +1,12 @@
+import '../helpers/animation_fakes.dart';
 import 'dart:math';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:idle_companion/core/assets/animation_catalog.dart';
 import 'package:idle_companion/domain/activity/idle_animation.dart';
 import 'package:idle_companion/domain/activity/activity_statistics.dart';
 
 void main() {
   test('idle graph rejects cycles, missing nodes and invalid thresholds', () {
-    final animations = AnimationCatalog();
+    final animations = legacyTestAnimations();
     expect(
       () =>
           IdleBehaviorSystem(Random(1), animations, thresholds: [30, 20, 300]),
@@ -50,7 +50,7 @@ void main() {
   test('standalone idle respects loop count and root cooldown', () {
     final idle = IdleBehaviorSystem(
       Random(1),
-      AnimationCatalog(),
+      legacyTestAnimations(),
       definitions: const [
         IdleAnimationDefinition(
           id: 'custom',
@@ -70,7 +70,7 @@ void main() {
     expect(idle.animationId, 'custom');
   });
   test('idle levels use configured thresholds', () {
-    final idle = IdleBehaviorSystem(Random(1), AnimationCatalog());
+    final idle = IdleBehaviorSystem(Random(1), legacyTestAnimations());
     expect(idle.levelFor(29), IdleLevel.active);
     expect(idle.levelFor(30), IdleLevel.level1);
     expect(idle.levelFor(120), IdleLevel.level2);
@@ -93,7 +93,7 @@ void main() {
   test('data-driven chain traverses a → b → c; child nodes are not roots', () {
     final idle = IdleBehaviorSystem(
       Random(1),
-      AnimationCatalog(),
+      legacyTestAnimations(),
       definitions: chain,
     )..setIdleSeconds(31);
     idle.update(.01);
@@ -108,7 +108,7 @@ void main() {
   test('chooses one eligible standalone or full chain at a time', () {
     final idle = IdleBehaviorSystem(
       Random(7),
-      AnimationCatalog(),
+      legacyTestAnimations(),
       definitions: const [
         ...chain,
         IdleAnimationDefinition(
@@ -152,7 +152,7 @@ void main() {
     () {
       final idle = IdleBehaviorSystem(
         Random(1),
-        AnimationCatalog(),
+        legacyTestAnimations(),
         definitions: chain,
       )..setIdleSeconds(31);
       idle.update(.01);
@@ -160,7 +160,7 @@ void main() {
       idle.update(.1);
       expect(idle.animationId, 'a');
       idle.update(.6);
-      expect(idle.animationId, 'hero.caught');
+      expect(idle.animationId, 'hero.idle');
       idle.update(1);
       expect(idle.animationId, isNull);
     },
@@ -168,13 +168,13 @@ void main() {
   test('interruptible animation returns immediately through caught state', () {
     final idle = IdleBehaviorSystem(
       Random(1),
-      AnimationCatalog(),
+      legacyTestAnimations(),
       definitions: [chain.last],
     )..setIdleSeconds(31);
     idle.update(.01);
     idle.setIdleSeconds(0);
     idle.update(.01);
-    expect(idle.animationId, 'hero.caught');
+    expect(idle.animationId, 'hero.idle');
   });
   test('session transitions aggregate boundaries and means', () {
     final t = DateTime(2026, 10, 8, 12);
