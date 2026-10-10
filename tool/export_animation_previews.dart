@@ -73,7 +73,12 @@ void main() {
     for (var i = 0; i < 4; i++) step('death', i, i == 3 ? 1 : .4),
   ]);
   preview('sit_down_v1', 'sit-down', sit);
-  preview('sharpen_v1', 'sharpen', clip('sharpen', loopOnly: true));
+  preview(
+    'sharpen_v1',
+    'sharpen',
+    clip('sharpen', loopOnly: true),
+    contact: true,
+  );
   preview('sharpen_v1', '../sit_down_v1/rest', [
     ...sit,
     ...clip('sharpen'),
@@ -82,7 +87,7 @@ void main() {
   ]);
   preview('stand_up_v1', 'stand-up', stand);
   preview('stand_up_v1', 'wake-to-walk', [
-    step('sharpen', 4),
+    step('sharpen', 7),
     neutral,
     ...stand,
     ...walk,

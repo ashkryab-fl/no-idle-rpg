@@ -108,7 +108,7 @@ abstract final class HeroClips {
       spriteSheetResources(
         id: ClipId('hero.sharpen'),
         asset: '${heroRoot}sharpen.png',
-        frames: 5,
+        frames: 9,
         frameWidth: 512,
         frameHeight: 512,
         stepTime: .225,
@@ -197,7 +197,7 @@ abstract final class HeroClips {
       clips[sharpenCleanup] = AnimationClipDefinition(
         id: sharpenCleanup,
         frames: [
-          for (final index in [4, 3, 1, 0])
+          for (final index in [7, 6, 5, 0])
             ClipFrameDefinition(sharpen.frames[index].frameId, .15),
         ],
         entryPose: const AnimationPoseContract.family(PoseFamilyId.seated),

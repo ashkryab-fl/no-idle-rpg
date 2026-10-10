@@ -104,7 +104,7 @@ void main() {
       isTrue,
     );
     expect(seated.image.width, 512);
-    expect(cache.sprite(sharpen.frames[1].frameId).image.width, 2560);
+    expect(cache.sprite(sharpen.frames[1].frameId).image.width, 4608);
     expect(cache.sprite(sit.frames.first.frameId).image.width, 2048);
     // Render real sprite pixels across the end hold. The earlier renderer
     // wrapped every idle sprite here and replayed the standing entry frame.

@@ -121,7 +121,13 @@ void main() {
     expect(playback.snapshot.nodeId, HeroRestGraphs.sharpen);
     expect(playback.snapshot.frameIndex, 0);
     playback.advance(8);
-    expect(playback.snapshot.frameIndex, inInclusiveRange(1, 4));
+    expect(
+      playback.snapshot.frameIndex,
+      inInclusiveRange(
+        1,
+        resources.clip(const ClipId('hero.sharpen')).frames.length - 1,
+      ),
+    );
     playback.signal(GraphSignalId.activityReturned);
     playback.advance(0);
     expect(playback.snapshot.nodeId, HeroRestGraphs.exitHold);
@@ -179,6 +185,8 @@ void main() {
 
   for (final policy in InterruptionPolicy.values) {
     test('$policy respects the current finite clip/cycle and carries dt', () {
+      final resources = defaultAnimationResources();
+      final clip = resources.clip(const ClipId('hero.sharpen'));
       final playback = runner(
         graph([
           PlayClip(
@@ -190,17 +198,19 @@ void main() {
           ),
           HoldPose(id: wait, poseId: PoseId.seatedNeutral),
         ]),
+        resources: resources,
       );
       playback.advance(.5);
       playback.signal(GraphSignalId.activityReturned);
-      playback.advance(4);
+      final available = clip.firstPassDuration + 2 * clip.loopDuration;
+      playback.advance(available);
       final delay = switch (policy) {
         InterruptionPolicy.immediate => 0.0,
-        InterruptionPolicy.afterCycle => .625,
-        InterruptionPolicy.afterClip => 2.425,
+        InterruptionPolicy.afterCycle => clip.firstPassDuration - .5,
+        InterruptionPolicy.afterClip => available - .5,
       };
       expect(playback.snapshot.nodeId, wait);
-      expect(playback.snapshot.nodeElapsed, closeTo(4 - delay, 1e-9));
+      expect(playback.snapshot.nodeElapsed, closeTo(available - delay, 1e-9));
     });
   }
 

@@ -15,9 +15,12 @@ encounter, and stops movement, scroll and enemy spawning.
 - `assets/characters/hero/sit_down.png`: four horizontal 512×512 frames,
   non-looping, 0.3 s/frame, then an additional 0.5 s hold. The last frame is
   visible for 0.8 s before the continuation begins.
-- `assets/characters/hero/sharpen.png`: five horizontal 512×512 frames,
+- `assets/characters/hero/sharpen.png`: nine horizontal 512×512 frames,
   0.225 s/frame. Frame 0 is the shared seated pose, played once on entry.
-  Frames 1–4 repeat in a 0.9 s cycle: center, left, center, right.
+  Frames 1–8 repeat in a 1.8 s cycle: center, left intermediate, left,
+  left intermediate, center, right intermediate, right, right intermediate.
+  Head, knees and stationary sword pixels come from one shared seated base;
+  each generated intermediate is reused on both directions of its stroke.
 
 The PNG files for sit-down frame 3, sharpening frame 0 and static seated pose
 are copied **byte-for-byte** from `reference.png`. All three metadata entries
@@ -73,7 +76,7 @@ reimplement clip clocks. Returning during a wait still takes the normal exit.
 
 The default entry lasts 4 × 0.3 s plus a 0.5 s shared HoldPose. Returning during
 entry queues activityReturned until both complete. Ordinary sharpening interrupts
-immediately; its 0.225 s neutral intro plays once, then frames 1–4 loop every 0.9 s.
+immediately; its 0.225 s neutral intro plays once, then frames 1–8 loop every 1.8 s.
 Return goes through a separate 0.3 s neutral HoldPose, stand-up Select,
 6 × 0.25 s PlayClip and Finish(readyToTravel). Neutral is outside those six frames.
 Duplicate returns do not restart exit; new inactivity finishes standing before a

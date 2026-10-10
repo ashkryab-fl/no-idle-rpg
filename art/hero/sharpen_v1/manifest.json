@@ -1,13 +1,17 @@
 {
-  "source": "source-sheet.png",
+  "source": "aligned_sources/center.png",
   "size": 512,
-  "scale": 0.49,
+  "scale": 1,
   "frames": [
     {"copy": "../seated_v1/reference.png"},
-    {"crop": [627, 0, 627, 627], "offset": [107, 156]},
-    {"crop": [0, 627, 627, 627], "offset": [85, 182]},
-    {"crop": [627, 0, 627, 627], "offset": [107, 156]},
-    {"crop": [627, 627, 627, 627], "offset": [107, 181]}
+    {"source": "aligned_sources/center.png"},
+    {"source": "aligned_sources/left-mid.png"},
+    {"source": "aligned_sources/left.png"},
+    {"source": "aligned_sources/left-mid.png"},
+    {"source": "aligned_sources/center.png"},
+    {"source": "aligned_sources/right-mid.png"},
+    {"source": "aligned_sources/right.png"},
+    {"source": "aligned_sources/right-mid.png"}
   ],
   "output": "assets/characters/hero/sharpen.png",
   "copies": ["art/hero/sharpen_v1/sharpen.png"]

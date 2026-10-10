@@ -97,7 +97,12 @@ void main() {
       final distance = game.distance;
       game.idle.setIdleSeconds(0);
       final observed = <ClipId?>{};
-      for (var i = 0; i < 200 && game.isResting; i++) {
+      final exitBudget =
+          demo.clip(HeroClips.sharpenSlow).firstPassDuration +
+          cleanup.duration +
+          demo.clip(HeroClips.standCareful).duration +
+          1;
+      for (var i = 0; i < (exitBudget * 30).ceil() && game.isResting; i++) {
         observed.add(game.heroPlayback.clipId);
         game.spawnEnemy();
         expect(game.enemy, isNull);
