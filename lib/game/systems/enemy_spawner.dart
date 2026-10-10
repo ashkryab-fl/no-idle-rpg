@@ -1,5 +1,5 @@
 import 'dart:math';
-import '../../content/animations/enemies/procedural_timelines.dart';
+import '../../content/animations/enemies/goblin_clips.dart';
 import '../../core/animation/enemy_animation_content.dart';
 import '../../core/balance/game_balance.dart';
 import '../../core/balance/progression_balance.dart';
@@ -39,37 +39,16 @@ class EnemyDefinition {
 abstract final class EnemyCatalog {
   static final definitions = List<EnemyDefinition>.unmodifiable([
     EnemyDefinition(
-      id: 'slime',
-      name: 'Moss slime',
+      id: 'gobli_low',
+      name: 'Goblin',
+      // Start with the existing low-tier combat and reward baseline.
       baseHp: ProgressionBalance.slimeHp,
       baseDamage: ProgressionBalance.slimeDamage,
       attackSpeed: ProgressionBalance.slimeAttackSpeed,
       rewardGold: ProgressionBalance.slimeGold,
       rewardXp: ProgressionBalance.slimeXp,
       difficultyWeight: ProgressionBalance.slimeWeight,
-      animations: ProceduralEnemyTimelines.content,
-    ),
-    EnemyDefinition(
-      id: 'sentinel',
-      name: 'Stone sentinel',
-      baseHp: ProgressionBalance.sentinelHp,
-      baseDamage: ProgressionBalance.sentinelDamage,
-      attackSpeed: ProgressionBalance.sentinelAttackSpeed,
-      rewardGold: ProgressionBalance.sentinelGold,
-      rewardXp: ProgressionBalance.sentinelXp,
-      animations: ProceduralEnemyTimelines.content,
-      difficultyWeight: ProgressionBalance.sentinelWeight,
-    ),
-    EnemyDefinition(
-      id: 'wisp',
-      name: 'Lost wisp',
-      baseHp: ProgressionBalance.wispHp,
-      baseDamage: ProgressionBalance.wispDamage,
-      attackSpeed: ProgressionBalance.wispAttackSpeed,
-      rewardGold: ProgressionBalance.wispGold,
-      rewardXp: ProgressionBalance.wispXp,
-      animations: ProceduralEnemyTimelines.content,
-      difficultyWeight: ProgressionBalance.wispWeight,
+      animations: GoblinClips.content,
     ),
   ]);
 }

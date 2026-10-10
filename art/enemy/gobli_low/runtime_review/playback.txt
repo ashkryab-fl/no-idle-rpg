@@ -1,0 +1,6 @@
+01-approach-start phase=enemyApproach clip=enemy.gobliLow.idle cell=0 distance=0.000 enemyX=386.000
+02-approach-guard phase=enemyApproach clip=enemy.gobliLow.idle cell=0 distance=125.333 enemyX=260.667
+03-attack phase=combat clip=enemy.gobliLow.attack cell=2 distance=132.000 enemyX=254.000
+04-knife-extended phase=combat clip=enemy.gobliLow.attack cell=4 distance=132.000 enemyX=254.000
+05-between-attacks phase=combat clip=enemy.gobliLow.idle cell=0 distance=132.000 enemyX=254.000
+06-death-fade phase=enemyDeath clip=enemy.gobliLow.death cell=0 distance=132.000 enemyX=254.000

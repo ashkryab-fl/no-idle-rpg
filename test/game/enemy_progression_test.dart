@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:idle_companion/core/balance/game_balance.dart';
 import 'package:idle_companion/core/balance/progression_balance.dart';
 import 'package:idle_companion/core/numbers/amount.dart';
 import 'package:idle_companion/game/systems/game_simulation.dart';
@@ -50,7 +51,7 @@ void main() {
         final xp = game.character.xp;
         final books = game.character.books;
         game.spawnEnemy();
-        game.advance(1.2);
+        game.advance(GameBalance.approachDuration + .1);
         game.heroHp = Amount.one;
         game.advance(.4);
         expect(game.phase, GamePhase.heroDeath);

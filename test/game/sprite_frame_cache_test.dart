@@ -26,42 +26,45 @@ class TrackingImages extends Images {
 }
 
 void main() {
-  testWidgets(
-    'content variants reuse the eight installed PNGs and cleanup pose',
-    (tester) async {
-      final resources = demoAnimationResources();
-      final images = TrackingImages();
-      final cache = FlameSpriteFrameCache(resources, images);
-      await tester.runAsync(() async {
-        final manifest = await AssetManifest.loadFromAssetBundle(rootBundle);
-        await cache.load(manifest.listAssets().toSet());
-      });
-      expect(images.requests.toSet(), hasLength(8));
-      expect(images.requests, hasLength(8));
-      final neutral = cache.sprite(
-        resources.pose(PoseId.seatedNeutral).frameId,
-      );
-      expect(
-        identical(
-          cache.sprite(
-            resources.clip(HeroClips.sharpenSlow).frames.first.frameId,
-          ),
-          neutral,
+  testWidgets('content variants reuse installed PNGs and cleanup pose', (
+    tester,
+  ) async {
+    final resources = demoAnimationResources();
+    final images = TrackingImages();
+    final cache = FlameSpriteFrameCache(resources, images);
+    await tester.runAsync(() async {
+      final manifest = await AssetManifest.loadFromAssetBundle(rootBundle);
+      await cache.load(manifest.listAssets().toSet());
+    });
+    expect(images.requests.toSet(), hasLength(9));
+    expect(images.requests, hasLength(9));
+    expect(
+      images.requests.where(
+        (path) => path == 'assets/enemies/gobli_low/attack.png',
+      ),
+      hasLength(1),
+    );
+    final neutral = cache.sprite(resources.pose(PoseId.seatedNeutral).frameId);
+    expect(
+      identical(
+        cache.sprite(
+          resources.clip(HeroClips.sharpenSlow).frames.first.frameId,
         ),
-        true,
-      );
-      expect(
-        identical(
-          cache.sprite(
-            resources.clip(HeroClips.sharpenCleanup).frames.last.frameId,
-          ),
-          neutral,
+        neutral,
+      ),
+      true,
+    );
+    expect(
+      identical(
+        cache.sprite(
+          resources.clip(HeroClips.sharpenCleanup).frames.last.frameId,
         ),
-        true,
-      );
-      images.clearCache();
-    },
-  );
+        neutral,
+      ),
+      true,
+    );
+    images.clearCache();
+  });
 
   testWidgets('late image loading cannot replace a newer playback generation', (
     tester,

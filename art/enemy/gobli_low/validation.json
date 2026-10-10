@@ -1,0 +1,107 @@
+{
+  "sequence": [
+    0,
+    1,
+    0,
+    2,
+    3,
+    2,
+    0
+  ],
+  "frameSize": [
+    512,
+    512
+  ],
+  "atlasSize": [
+    3584,
+    512
+  ],
+  "rearFootContact": [
+    {
+      "sourceFrame": 0,
+      "point": [
+        427.0,
+        469
+      ]
+    },
+    {
+      "sourceFrame": 1,
+      "point": [
+        427.0,
+        469
+      ]
+    },
+    {
+      "sourceFrame": 2,
+      "point": [
+        427.5,
+        469
+      ]
+    },
+    {
+      "sourceFrame": 3,
+      "point": [
+        427.0,
+        469
+      ]
+    }
+  ],
+  "gifDurationMs": [
+    100,
+    100,
+    100,
+    100,
+    100,
+    100
+  ],
+  "sourceArtUnchanged": true,
+  "runtimeVerified": true,
+  "rearFootXTolerancePx": 0.5,
+  "focusedTestsPassed": 21,
+  "analyzerPassed": true,
+  "assetPackingVerified": true,
+  "nativePlatform": "macOS",
+  "nativeProbe": "tool/goblin_desktop_probe.dart",
+  "nativeReview": "runtime_review/guard.png",
+  "simulationEconomyAndPacingTestsPassed": 10,
+  "spawnPool": [
+    "gobli_low"
+  ],
+  "movementVerified": {
+    "sharedWorldDistance": true,
+    "speed": 32,
+    "approachDistance": 132,
+    "approachSeconds": 4.125,
+    "fps": [
+      30,
+      60
+    ],
+    "simulationSpeeds": [
+      1,
+      5,
+      20
+    ],
+    "nativePlatform": "macOS"
+  },
+  "movementAndPoolRegressionTestsPassed": 23,
+  "runtimeFrameDuration": 0.08571428571428572,
+  "originalGifSequence": [
+    0,
+    1,
+    2,
+    3,
+    2,
+    0
+  ],
+  "alternateGifDurationMs": [
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100
+  ],
+  "commitSnapshotTestsPassed": 78,
+  "currentCombatRegressionTestsPassed": 24
+}

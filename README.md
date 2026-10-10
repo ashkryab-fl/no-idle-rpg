@@ -131,6 +131,8 @@ BOOT → TRAVELING → ENEMY_APPROACH → COMBAT → ENEMY_DEATH → REWARD → 
 
 Переходи явно перевіряє `GameStateMachine`. Hero death також може бути викликаний debug tools під час travel/approach/reward. Enemy death animation завершується перед розрахунком reward. Смерть відкочує поточний етап на 1 (мінімум 1) та обнуляє stageKills; respawn відновлює full HP. `NoDeathPenalty` зберігає постійний character progress: level, XP, Gold, Books і придбані upgrades/equipment не втрачаються.
 
+Пул спавну містить лише ворогів із підключеними sprite assets; зараз це `gobli_low`. Під час `ENEMY_APPROACH` ворог стоїть у кадрі 0, а його screen position зміщується на ту саму дистанцію, що background і road. Швидкість камери — 32 units/s: від `enemySpawnX=386` до `enemyCombatX=254` підхід займає приблизно 4.125 s. Після досягнення бойової позиції камера й ворог зупиняються одночасно.
+
 **USER_IDLE** визначає бажання відпочивати незалежно від поточної combat phase. Якщо користувач став idle під час encounter, герой завершує approach, бій, death/reward або власний death/respawn, і лише після повернення до `TRAVELING` запускає відпочинок. Idle animation не перекриває бойові анімації. Якщо активність повернулась до завершення encounter, відпочинок не починається.
 
 `GameSimulation.isResting` зупиняє рух, background scroll, накопичення distance та зменшення encounter distance. Нові вороги не спавняться на жодному idle level, включно з Debug Spawn enemy. Рух і спавн відновлюються після повернення до active та завершення поточної idle animation та її exit sequence (для сидячого відпочинку: `hero.seated → hero.standUp`). Під час cooldown між доступними idle animations герой також стоїть (`hero.idle` fallback).
@@ -141,7 +143,7 @@ BOOT → TRAVELING → ENEMY_APPROACH → COMBAT → ENEMY_DEATH → REWARD → 
 
 Смерть героя: 4 кадри — встромляє меч у землю → опускає голову → осідає на коліна → знесилено тримається за меч. Перші три кадри по 0.4 s, остання поза рівно 1 s, загалом 2.2 s. `hero.death` не зациклюється: 0.4 s останнього кадру в HERO_DEATH і 0.6 s утримання в RESPAWN; потім герой відроджується з повним HP. Attack speed не змінює цей темп. Sprite і preview — у `art/hero/death_v1/`, runtime asset — `assets/characters/hero/death.png`.
 
-Simulation використовує delta time accumulator із fixed step, а не frame counts. Traveling distance і background scroll залежать від часу. У approach фон плавно сповільнюється. Після reward герой продовжує рух або відпочиває залежно від активності користувача. Великі suspend gaps (>5 s) не проганяють прихований combat catch-up.
+Simulation використовує delta time accumulator із fixed step, а не frame counts. Traveling distance і background scroll залежать від часу. У approach фон, дорога й ворог зміщуються на однакову дистанцію та зупиняються на бойовій позиції. Після reward герой продовжує рух або відпочиває залежно від активності користувача. Великі suspend gaps (>5 s) не проганяють прихований combat catch-up.
 
 `DesktopGame` зупиняє стандартний Flame ticker через `pauseEngine`, а Timer викликає `stepEngine` із реальним dt. Settings дає 15/30/60 FPS; default 30, 15 — energy-efficient режим. Це обмежує фактичні rendering ticks, а не тільки ігрову швидкість. Debug speed x5/x20 множить simulation dt; activity statistics залишаються wall-clock.
 

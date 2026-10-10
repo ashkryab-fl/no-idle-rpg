@@ -1,0 +1,15 @@
+{
+  "source": "aligned_sources/0.png",
+  "size": 512,
+  "frames": [
+    {"copy": "aligned_sources/0.png"},
+    {"copy": "aligned_sources/1.png"},
+    {"copy": "aligned_sources/0.png"},
+    {"copy": "aligned_sources/2.png"},
+    {"copy": "aligned_sources/3.png"},
+    {"copy": "aligned_sources/2.png"},
+    {"copy": "aligned_sources/0.png"}
+  ],
+  "output": "assets/enemies/gobli_low/attack.png",
+  "copies": ["art/enemy/gobli_low/attack.png"]
+}

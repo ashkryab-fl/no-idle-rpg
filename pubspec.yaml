@@ -67,6 +67,7 @@ flutter:
     - assets/characters/hero/seated.png
     - assets/characters/hero/sharpen.png
     - assets/characters/hero/stand_up.png
+    - assets/enemies/gobli_low/attack.png
     - assets/environment/background_meadow_01.png
     - assets/environment/background_stream_02.png
     - assets/environment/background_wheat_03.png

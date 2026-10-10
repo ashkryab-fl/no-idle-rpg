@@ -5,7 +5,6 @@ import '../../../core/animation/playback_snapshot.dart';
 import '../../animation/flame_sprite_frame_cache.dart';
 import '../../systems/game_simulation.dart';
 import '../../../core/balance/game_balance.dart';
-import '../../systems/game_state_machine.dart';
 
 class ActorComponent extends Component {
   ActorComponent(this.simulation, this.frameCache, {required this.hero});
@@ -17,19 +16,29 @@ class ActorComponent extends Component {
   void render(Canvas canvas) {
     if (!hero && simulation.enemy == null) return;
     final snapshot = hero ? simulation.heroPlayback : simulation.enemyPlayback!;
-    final approach = (simulation.machine.elapsed / GameBalance.approachDuration)
-        .clamp(0, 1);
-    final x = hero
-        ? 104.0
-        : simulation.phase == GamePhase.enemyApproach
-        ? 386.0 - approach * 132
-        : 254.0;
+    final x = hero ? 104.0 : simulation.enemyX;
     final frame = snapshot.frame;
     if (frame != null && !frame.debugPlaceholder) {
       final rig = snapshot.rig!;
       final renderScale = rig.worldUnitsPerPixel * frame.scaleMultiplier;
       final w = rig.canvasWidth * renderScale,
           h = rig.canvasHeight * renderScale;
+      final fading = !hero && snapshot.proceduralPose == ProceduralPose.fallen;
+      final paint = snapshot.damageFlash || fading ? Paint() : null;
+      if (fading) {
+        paint!.color = Color.fromRGBO(
+          255,
+          255,
+          255,
+          (1 - snapshot.elapsed / snapshot.duration).clamp(0, 1).toDouble(),
+        );
+      }
+      if (snapshot.damageFlash) {
+        paint!.colorFilter = const ColorFilter.mode(
+          Color(0x99fff4d6),
+          BlendMode.srcATop,
+        );
+      }
       frameCache
           .sprite(frame.id)
           .render(
@@ -39,13 +48,7 @@ class ActorComponent extends Component {
               GameBalance.actorGroundY - h * rig.anchorY,
             ),
             size: Vector2(w, h),
-            overridePaint: snapshot.damageFlash
-                ? (Paint()
-                    ..colorFilter = const ColorFilter.mode(
-                      Color(0x99fff4d6),
-                      BlendMode.srcATop,
-                    ))
-                : null,
+            overridePaint: paint,
           );
     } else {
       _procedural(canvas, x, snapshot);

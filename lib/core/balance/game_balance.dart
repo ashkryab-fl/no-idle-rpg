@@ -3,7 +3,10 @@ class GameBalance {
   static const movementSpeed = 32.0;
   static const encounterMinDistance = 90.0;
   static const encounterMaxDistance = 160.0;
-  static const approachDuration = 1.1;
+  static const enemySpawnX = 386.0;
+  static const enemyCombatX = 254.0;
+  static const enemyApproachDistance = enemySpawnX - enemyCombatX;
+  static const approachDuration = enemyApproachDistance / movementSpeed;
   static const deathDuration = .8;
   static const rewardDuration = .9;
   static const heroDeathFrameTime = .4;

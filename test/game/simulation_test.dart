@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:idle_companion/core/animation/ids.dart';
+import 'package:idle_companion/core/balance/game_balance.dart';
 import 'package:idle_companion/game/systems/game_simulation.dart';
 import 'package:idle_companion/game/systems/game_state_machine.dart';
 
@@ -40,7 +41,7 @@ void main() {
     game.spawnEnemy();
     final enemy = game.enemy;
     game.idle.setIdleSeconds(300);
-    game.advance(1.2);
+    game.advance(GameBalance.approachDuration + .1);
     expect(game.phase, GamePhase.combat);
     expect(game.enemy, same(enemy));
     expect(game.isResting, false);
@@ -71,7 +72,7 @@ void main() {
     final game = GameSimulation(random: Random(1));
     game.spawnEnemy();
     game.idle.setIdleSeconds(300);
-    game.advance(1.2);
+    game.advance(GameBalance.approachDuration + .1);
     expect(game.heroPlayback.graphId, isNull);
     game.idle.setIdleSeconds(0);
     game.killEnemy();

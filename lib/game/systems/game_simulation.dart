@@ -95,6 +95,15 @@ class GameSimulation {
   bool hitboxes = false;
   final List<VisualEvent> events = [];
   double _accumulator = 0;
+  double _enemySpawnDistance = 0;
+  double get _approachRemaining => max(
+    0,
+    GameBalance.enemyApproachDistance - (distance - _enemySpawnDistance),
+  );
+  // The enemy stands in the world; the camera moves it by the same distance
+  // that scrolls the scenery and road, including the final approach tick.
+  double get enemyX =>
+      GameBalance.enemySpawnX - (distance - _enemySpawnDistance);
   CombatStats get stats => CharacterStats.calculate(character);
   GamePhase get phase => machine.phase;
   int get enemyTier => stage - 1;
@@ -107,12 +116,8 @@ class GameSimulation {
       ProgressionBalance.idleRewardMultipliers[idle.level.index];
   double get scrollSpeed => isResting
       ? 0
-      : phase == GamePhase.traveling
+      : phase == GamePhase.traveling || phase == GamePhase.enemyApproach
       ? GameBalance.movementSpeed * movementMultiplier
-      : phase == GamePhase.enemyApproach
-      ? GameBalance.movementSpeed *
-            movementMultiplier *
-            (1 - machine.elapsed / GameBalance.approachDuration).clamp(0, 1)
       : 0;
   void advance(double seconds) {
     // Discard suspend gaps: rewards only come from running simulation ticks.
@@ -139,7 +144,9 @@ class GameSimulation {
     machine.elapsed += dt;
     final movement = phase == GamePhase.traveling
         ? GameBalance.movementSpeed * movementMultiplier * travelTime
-        : scrollSpeed * dt;
+        : phase == GamePhase.enemyApproach
+        ? min(scrollSpeed * dt, _approachRemaining)
+        : 0.0;
     distance += movement;
     scroll = (scroll + movement) % GameBalance.viewportWidth;
     switch (phase) {
@@ -149,7 +156,7 @@ class GameSimulation {
         encounterRemaining -= movement;
         if (encounterRemaining <= 0) spawnEnemy();
       case GamePhase.enemyApproach:
-        if (machine.elapsed >= GameBalance.approachDuration) {
+        if (_approachRemaining <= 1e-9) {
           combat.reset();
           machine.transition(GamePhase.combat);
         }
@@ -233,6 +240,7 @@ class GameSimulation {
   void spawnEnemy() {
     if (phase != GamePhase.traveling || isResting) return;
     enemy = spawner.spawn(enemyTier);
+    _enemySpawnDistance = distance;
     machine.transition(GamePhase.enemyApproach);
     _synchronizeAnimations();
   }
