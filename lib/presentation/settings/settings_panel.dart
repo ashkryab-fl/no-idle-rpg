@@ -76,7 +76,7 @@ class SettingsPanel extends StatelessWidget {
                 builder: (context) => AlertDialog(
                   title: const Text('Reset all progress?'),
                   content: const Text(
-                    'Levels, currencies, upgrades, activity statistics and settings will be cleared.',
+                    'Stage progress, currencies, equipment, activity statistics and settings will be cleared.',
                   ),
                   actions: [
                     TextButton(

@@ -80,23 +80,21 @@ void main() {
   });
 
   test(
-    '10 to 9 to 10 farming replays a full stage and keeps gold and upgrades',
+    '10 to 9 to 10 farming replays a full stage and keeps gold and equipment',
     () {
       final game = GameSimulation(random: Random(1))
         ..stage = 10
         ..stageKills = 4
         ..kills = 100;
       game.character
-        ..level = 10
-        ..xp = Amount.fromNum(25)
         ..gold = Amount.fromNum(100)
         ..books = Amount.fromNum(10);
       game.character.equipment['weapon'] = 2;
-      game.character.upgrades['hp'] = 3;
+      game.character.equipment['armor'] = 3;
+      final damage = game.stats.damage.log10;
+      final maxHp = game.stats.maxHp.log10;
       var previousGold = game.character.gold;
       for (var cycle = 0; cycle < 2; cycle++) {
-        final heroLevel = game.character.level;
-        final xp = game.character.xp;
         final books = game.character.books;
         game.spawnEnemy();
         game.advance(GameBalance.approachDuration + .1);
@@ -105,12 +103,10 @@ void main() {
         expect(game.phase, GamePhase.heroDeath);
         expect(game.stage, 9);
         expect(game.stageKills, 0);
-        expect(game.character.level, heroLevel);
-        expect(game.character.xp, same(xp));
         expect(game.character.gold, same(previousGold));
         expect(game.character.books, same(books));
         expect(game.character.equipment['weapon'], 2);
-        expect(game.character.upgrades['hp'], 3);
+        expect(game.character.equipment['armor'], 3);
         game.advance(3);
         expect(game.phase, GamePhase.traveling);
         expect(game.heroHp.ratio(game.stats.maxHp), closeTo(1, 1e-8));
@@ -139,7 +135,8 @@ void main() {
           game.kills,
           100 + (cycle + 1) * ProgressionBalance.enemiesPerStage,
         );
-        expect(game.character.level, greaterThanOrEqualTo(heroLevel));
+        expect(game.stats.damage.log10, damage);
+        expect(game.stats.maxHp.log10, maxHp);
         previousGold = game.character.gold;
       }
     },

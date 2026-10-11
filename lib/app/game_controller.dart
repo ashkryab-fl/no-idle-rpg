@@ -6,13 +6,12 @@ import '../core/numbers/amount.dart';
 import '../core/persistence/game_save.dart';
 import '../core/persistence/game_save_repository.dart';
 import '../domain/activity/idle_level.dart';
-import '../domain/progression/infinite_upgrade.dart';
 import '../game/desktop_game.dart';
 import '../game/systems/game_simulation.dart';
 import '../platform/desktop_window_service.dart';
 import '../platform/user_activity_service.dart';
 
-enum OverlayPanel { menu, statistics, upgrades, equipment, settings, debug }
+enum OverlayPanel { menu, statistics, equipment, settings, debug }
 
 class AppRuntime {
   AppRuntime(this.simulation, this.repository, this.window, this.activity);
@@ -201,23 +200,10 @@ class GameController extends Notifier<AppUiState> {
     }
   }
 
-  void upgrade(
-    InfiniteUpgradeDefinition definition,
-    bool equipment,
-    int? count,
-  ) {
+  void purchaseEquipment(String id, int? count) {
     if (_closing || _resetting || _disposed) return;
-    final oldMax = simulation.stats.maxHp;
-    final bought = simulation.progression.upgrade(
-      simulation.character,
-      definition,
-      equipment: equipment,
-      count: count,
-    );
+    final bought = simulation.purchaseEquipment(id, count: count);
     if (bought == 0) return;
-    if (!simulation.heroHp.isZero) {
-      simulation.heroHp = simulation.heroHp + (simulation.stats.maxHp - oldMax);
-    }
     refresh();
     unawaited(save());
   }
@@ -266,11 +252,8 @@ class GameController extends Notifier<AppUiState> {
     try {
       await runtime.repository.reset();
       final hero = simulation.character;
-      hero.level = 1;
-      hero.xp = Amount.zero;
       hero.gold = Amount.zero;
       hero.books = Amount.zero;
-      hero.upgrades.clear();
       hero.equipment.clear();
       simulation.distance = 0;
       simulation.kills = 0;
@@ -323,8 +306,6 @@ class GameController extends Notifier<AppUiState> {
       case 'books':
         simulation.character.books =
             simulation.character.books + Amount.fromNum(100);
-      case 'xp':
-        simulation.progression.addXp(simulation.character, Amount.fromNum(100));
       case 'hitboxes':
         simulation.hitboxes = !simulation.hitboxes;
     }

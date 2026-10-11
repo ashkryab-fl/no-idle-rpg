@@ -27,7 +27,6 @@ class DebugPanel extends StatelessWidget {
             ('hero', 'Kill hero'),
             ('gold', '+100 Gold'),
             ('books', '+100 Books'),
-            ('xp', '+100 XP'),
             ('hitboxes', 'Hitboxes'),
           ])
             OutlinedButton(

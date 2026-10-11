@@ -120,7 +120,7 @@ void main() {
     }
     expect(game.kills, kills + 1);
     expect(game.character.gold.isZero, false);
-    expect(!game.character.xp.isZero || game.character.level > 1, true);
+    expect(game.character.toJson().keys, isNot(contains('xp')));
   });
 
   test('headless combat outcomes match 30/60 FPS at x1/x5/x20', () {

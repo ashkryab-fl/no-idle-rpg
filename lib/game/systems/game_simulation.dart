@@ -13,11 +13,12 @@ import '../../domain/activity/rest_coordinator.dart';
 import '../../domain/character/character.dart';
 import '../../domain/economy/reward.dart';
 import '../../domain/settings.dart';
+import '../../domain/equipment/equipment_purchase.dart';
+import '../../core/balance/equipment_curve_profile.dart';
 import 'combat_system.dart';
 import 'drop_system.dart';
 import 'enemy_spawner.dart';
 import 'game_state_machine.dart';
-import 'progression_system.dart';
 
 class VisualEvent {
   VisualEvent(this.kind, {this.damage, this.reward});
@@ -38,6 +39,7 @@ class NoDeathPenalty implements DeathPolicy {
 
 class GameSimulation {
   GameSimulation({
+    this.curveProfile = EquipmentCurveProfile.candidate,
     Random? random,
     Random? idleRandom,
     AnimationResources? resources,
@@ -65,6 +67,7 @@ class GameSimulation {
       heroPlayback: heroAnimations.combatPlayback,
       enemyPlayback: enemyAnimations.combatPlayback,
     );
+    purchases = EquipmentPurchases(profile: curveProfile);
     heroHp = stats.maxHp;
     encounterRemaining = spawner.nextDistance();
     machine.transition(GamePhase.traveling);
@@ -76,7 +79,8 @@ class GameSimulation {
   final GameSettings settings;
   final DeathPolicy deathPolicy;
   final machine = GameStateMachine();
-  final progression = ProgressionSystem();
+  final EquipmentCurveProfile curveProfile;
+  late final EquipmentPurchases purchases;
   late final EnemySpawner spawner;
   late final CombatSystem combat;
   late final DropSystem drops;
@@ -104,7 +108,8 @@ class GameSimulation {
   // that scrolls the scenery and road, including the final approach tick.
   double get enemyX =>
       GameBalance.enemySpawnX - (distance - _enemySpawnDistance);
-  CombatStats get stats => CharacterStats.calculate(character);
+  CombatStats get stats =>
+      CharacterStats.calculate(character, profile: curveProfile);
   GamePhase get phase => machine.phase;
   int get wave => stageKills + 1;
   bool get isBossWave => wave == ProgressionBalance.enemiesPerStage;
@@ -189,8 +194,6 @@ class GameSimulation {
           lastReward = drops.roll(enemy!, multiplier: rewardMultiplier);
           character.gold = character.gold + lastReward!.gold;
           character.books = character.books + lastReward!.books;
-          final levels = progression.addXp(character, lastReward!.xp);
-          if (levels > 0) heroHp = stats.maxHp;
           kills++;
           stageKills++;
           if (stageKills >= ProgressionBalance.enemiesPerStage) {
@@ -216,6 +219,19 @@ class GameSimulation {
     _synchronizeAnimations();
     // A renderer is optional; bound the event queue for headless simulation.
     if (events.length > 100) events.removeRange(0, events.length - 100);
+  }
+
+  /// Apply a purchase and restore only the actual increase in max HP.
+  /// Dead heroes stay at zero until the normal respawn boundary.
+  int purchaseEquipment(String id, {int? count = 1}) {
+    final oldMax = stats.maxHp;
+    final bought = purchases.purchase(character, id, count: count);
+    if (bought > 0 && !heroHp.isZero) {
+      final newMax = stats.maxHp;
+      final restored = heroHp + (newMax - oldMax);
+      heroHp = restored > newMax ? newMax : restored;
+    }
+    return bought;
   }
 
   void resetEncounter() {

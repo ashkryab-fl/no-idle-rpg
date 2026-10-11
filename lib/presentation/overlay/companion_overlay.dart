@@ -7,11 +7,9 @@ import '../../app/game_controller.dart';
 import '../../core/balance/game_balance.dart';
 import '../../core/balance/progression_balance.dart';
 import '../../core/numbers/number_formatter.dart';
-import '../../domain/progression/infinite_upgrade.dart';
 import '../equipment/equipment_panel.dart';
 import '../settings/settings_panel.dart';
 import '../statistics/statistics_panel.dart';
-import '../upgrades/upgrade_list.dart';
 import 'debug_panel.dart';
 import 'hero_health_bar.dart';
 
@@ -209,7 +207,6 @@ class _CompanionOverlayState extends ConsumerState<CompanionOverlay>
   String _title(OverlayPanel panel) => switch (panel) {
     OverlayPanel.menu => 'Idle Companion',
     OverlayPanel.statistics => 'Statistics',
-    OverlayPanel.upgrades => 'Character Upgrades',
     OverlayPanel.equipment => 'Equipment',
     OverlayPanel.settings => 'Settings',
     OverlayPanel.debug => 'Debug Tools',
@@ -255,11 +252,6 @@ class _CompanionOverlayState extends ConsumerState<CompanionOverlay>
       ],
     ),
     OverlayPanel.statistics => StatisticsPanel(controller: controller),
-    OverlayPanel.upgrades => UpgradeList(
-      controller: controller,
-      definitions: UpgradeCatalog.character,
-      equipment: false,
-    ),
     OverlayPanel.equipment => EquipmentPanel(controller: controller),
     OverlayPanel.settings => SettingsPanel(controller: controller),
     OverlayPanel.debug => DebugPanel(controller: controller),

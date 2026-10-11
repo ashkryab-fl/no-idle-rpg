@@ -11,6 +11,5 @@ class DropSystem {
     books: random.nextDouble() < enemy.definition.rewardBookChance
         ? enemy.books.scale(multiplier)
         : Amount.zero,
-    xp: enemy.xp,
   );
 }

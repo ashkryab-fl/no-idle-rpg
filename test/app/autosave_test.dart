@@ -2,8 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:idle_companion/app/game_controller.dart';
 import 'package:idle_companion/core/numbers/amount.dart';
-import 'package:idle_companion/domain/equipment/equipment.dart';
-import 'package:idle_companion/domain/progression/infinite_upgrade.dart';
 import '../helpers/runtime_fakes.dart';
 
 void main() {
@@ -29,7 +27,7 @@ void main() {
         expect(repository.writes, 2);
 
         controller.simulation.character.gold = Amount.fromNum(1000);
-        controller.upgrade(EquipmentCatalog.items.first, true, 1);
+        controller.purchaseEquipment('weapon', 1);
         expect(repository.writes, 3);
         expect(
           (repository.snapshot!['character'] as Map)['equipment'],
@@ -37,11 +35,11 @@ void main() {
         );
 
         controller.simulation.character.books = Amount.fromNum(100);
-        controller.upgrade(UpgradeCatalog.character.first, false, 10);
+        controller.purchaseEquipment('armor', 10);
         expect(repository.writes, 4);
         expect(
-          (repository.snapshot!['character'] as Map)['upgrades'],
-          containsPair('damage', 10),
+          (repository.snapshot!['character'] as Map)['equipment'],
+          containsPair('armor', 10),
         );
         await tester.pump();
       } finally {

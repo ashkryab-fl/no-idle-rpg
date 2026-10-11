@@ -15,7 +15,7 @@ class GameSave {
     this.stage = 1,
     this.stageKills = 0,
   });
-  static const currentVersion = 6;
+  static const currentVersion = 8;
   final CharacterProgress character;
   final ActivityStatisticsService activity;
   final GameSettings settings;
@@ -45,7 +45,14 @@ class GameSave {
     'lastSaveTime': lastSaveTime.toUtc().toIso8601String(),
   };
   factory GameSave.fromJson(Map<String, dynamic> source) {
-    final json = SaveMigrator.migrate(source);
+    final version = source['saveVersion'];
+    if (version is! int) {
+      throw const FormatException('Missing or invalid save version');
+    }
+    if (version != currentVersion) {
+      throw UnsupportedError('Unsupported save version $version');
+    }
+    final json = source;
     final distance = (json['distance'] as num? ?? 0).toDouble();
     final kills = json['kills'] as int? ?? 0;
     final stage = json['stage'] as int? ?? 1;
@@ -76,68 +83,5 @@ class GameSave {
       stage: stage,
       stageKills: stageKills,
     );
-  }
-}
-
-abstract final class SaveMigrator {
-  // Save versions 1–5 used twelve victories per stage.
-  static const _legacyEnemiesPerStage = 12;
-  static Map<String, dynamic> migrate(Map<String, dynamic> source) {
-    final json = Map<String, dynamic>.from(source);
-    var version = json['saveVersion'] as int? ?? 1;
-    if (version > GameSave.currentVersion || version < 1) {
-      throw UnsupportedError('Unsupported save version $version');
-    }
-    while (version < GameSave.currentVersion) {
-      switch (version) {
-        case 1:
-          json.putIfAbsent('settings', () => <String, dynamic>{});
-          json.putIfAbsent('activity', () => <String, dynamic>{});
-          version = 2;
-        case 2:
-          version = 3;
-        case 3:
-          final progress = json['enemyProgressKills'] ?? json['kills'] ?? 0;
-          if (progress is! int || progress < 0) {
-            throw const FormatException('Invalid legacy enemy progression');
-          }
-          json.putIfAbsent(
-            'stage',
-            () => progress ~/ _legacyEnemiesPerStage + 1,
-          );
-          json.putIfAbsent(
-            'stageKills',
-            () => progress % _legacyEnemiesPerStage,
-          );
-          json.remove('enemyProgressKills');
-          version = 4;
-        case 4:
-          final kills = json['kills'] ?? 0;
-          if (kills is! int || kills < 0) {
-            throw const FormatException('Invalid legacy kill count');
-          }
-          json.putIfAbsent('stage', () => kills ~/ _legacyEnemiesPerStage + 1);
-          json.putIfAbsent('stageKills', () => kills % _legacyEnemiesPerStage);
-          version = 5;
-        case 5:
-          final progress = json['stageKills'] ?? 0;
-          if (progress is! int ||
-              progress < 0 ||
-              progress >= _legacyEnemiesPerStage) {
-            throw const FormatException('Invalid legacy stage progression');
-          }
-          // Preserve the stage and its approximate completion, leaving the boss
-          // undefeated even when migrating a nearly completed old stage.
-          json['stageKills'] =
-              progress *
-              ProgressionBalance.enemiesPerStage ~/
-              _legacyEnemiesPerStage;
-          version = 6;
-        default:
-          throw UnsupportedError('No migration for $version');
-      }
-    }
-    json['saveVersion'] = version;
-    return json;
   }
 }

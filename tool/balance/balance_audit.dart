@@ -1,153 +1,124 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:math';
 
 import 'package:idle_companion/core/balance/progression_balance.dart';
 import 'package:idle_companion/core/numbers/amount.dart';
-import 'package:idle_companion/domain/equipment/equipment.dart';
-import 'package:idle_companion/domain/progression/infinite_upgrade.dart';
 import 'package:idle_companion/game/systems/enemy_spawner.dart';
-
 import 'simulate_progression.dart';
 
-// Read-only balance report. Uses the current event model and domain catalogs;
-// no save files, runtime settings or gameplay coefficients are changed.
-Map<String, Object> detailedSnapshot(ProgressionSimulation sim, int day) {
-  final hero = sim.hero;
-  final stats = sim.stats;
-  Amount spent(
-    List<InfiniteUpgradeDefinition> catalog,
-    Map<String, int> levels,
-  ) {
-    return catalog.fold(
-      Amount.zero,
-      (sum, item) => sum + item.batchCost(0, levels[item.id] ?? 0),
-    );
-  }
-
-  final goldSpent = spent(EquipmentCatalog.items, hero.equipment);
-  final booksSpent = spent(UpgradeCatalog.character, hero.upgrades);
-  final xpCurve = InfiniteUpgradeDefinition(
-    id: 'xp',
-    name: 'XP',
-    stat: CharacterStat.damage,
-    baseCost: ProgressionBalance.baseXp,
-    costGrowth: ProgressionBalance.xpGrowth,
-  );
-  final enemy = EnemyFactory().create(
-    EnemyCatalog.definitions.single,
-    sim.stage - 1,
-  );
-  return {
-    ...sim.snapshot(day),
-    'hours': day * 8,
-    'wave': sim.stageKills + 1,
-    'maxHp': stats.maxHp.toDouble(),
-    'currentHp': sim.hp.toDouble(),
-    'damage': stats.damage.toDouble(),
-    'dps': stats.dps.toDouble(),
-    'critChance': stats.critChance,
-    'critDamage': stats.critDamage,
-    'xpRemaining': hero.xp.toDouble(),
-    'xpRequired': sim.progression.xpRequired(hero.level).toDouble(),
-    'xpEarned': (xpCurve.batchCost(0, hero.level - 1) + hero.xp).toDouble(),
-    'goldRemaining': hero.gold.toDouble(),
-    'booksRemaining': hero.books.toDouble(),
-    'goldSpent': goldSpent.toDouble(),
-    'booksSpent': booksSpent.toDouble(),
-    'goldEarned': (goldSpent + hero.gold).toDouble(),
-    'booksEarned': (booksSpent + hero.books).toDouble(),
-    for (final item in EquipmentCatalog.items)
-      'equipment_${item.id}': hero.equipment[item.id] ?? 0,
-    for (final item in UpgradeCatalog.character)
-      'upgrade_${item.id}': hero.upgrades[item.id] ?? 0,
-    'enemyHp': enemy.stats.maxHp.toDouble(),
-    'enemyDamage': enemy.stats.damage.toDouble(),
-    'enemyGold': enemy.gold.toDouble(),
-    'enemyBookDrop': enemy.books.toDouble(),
-    'enemyXp': enemy.xp.toDouble(),
-  };
-}
-
+/// Compact diagnostics for the active Gold-only equipment profile.
 void main(List<String> args) {
   final seeds = args.isEmpty ? 20 : int.parse(args.first);
-  final rows = <Map<String, Object>>[];
-  for (final scenario in ['hourly_balanced', 'no_purchases']) {
+  final scenarios = <String, (InvestmentStrategy, double)>{
+    'no_purchases': (InvestmentStrategy.noPurchases, double.infinity),
+    'affordable_balanced': (InvestmentStrategy.balanced, 0),
+    'five_minute_balanced': (InvestmentStrategy.balanced, 300),
+    'hourly_balanced': (InvestmentStrategy.balanced, 3600),
+    'weapon_only': (InvestmentStrategy.weaponOnly, 0),
+    'armor_only': (InvestmentStrategy.armorOnly, 0),
+  };
+  const hours = [.5, 1.0, 3.0, 7.0, 49.0, 210.0];
+  final rows = <Map<String, Object?>>[];
+  for (final scenario in scenarios.entries) {
     for (var seed = 1; seed <= seeds; seed++) {
-      for (final day in [1, 2, 7, 30]) {
-        final sim = ProgressionSimulation(
-          seed: seed,
-          upgradeInterval: scenario == 'no_purchases' ? double.infinity : 3600,
-        );
-        sim.runUntil(day * 8 * 3600);
-        final before = ProgressionSimulation(
-          seed: seed,
-          upgradeInterval: scenario == 'no_purchases' ? double.infinity : 3600,
-        );
-        before.runUntil((day * 8 - 1) * 3600);
+      final sim = ProgressionSimulation(
+        seed: seed,
+        strategy: scenario.value.$1,
+        upgradeInterval: scenario.value.$2,
+      );
+      for (final hour in hours) {
+        sim.runUntil(hour * 3600);
         rows.add({
-          'scenario': scenario,
+          'scenario': scenario.key,
           'seed': seed,
-          ...detailedSnapshot(sim, day),
-          'lastHourKills': sim.kills - before.kills,
-          'lastHourDeaths': sim.deaths - before.deaths,
-          'lastHourNetStages': sim.stage - before.stage,
-          'lastHourNewHighestStages':
-              (sim.snapshot(day)['highestStage'] as int) -
-              (before.snapshot(day)['highestStage'] as int),
+          'hours': hour,
+          ...sim.snapshot((hour / 7).floor()),
         });
       }
-      stderr.writeln('$scenario seed $seed/$seeds');
     }
+    stderr.writeln('${scenario.key}: $seeds seeds complete');
   }
-  final summary = <Map<String, Object>>[];
-  for (final scenario in ['hourly_balanced', 'no_purchases']) {
-    for (final day in [1, 2, 7, 30]) {
-      final selected = rows.where(
-        (r) => r['scenario'] == scenario && r['day'] == day,
-      );
+  final summary = <Map<String, Object?>>[];
+  for (final scenario in scenarios.keys) {
+    for (final hour in hours) {
+      final selected = rows
+          .where((r) => r['scenario'] == scenario && r['hours'] == hour)
+          .toList();
       final metrics = <String, Object>{};
       for (final key in selected.first.keys) {
-        if (['scenario', 'seed', 'day'].contains(key)) continue;
-        final values = selected.map((r) => (r[key] as num).toDouble()).toList();
-        metrics[key] = {
-          'median': ProgressionSimulation.median(values),
-          'min': values.reduce(min),
-          'max': values.reduce(max),
-        };
+        if (['scenario', 'seed', 'day', 'hours'].contains(key)) continue;
+        final magnitude =
+            key.endsWith('Log') &&
+            selected.every((r) => r[key] == null || r[key] is String);
+        if (magnitude || selected.every((r) => r[key] is num)) {
+          final values = selected.map(
+            (r) => magnitude
+                ? Amount.fromJson(r[key]).toDouble()
+                : (r[key] as num).toDouble(),
+          );
+          final metricKey = magnitude ? key.substring(0, key.length - 3) : key;
+          metrics[metricKey] = {
+            'p50': ProgressionSimulation.median(values),
+            'p90': ProgressionSimulation.percentile(values, .9),
+            'p95': ProgressionSimulation.percentile(values, .95),
+            'min': values.reduce((a, b) => a < b ? a : b),
+            'max': values.reduce((a, b) => a > b ? a : b),
+          };
+        }
       }
-      summary.add({'scenario': scenario, 'day': day, 'metrics': metrics});
+      summary.add({'scenario': scenario, 'hours': hour, 'metrics': metrics});
     }
-  }
-  final stageExamples = <Map<String, Object>>[];
-  for (final stage in [1, 10, 25, 50, 100, 217, 552, 2215, 5087]) {
-    final enemy = EnemyFactory().create(
-      EnemyCatalog.definitions.single,
-      stage - 1,
-    );
-    stageExamples.add({
-      'stage': stage,
-      'hp': enemy.stats.maxHp.toDouble(),
-      'damage': enemy.stats.damage.toDouble(),
-      'gold': enemy.gold.toDouble(),
-      'booksIfDrop': enemy.books.toDouble(),
-      'expectedBooks': enemy.books
-          .scale(enemy.definition.rewardBookChance)
-          .toDouble(),
-      'xp': enemy.xp.toDouble(),
-    });
   }
   stdout.writeln(
     const JsonEncoder.withIndent('  ').convert({
-      'date': '2026-10-10',
-      'hoursPerDay': 8,
+      'date': '2026-10-11',
+      'model': 'phase_02_equipment_only',
       'seeds': seeds,
-      'checkpoints': [1, 2, 7, 30],
+      'hoursPerDay': 7,
+      'checkpointsProductiveHours': hours,
       'method':
-          'Current ProgressionSimulation event model; independent restart at each checkpoint.',
+          'Continuous event simulation per seed, no restart/rest; reward confirmed after death animation. Gold-only equipment using the active curve profile; Books remain unspent. Affordable policies check shares after every encounter; focus policies buy one registered equipment item.',
+      'sampleWindow':
+          'Last 200 completed outcomes/normal kills/boss kills/purchases independently; first clear durations last 20. TTK includes only victories. Between-seed summaries of window statistics.',
+      'coefficients': {
+        'heroHp': ProgressionBalance.heroHp,
+        'heroDamage': ProgressionBalance.heroDamage,
+        'hpGrowth': ProgressionBalance.hpGrowth,
+        'damageGrowth': ProgressionBalance.damageGrowth,
+        'goldGrowth': ProgressionBalance.goldRewardGrowth,
+        'bookGrowth': ProgressionBalance.bookRewardGrowth,
+        'equipmentCostGrowth': ProgressionBalance.equipmentCostGrowth,
+        'upgradeGrowth': ProgressionBalance.upgradeGrowth,
+        'enemiesPerStage': ProgressionBalance.enemiesPerStage,
+        'bossMultiplier': ProgressionBalance.bossStatMultiplier,
+        'critCap': ProgressionBalance.critChanceCap,
+      },
       'rows': rows,
       'summary': summary,
-      'stageExamples': stageExamples,
+      'stageExamples': [
+        for (final stage in [1, 10, 25, 50, 100])
+          {
+            'stage': stage,
+            'hpLog': EnemyFactory()
+                .create(EnemyCatalog.definitions.single, stage - 1)
+                .stats
+                .maxHp
+                .toJson(),
+            'damageLog': EnemyFactory()
+                .create(EnemyCatalog.definitions.single, stage - 1)
+                .stats
+                .damage
+                .toJson(),
+            'goldLog': EnemyFactory()
+                .create(EnemyCatalog.definitions.single, stage - 1)
+                .gold
+                .toJson(),
+            'booksIfDropLog': EnemyFactory()
+                .create(EnemyCatalog.definitions.single, stage - 1)
+                .books
+                .toJson(),
+          },
+      ],
     }),
   );
 }

@@ -188,6 +188,7 @@ void main() {
     await tester.pump();
     expect(container.read(gameControllerProvider).panel, OverlayPanel.menu);
     expect(find.text('A small adventure while you work.'), findsOneWidget);
+    expect(find.text('Character Upgrades'), findsNothing);
     Future<List<int>> captureMenu() async {
       final bounds = tester.getRect(find.byKey(const ValueKey('menuPanel')));
       final boundary = tester.renderObject<RenderRepaintBoundary>(
@@ -256,7 +257,6 @@ void main() {
     // Every destination and its back button remain reachable with the game hidden.
     for (final (label, panel) in [
       ('Statistics', OverlayPanel.statistics),
-      ('Character Upgrades', OverlayPanel.upgrades),
       ('Equipment', OverlayPanel.equipment),
       ('Settings', OverlayPanel.settings),
       ('Debug Tools', OverlayPanel.debug),

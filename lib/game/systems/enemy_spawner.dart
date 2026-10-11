@@ -14,7 +14,6 @@ class EnemyDefinition {
     required this.baseDamage,
     required this.attackSpeed,
     required this.rewardGold,
-    required this.rewardXp,
     required this.animations,
     this.scale = 1.0,
     this.critChance = ProgressionBalance.enemyCritChance,
@@ -32,7 +31,6 @@ class EnemyDefinition {
       critChance,
       critDamage,
       rewardGold,
-      rewardXp,
       rewardBookChance,
       rewardBooks,
       difficultyWeight;
@@ -49,7 +47,6 @@ abstract final class EnemyCatalog {
       baseDamage: ProgressionBalance.slimeDamage,
       attackSpeed: ProgressionBalance.slimeAttackSpeed,
       rewardGold: ProgressionBalance.slimeGold,
-      rewardXp: ProgressionBalance.slimeXp,
       difficultyWeight: ProgressionBalance.slimeWeight,
       animations: GoblinClips.content,
     ),
@@ -60,8 +57,7 @@ class Enemy {
   Enemy(
     this.definition,
     this.stats,
-    this.gold,
-    this.xp, {
+    this.gold, {
     Amount? books,
     this.isBoss = false,
   }) : books = books ?? Amount.fromNum(ProgressionBalance.baseBookReward),
@@ -69,7 +65,7 @@ class Enemy {
   final EnemyDefinition definition;
   final bool isBoss;
   final CombatStats stats;
-  final Amount gold, xp, books;
+  final Amount gold, books;
   Amount hp;
 }
 
@@ -91,9 +87,6 @@ class EnemyFactory {
         Amount.fromNum(
           definition.rewardGold,
         ).grow(ProgressionBalance.goldRewardGrowth, tier),
-        Amount.fromNum(
-          definition.rewardXp,
-        ).grow(ProgressionBalance.xpRewardGrowth, tier),
         isBoss: isBoss,
         books: Amount.fromNum(
           definition.rewardBooks,

@@ -9,9 +9,7 @@ class StatisticsPanel extends StatelessWidget {
   final GameController controller;
   @override
   Widget build(BuildContext context) {
-    final game = controller.simulation,
-        hero = game.character,
-        stats = game.stats;
+    final game = controller.simulation, stats = game.stats;
     final activity = game.activity;
     String number(Amount a) => NumberFormatter.amount(a);
     Widget row(String label, String value) => Padding(
@@ -26,20 +24,16 @@ class StatisticsPanel extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        row('Gold', number(game.character.gold)),
+        row('Knowledge Books', number(game.character.books)),
         row('Stage', '${game.stage}'),
         row(
           'Wave',
           '${game.wave}/${ProgressionBalance.enemiesPerStage}${game.isBossWave ? ' · Boss' : ''}',
         ),
-        row('Character level', '${hero.level}'),
-        Text(
-          'Each character level adds ${((ProgressionBalance.levelStatGrowth - 1) * 100).toStringAsFixed(1)}% to base HP and damage. Death returns you to the previous stage; character progress and upgrades are kept.',
-          style: const TextStyle(fontSize: 11, color: Colors.white54),
-        ),
-        row('Experience', number(hero.xp)),
-        row(
-          'XP to next level',
-          number(game.progression.xpRequired(hero.level) - hero.xp),
+        const Text(
+          'Purchases improve combat stats. Death returns you to the previous stage; currencies and equipment are kept.',
+          style: TextStyle(fontSize: 11, color: Colors.white54),
         ),
         row('DPS', number(stats.dps.scale(game.dpsMultiplier))),
         row('Damage', number(stats.damage)),
