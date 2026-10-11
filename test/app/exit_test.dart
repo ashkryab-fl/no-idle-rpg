@@ -1,7 +1,9 @@
 import 'dart:async';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:get_it/get_it.dart';
+import 'package:idle_companion/app/di/injection.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:idle_companion/app/game_controller.dart';
+import 'package:idle_companion/app/session/session_cubit.dart';
+import 'package:idle_companion/presentation/companion/cubit/overlay_cubit.dart';
 import '../helpers/runtime_fakes.dart';
 
 void main() {
@@ -9,32 +11,29 @@ void main() {
   late MemoryRepository repository;
   late FakeWindow window;
   late FakeActivity activity;
-  late ProviderContainer container;
-  late GameController controller;
+  late GetIt dependencies;
+  late OverlayCubit overlay;
+  late SessionCubit controller;
   setUp(() {
     repository = MemoryRepository();
     window = FakeWindow();
     activity = FakeActivity();
-    container = ProviderContainer(
-      overrides: [
-        runtimeProvider.overrideWithValue(
-          fakeRuntime(repository, window, activity),
-        ),
-      ],
+    dependencies = configureDependencies(
+      runtime: fakeRuntime(repository, window, activity),
     );
-    container.read(gameControllerProvider);
-    controller = container.read(gameControllerProvider.notifier);
+    controller = dependencies<SessionCubit>();
+    overlay = dependencies<OverlayCubit>();
   });
-  tearDown(() {
-    container.dispose();
+  tearDown(() async {
+    await dependencies.reset();
   });
 
   test(
     'Exit waits for save, freezes simulation and ignores repeated requests',
     () async {
       repository.gate = Completer<void>();
-      final exit = controller.close();
-      await controller.close();
+      final exit = controller.quit();
+      await controller.quit();
       expect(controller.game.suspended, isTrue);
       expect(window.quits, 0);
       expect(repository.writes, 1);
@@ -47,20 +46,18 @@ void main() {
     'Save failure cancels native exit and allows a successful retry',
     () async {
       repository.fail = true;
+      final settingsOpened = overlay.stream.firstWhere(
+        (state) => state.panel == OverlayPanel.settings,
+      );
       await window.closeHandler!();
+      await settingsOpened;
       expect(window.quits, 0);
       expect(window.cancellations, 1);
       expect(controller.game.suspended, isFalse);
-      expect(
-        container.read(gameControllerProvider).panel,
-        OverlayPanel.settings,
-      );
-      expect(
-        container.read(gameControllerProvider).error,
-        contains('Disk full'),
-      );
+      expect(overlay.state.panel, OverlayPanel.settings);
+      expect(controller.state.error, contains('Disk full'));
       repository.fail = false;
-      await controller.close();
+      await controller.quit();
       expect(window.quits, 1);
     },
   );
@@ -71,7 +68,7 @@ void main() {
     controller.simulation.settings.roadOpacity = .5;
     controller.simulation.settings.overallOpacity = 0;
     repository.resetGate = Completer<void>();
-    final reset = controller.reset();
+    final reset = controller.resetProgress();
     await window.closeHandler!();
     expect(window.quits, 0);
     expect(window.cancellations, 1);
@@ -82,7 +79,7 @@ void main() {
     expect(controller.simulation.settings.backgroundOpacity, 1);
     expect(controller.simulation.settings.roadOpacity, 1);
     expect(controller.simulation.settings.overallOpacity, 1);
-    await controller.close();
+    await controller.quit();
     expect(window.quits, 1);
   });
 }

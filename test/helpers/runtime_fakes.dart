@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:idle_companion/app/game_controller.dart';
+import 'package:idle_companion/app/app_runtime.dart';
 import 'package:idle_companion/core/persistence/game_save.dart';
 import 'package:idle_companion/core/persistence/game_save_repository.dart';
 import 'package:idle_companion/game/systems/game_simulation.dart';
@@ -32,6 +32,7 @@ class FakeWindow implements DesktopWindowService {
   int quits = 0, cancellations = 0;
   bool failQuit = false;
   bool heroVisible = true;
+  bool expanded = false;
   Future<void> Function()? closeHandler;
   @override
   Future<void> configure({
@@ -40,6 +41,7 @@ class FakeWindow implements DesktopWindowService {
     bool heroVisible = true,
   }) async {
     this.heroVisible = heroVisible;
+    this.expanded = expanded;
   }
 
   @override

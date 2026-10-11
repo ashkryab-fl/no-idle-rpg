@@ -23,6 +23,10 @@ final class HeroAnimationCoordinator {
   HeroAnimationRequest _request = HeroAnimationRequest.travel;
   bool _restWasBlocking = false;
   int _generation = 0;
+  int _restReturnRevision = 0;
+
+  /// Changes once when a played rest graph finishes returning to work.
+  int get restReturnRevision => _restReturnRevision;
   double _clock = 0;
   double combatPeriod = 1;
   bool get blocksAdventure => rest.blocksAdventure;
@@ -77,6 +81,7 @@ final class HeroAnimationCoordinator {
       _restWasBlocking = rest.blocksAdventure;
       if (!rest.blocksAdventure) {
         if (wasBlocking) {
+          if (rest.graphRunner?.isCompleted == true) _restReturnRevision++;
           _generation++;
           _player.play(resources.clip(const ClipId('hero.walk')));
         }
