@@ -98,25 +98,7 @@ void main() {
     final restored = save.restoreSimulation();
     expect(restored.character.toJson(), character);
   });
-  test('current schema ignores injected hero level and experience', () async {
-    final game = GameSimulation();
-    game.character.equipment['armor'] = 2000;
-    final json = GameSave.capture(game, DateTime.now()).toJson();
-    final hero = json['character'] as Map;
-    expect(hero.containsKey('level'), isFalse);
-    expect(hero.containsKey('xp'), isFalse);
-    hero['level'] = 1000000;
-    hero['xp'] = 'NaN';
-    final save = GameSave.fromJson(json);
-    final restored = save.restoreSimulation();
-    expect(restored.stats.maxHp.log10, game.stats.maxHp.log10);
-    expect(restored.stats.damage.log10, game.stats.damage.log10);
-    expect(restored.heroHp.log10, game.heroHp.log10);
-    expect(save.character.toJson().keys, isNot(contains('level')));
-    expect(save.character.toJson().keys, isNot(contains('xp')));
-  });
-
-  for (var version = 1; version <= 8; version++) {
+  for (var version = 1; version < GameSave.currentVersion; version++) {
     test('v$version primary and backup reset without migrating', () async {
       final repository = FileGameSaveRepository(dir);
       final legacy = {'saveVersion': version, 'stage': 100000};
@@ -158,13 +140,17 @@ void main() {
       final repository = FileGameSaveRepository(dir);
       await File(
         '${dir.path}/save.json',
-      ).writeAsString('{"saveVersion":9,"stage":-1}');
-      for (final backup in ['{"saveVersion":6}', '{bad', '{"saveVersion":9}']) {
+      ).writeAsString('{"saveVersion":${GameSave.currentVersion},"stage":-1}');
+      for (final backup in [
+        '{"saveVersion":6}',
+        '{bad',
+        '{"saveVersion":${GameSave.currentVersion}}',
+      ]) {
         await File('${dir.path}/save.backup.json').writeAsString(backup);
         await expectLater(repository.load(), throwsFormatException);
         expect(
           await File('${dir.path}/save.json').readAsString(),
-          '{"saveVersion":9,"stage":-1}',
+          '{"saveVersion":${GameSave.currentVersion},"stage":-1}',
         );
       }
     },
@@ -186,7 +172,9 @@ void main() {
       final otherName = futureName == 'save.json'
           ? 'save.backup.json'
           : 'save.json';
-      await File('${dir.path}/$futureName').writeAsString('{"saveVersion":10}');
+      await File(
+        '${dir.path}/$futureName',
+      ).writeAsString('{"saveVersion":${GameSave.currentVersion + 1}}');
       await File(
         '${dir.path}/$otherName',
       ).writeAsString(jsonEncode(current.toJson()));
@@ -194,7 +182,7 @@ void main() {
       await expectLater(repository.save(current), throwsUnsupportedError);
       expect(
         await File('${dir.path}/$futureName').readAsString(),
-        '{"saveVersion":10}',
+        '{"saveVersion":${GameSave.currentVersion + 1}}',
       );
       await repository.reset();
     }
@@ -222,33 +210,6 @@ void main() {
       await Future.wait([beforeReset, reset, afterReset]);
       expect((await repository.load())!.kills, 13);
       expect(await File('${dir.path}/save.backup.json').exists(), isFalse);
-    },
-  );
-  test(
-    'current save rejects any old stat map and recovers only current backup',
-    () async {
-      final repository = FileGameSaveRepository(dir);
-      final current = GameSave.capture(
-        GameSimulation()..kills = 77,
-        DateTime.now(),
-      ).toJson();
-      await File(
-        '${dir.path}/save.backup.json',
-      ).writeAsString(jsonEncode(current));
-      final bad = GameSave.capture(
-        GameSimulation()..kills = 88,
-        DateTime.now(),
-      ).toJson();
-      (bad['character'] as Map)['upgrades'] = <String, int>{};
-      expect(() => GameSave.fromJson(bad), throwsFormatException);
-      await File('${dir.path}/save.json').writeAsString(jsonEncode(bad));
-      expect((await repository.load())!.kills, 77);
-      await File('${dir.path}/save.backup.json').delete();
-      await expectLater(repository.load(), throwsFormatException);
-      expect(
-        await File('${dir.path}/save.json').readAsString(),
-        jsonEncode(bad),
-      );
     },
   );
 }

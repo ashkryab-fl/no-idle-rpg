@@ -7,6 +7,7 @@ import '../animation/hero_animation_coordinator.dart';
 import '../animation/enemy_animation_coordinator.dart';
 import '../../core/balance/game_balance.dart';
 import '../../core/balance/progression_balance.dart';
+import '../../core/balance/economy_profile.dart';
 import '../../core/numbers/amount.dart';
 import '../../domain/activity/activity_statistics.dart';
 import '../../domain/activity/rest_coordinator.dart';
@@ -43,6 +44,7 @@ class NoDeathPenalty implements DeathPolicy {
 
 class GameSimulation {
   GameSimulation({
+    this.economyProfile = EconomyProfile.candidate,
     this.curveProfile = EquipmentCurveProfile.candidate,
     Random? random,
     Random? idleRandom,
@@ -63,6 +65,7 @@ class GameSimulation {
     spawner = EnemySpawner(
       selectionRandom ?? Random(this.random.nextInt(1 << 32)),
       travelRandom: travelRandom ?? Random(this.random.nextInt(1 << 32)),
+      profile: economyProfile,
     );
     talentPurchases = TalentPurchases(profile: talentProfile);
     settlement = StageSettlement(profile: talentProfile);
@@ -78,7 +81,10 @@ class GameSimulation {
       heroPlayback: heroAnimations.combatPlayback,
       enemyPlayback: enemyAnimations.combatPlayback,
     );
-    purchases = EquipmentPurchases(profile: curveProfile);
+    purchases = EquipmentPurchases(
+      profile: curveProfile,
+      economy: economyProfile,
+    );
     heroHp = stats.maxHp;
     encounterRemaining = 0;
     machine.transition(GamePhase.traveling);
@@ -91,6 +97,7 @@ class GameSimulation {
   final DeathPolicy deathPolicy;
   final machine = GameStateMachine();
   final EquipmentCurveProfile curveProfile;
+  final EconomyProfile economyProfile;
   late final EquipmentPurchases purchases;
   late final EnemySpawner spawner;
   late final CombatSystem combat;

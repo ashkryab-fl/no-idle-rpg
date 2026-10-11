@@ -167,14 +167,14 @@ class _CompanionOverlayState extends ConsumerState<CompanionOverlay>
                           ],
                         ),
                       ),
-                      if (ui.error != null)
+                      if (ui.error != null || ui.notice != null)
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 12),
                           child: Row(
                             children: [
                               Expanded(
                                 child: Text(
-                                  ui.error!,
+                                  (ui.error ?? ui.notice)!,
                                   style: const TextStyle(
                                     fontSize: 11,
                                     color: Colors.orangeAccent,
@@ -182,7 +182,9 @@ class _CompanionOverlayState extends ConsumerState<CompanionOverlay>
                                 ),
                               ),
                               IconButton(
-                                onPressed: controller.dismissError,
+                                onPressed: ui.error != null
+                                    ? controller.dismissError
+                                    : controller.dismissNotice,
                                 icon: const Icon(Icons.close, size: 14),
                               ),
                             ],

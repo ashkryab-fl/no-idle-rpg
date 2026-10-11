@@ -49,7 +49,6 @@ Run from the repository root (Python standard library, ffmpeg/ffprobe, Dart):
 python3 tool/sprite_assets/build.py
 python3 tool/sprite_assets/build.py --previews-only
 python3 tool/sprite_assets/verify.py --previews
-python3 -m unittest tool.sprite_assets.test_pipeline
 ```
 
 To reproduce PNGs without changing the checkout:

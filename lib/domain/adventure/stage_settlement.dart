@@ -56,9 +56,13 @@ class StageSettlement {
       }
       final repeats = ledger.usedRepeats[attempt.stage] ?? 0;
       if (first) {
-        lines[RewardSource.firstClearBaseGold] = attempt.encounters.last.gold;
-        lines[RewardSource.firstClearBonusGold] = attempt.encounters.last.gold
-            .scale(attempt.effects['first_clear_gold']);
+        final firstBase = attempt.encounters.last.gold.scale(
+          profile.firstClearGoldBaseMultiplier,
+        );
+        lines[RewardSource.firstClearBaseGold] = firstBase;
+        lines[RewardSource.firstClearBonusGold] = firstBase.scale(
+          attempt.effects['first_clear_gold'],
+        );
         lines[RewardSource.firstBooks] = Amount.fromNum(profile.firstBooks);
         if (attempt.stage == 5 ||
             attempt.stage == 10 ||

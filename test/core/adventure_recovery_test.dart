@@ -1,3 +1,4 @@
+import 'package:idle_companion/core/balance/talent_profile.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
@@ -6,7 +7,7 @@ import 'package:idle_companion/core/persistence/game_save.dart';
 import 'package:idle_companion/core/persistence/game_save_repository.dart';
 import 'package:idle_companion/game/systems/game_simulation.dart';
 import 'package:idle_companion/game/systems/game_state_machine.dart';
-import '../game/phase_01_test.dart' show ConstantRandom;
+import '../helpers/simulation_fixture.dart' show ConstantRandom;
 
 void settle(GameSimulation game) {
   for (var i = 0; game.phase == GamePhase.enemyDeath && i < 300; i++) {
@@ -19,7 +20,9 @@ void main() {
   test(
     'backup restores whole pre-settlement checkpoint and next actual boss settlement pays once',
     () async {
-      final dir = await Directory.systemTemp.createTemp('phase03-recovery-');
+      final dir = await Directory.systemTemp.createTemp(
+        'adventure-recovery-test-',
+      );
       addTearDown(() => dir.delete(recursive: true));
       final repository = FileGameSaveRepository(dir);
       final game = GameSimulation(random: ConstantRandom())
@@ -58,7 +61,9 @@ void main() {
   test(
     'unknown snapshot profile recovers valid current backup; without backup explicit recovery error',
     () async {
-      final dir = await Directory.systemTemp.createTemp('phase03-profile-');
+      final dir = await Directory.systemTemp.createTemp(
+        'saved-talent-profile-test-',
+      );
       addTearDown(() => dir.delete(recursive: true));
       final repository = FileGameSaveRepository(dir),
           game = GameSimulation(random: ConstantRandom());
@@ -72,7 +77,7 @@ void main() {
       await File('${dir.path}/save.json').writeAsString(jsonEncode(bad));
       expect(
         (await repository.load())!.adventure.attempt!.profileId,
-        'phase03_candidate_v1',
+        TalentProfile.candidate.id,
       );
       await File('${dir.path}/save.backup.json').delete();
       await expectLater(repository.load(), throwsFormatException);

@@ -2,6 +2,7 @@ import '../../core/balance/talent_profile.dart';
 import '../../core/numbers/amount.dart';
 import '../character/character.dart';
 import '../progression/upgrade_price.dart';
+import '../progression/purchase_quote.dart';
 
 enum TalentPair { boss, endurance, travel }
 
@@ -181,21 +182,20 @@ class TalentProgress {
   }
 }
 
-class TalentQuote {
-  const TalentQuote(
-    this.id,
-    this.rank,
-    this.count,
-    this.cost,
-    this.before,
-    this.after,
-    this.reason,
-  );
-  final String id;
-  final int rank, count;
-  final Amount cost;
-  final double before, after;
-  final String? reason;
+class TalentQuote extends PurchaseQuote<double> {
+  const TalentQuote({
+    required super.id,
+    required super.rank,
+    required super.count,
+    required super.cost,
+    required super.nextCost,
+    required super.before,
+    required super.after,
+    required super.delta,
+    super.limit,
+    super.requiredStage,
+  }) : super(currency: PurchaseCurrency.books);
+  String? get reason => blockedReason;
 }
 
 class TalentPurchases {
@@ -222,26 +222,35 @@ class TalentPurchases {
     }
     final buying = (count ?? curve.cap).clamp(0, affordable.clamp(0, useful));
     final before = curve.value(rank), after = curve.value(rank + buying);
+    final nextRank = rank + buying;
+    final boundary = count == 0
+        ? PurchaseLimit.noSelection
+        : count != null && buying == count
+        ? null
+        : nextRank >= curve.cap
+        ? PurchaseLimit.maximumRank
+        : nextRank >= limit
+        ? PurchaseLimit.milestone
+        : curve.value(nextRank + 1) <= curve.value(nextRank)
+        ? PurchaseLimit.precision
+        : PurchaseLimit.insufficientCurrency;
     return TalentQuote(
-      id,
-      rank,
-      buying,
-      price.batchCost(rank, buying),
-      before,
-      after,
-      buying > 0
-          ? null
-          : rank >= curve.cap
-          ? 'Maximum rank'
-          : rank >= limit
-          ? 'Requires first clear of Stage ${limit == 0
+      id: id,
+      rank: rank,
+      count: buying,
+      cost: price.batchCost(rank, buying),
+      nextCost: rank == curve.cap ? Amount.zero : price.cost(rank),
+      before: before,
+      after: after,
+      delta: after - before,
+      limit: boundary,
+      requiredStage: boundary == PurchaseLimit.milestone
+          ? limit == 0
                 ? d.unlockStage
                 : limit == 3
                 ? 20
-                : 100}'
-          : count == 0
-          ? 'No purchase selected'
-          : 'Not enough Books',
+                : 100
+          : null,
     );
   }
 

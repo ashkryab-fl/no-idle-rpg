@@ -10,7 +10,23 @@ abstract final class ProgressionBalance {
   static const hpGrowth = 1.08;
   static const damageGrowth = 1.065;
   static const enemiesPerStage = 5;
-  static const bossStatMultiplier = 1.10;
+  static const profileId = 'phase06_calibrated_v3';
+  static const bossHp = 2.2;
+  static const bossDamage = 1.2;
+  static const bossGold = 2.0;
+  static const enemyGrowthKnee = 40;
+  static const enemyGrowthWidth = 40.0;
+  static const enemyGrowthTail = .35;
+  static const enemyCritChanceFactor = 4.0;
+  static const enemyCritBonusFactor = 2.0;
+  static const talentCostGrowth = 1.8;
+  static const bossDamageTalent = .5;
+  static const firstClearGoldTalent = 1.5;
+  static const stageHealTalent = .2;
+  static const critProtectionTalent = .8;
+  static const shorterTravelTalent = .25;
+  static const stageGoldTalent = .5;
+  static const firstClearGoldBaseMultiplier = 3.0;
   static const enemyCritChance = .03;
   static const enemyCritDamage = 1.5;
   static const enemyWeight = 1.0;
@@ -18,9 +34,8 @@ abstract final class ProgressionBalance {
   static const goldRewardGrowth = 1.10;
 
   static const upgradeGrowth = 1.05;
-  // Small cost/power gap: stages slow down gradually over weeks of farming.
-  // A 30-day event simulation is available in tool/balance/simulate_progression.dart.
-  static const equipmentCostGrowth = 1.1405;
+  // Calibrated candidate; remaining pacing gaps are summarized in docs/balance_refactoring_summary.md.
+  static const equipmentCostGrowth = 1.1195;
   static const critChanceCap = .8;
   // +0.1 percentage point of crit chance and +0.01x crit multiplier per level.
   static const critChanceBonus = .001;

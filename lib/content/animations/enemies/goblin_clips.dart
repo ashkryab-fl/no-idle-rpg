@@ -18,8 +18,6 @@ abstract final class GoblinClips {
   );
 
   static AnimationResources resources() {
-    // Atlas order: 0 → 1 → 0 → 2 → 3 → 2 → 0. The damage marker lands on
-    // the fully extended knife (cell 4); cadence uses the shared combat clock.
     final sheet = spriteSheetResources(
       id: attackId,
       asset: asset,

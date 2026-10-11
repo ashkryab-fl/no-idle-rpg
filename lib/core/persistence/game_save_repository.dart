@@ -8,10 +8,24 @@ abstract class GameSaveRepository {
   Future<void> reset();
 }
 
+enum SaveLoadStatus { newGame, current, recoveredBackup, discardedLegacy }
+
+extension SaveLoadMessage on SaveLoadStatus {
+  String? get notice => switch (this) {
+    SaveLoadStatus.newGame || SaveLoadStatus.current => null,
+    SaveLoadStatus.recoveredBackup =>
+      'Progress restored from backup. Changes since that save may be lost.',
+    SaveLoadStatus.discardedLegacy =>
+      'An older pre-release save was reset. A new adventure has started.',
+  };
+}
+
 /// Serialized writes, atomic rename and last-known-good backup.
 class FileGameSaveRepository implements GameSaveRepository {
   FileGameSaveRepository(this.directory);
   final Directory directory;
+  SaveLoadStatus _lastLoadStatus = SaveLoadStatus.newGame;
+  SaveLoadStatus get lastLoadStatus => _lastLoadStatus;
   Future<void> _queue = Future.value();
   File get _file => File('${directory.path}/save.json');
   File get _backup => File('${directory.path}/save.backup.json');
@@ -34,6 +48,7 @@ class FileGameSaveRepository implements GameSaveRepository {
 
   @override
   Future<GameSave?> load() => _serialized(() async {
+    _lastLoadStatus = SaveLoadStatus.newGame;
     final primary = await _read(_file);
     final backup = await _read(_backup);
     // Never automatically downgrade or overwrite an unknown schema, even if
@@ -41,8 +56,14 @@ class FileGameSaveRepository implements GameSaveRepository {
     for (final read in [primary, backup]) {
       if (read.error is UnsupportedError) throw read.error!;
     }
-    if (primary.save != null) return primary.save;
-    if (backup.save != null) return backup.save;
+    if (primary.save != null) {
+      _lastLoadStatus = SaveLoadStatus.current;
+      return primary.save;
+    }
+    if (backup.save != null) {
+      _lastLoadStatus = SaveLoadStatus.recoveredBackup;
+      return backup.save;
+    }
     final failure = primary.error ?? backup.error;
     if (failure != null) {
       throw FormatException('Save and backup could not be read: $failure');
@@ -51,6 +72,7 @@ class FileGameSaveRepository implements GameSaveRepository {
     // runs in the same queue as save/reset, so legacy cannot reappear later.
     if (primary.legacy || backup.legacy) {
       await _deleteFiles();
+      _lastLoadStatus = SaveLoadStatus.discardedLegacy;
     }
     return null;
   });

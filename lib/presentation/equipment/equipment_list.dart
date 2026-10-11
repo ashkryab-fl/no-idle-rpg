@@ -3,7 +3,6 @@ import '../../app/game_controller.dart';
 import '../../domain/equipment/equipment.dart';
 import '../../core/numbers/amount.dart';
 import '../../core/numbers/number_formatter.dart';
-import '../../domain/character/character.dart';
 
 class EquipmentList extends StatefulWidget {
   const EquipmentList({super.key, required this.controller});
@@ -19,16 +18,13 @@ class _EquipmentListState extends State<EquipmentList> {
     final game = widget.controller.simulation;
     final wallet = game.character.gold;
     final levels = game.character.equipment;
-    final stats = game.stats;
-    String preciseAmount(Amount value) => value.log10 < 3
-        ? value.toDouble().toStringAsFixed(2)
-        : NumberFormatter.amount(value);
-    String statValue(CharacterStat stat, CombatStats values) => switch (stat) {
-      CharacterStat.damage => preciseAmount(values.damage),
-      CharacterStat.maxHp => preciseAmount(values.maxHp),
+    String statValue(CharacterStat stat, Amount value) => switch (stat) {
+      CharacterStat.damage ||
+      CharacterStat.maxHp => NumberFormatter.amount(value),
       CharacterStat.critChance =>
-        '${(values.critChance * 100).toStringAsFixed(2)}%',
-      CharacterStat.critDamage => '${values.critDamage.toStringAsFixed(2)}×',
+        '${NumberFormatter.decimal(value.toDouble() * 100)}%',
+      CharacterStat.critDamage =>
+        '${NumberFormatter.decimal(value.toDouble())}×',
     };
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -38,18 +34,14 @@ class _EquipmentListState extends State<EquipmentList> {
           style: const TextStyle(color: Color(0xffffd58a)),
         ),
         const SizedBox(height: 8),
-        const Text(
-          'Stats: now → after selected purchase',
-          style: TextStyle(fontSize: 12, color: Colors.white60),
-        ),
-        const SizedBox(height: 12),
         SegmentedButton<int>(
           segments: const [
-            ButtonSegment(value: 1, label: Text('x1')),
-            ButtonSegment(value: 10, label: Text('x10')),
+            ButtonSegment(value: 1, label: Text('×1')),
+            ButtonSegment(value: 10, label: Text('×10')),
             ButtonSegment(value: 0, label: Text('MAX')),
           ],
           selected: {count ?? 0},
+          showSelectedIcon: false,
           onSelectionChanged: (v) =>
               setState(() => count = v.first == 0 ? null : v.first),
         ),
@@ -70,45 +62,30 @@ class _EquipmentListState extends State<EquipmentList> {
                 CharacterStat.critChance => 'Crit chance',
                 CharacterStat.critDamage => 'Crit damage',
               };
-              final profile = game.curveProfile;
-              final effectText = switch (definition.stat) {
-                CharacterStat.critChance =>
-                  'Gains decrease after ${(profile.chance.atThreshold * 100).toStringAsFixed(0)}% crit chance.',
-                CharacterStat.critDamage =>
-                  'Gains decrease after ${profile.multiplier.value(profile.multiplier.threshold).toStringAsFixed(2)}× crit damage.',
-                _ =>
-                  'Each level increases ${statLabel.toLowerCase()}; percentage gains gradually decrease.',
-              };
-              final current = statValue(definition.stat, stats);
+              final current = statValue(definition.stat, quote.before);
               var statText = '$statLabel: $current';
               if (buying > 0) {
-                final preview = CharacterProgress()
-                  ..equipment.addAll(game.character.equipment);
-                preview.equipment[definition.id] = level + buying;
-                final after = statValue(
-                  definition.stat,
-                  CharacterStats.calculate(preview, profile: profile),
-                );
-                statText += ' → $after (after +$buying)';
+                final after = statValue(definition.stat, quote.after);
+                statText += ' → $after';
               }
-              String gain(double value) => value.abs() >= .01
-                  ? value.toStringAsFixed(4)
-                  : value.toStringAsPrecision(6);
-              final relativePercent =
-                  (Amount.fromLog(quote.after.log10 - quote.before.log10) -
-                          Amount.one)
-                      .scale(100);
+              final relativePercent = quote.relativePercent;
               final relativeGain = relativePercent.log10 < 6
-                  ? gain(relativePercent.toDouble())
-                  : NumberFormatter.amount(relativePercent);
+                  ? NumberFormatter.gain(relativePercent.toDouble())
+                  : NumberFormatter.amount(relativePercent, whole: false);
+              String gain(double value) {
+                final text = NumberFormatter.gain(value);
+                return text.startsWith('<') ? text : '+$text';
+              }
+
               final deltaText = buying == 0
                   ? quote.blockedReason ?? 'No purchase selected'
                   : switch (definition.stat) {
                       CharacterStat.critChance =>
-                        'Gain: +${gain(100 * (profile.chance.value(level + buying) - profile.chance.value(level)))} percentage points',
+                        'Gain: ${gain(100 * quote.delta.toDouble())} pp',
                       CharacterStat.critDamage =>
-                        'Gain: +${gain(profile.multiplier.value(level + buying) - profile.multiplier.value(level))}×',
-                      _ => 'Gain: +$relativeGain%',
+                        'Gain: ${gain(quote.delta.toDouble())}×',
+                      _ =>
+                        'Gain: ${relativeGain.startsWith("<") ? relativeGain : "+$relativeGain"}%',
                     };
               return Card(
                 color: const Color(0x88232c3d),
@@ -132,28 +109,28 @@ class _EquipmentListState extends State<EquipmentList> {
                         ],
                       ),
                       const SizedBox(height: 4),
-                      Text(
-                        statText,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Color(0xff9bdfcc),
+                      Tooltip(
+                        message: deltaText,
+                        child: Text(
+                          statText,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Color(0xff9bdfcc),
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        deltaText,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Colors.white60,
+                      if (buying == 0 ||
+                          current ==
+                              statValue(definition.stat, quote.after)) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          deltaText,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.white60,
+                          ),
                         ),
-                      ),
-                      Text(
-                        effectText,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: Colors.white54,
-                        ),
-                      ),
+                      ],
                       const SizedBox(height: 8),
                       SizedBox(
                         width: double.infinity,
@@ -166,8 +143,10 @@ class _EquipmentListState extends State<EquipmentList> {
                               : null,
                           child: Text(
                             buying > 0
-                                ? 'Upgrade +$buying · ${NumberFormatter.amount(quote.cost)}'
-                                : 'Upgrade · ${NumberFormatter.amount(definition.cost(level))}',
+                                ? 'Upgrade +$buying · ${NumberFormatter.price(quote.cost)} Gold'
+                                : quote.nextCost.isZero
+                                ? 'Upgrade unavailable'
+                                : 'Upgrade · ${NumberFormatter.price(quote.nextCost)} Gold',
                           ),
                         ),
                       ),

@@ -45,7 +45,7 @@ final class Amount implements Comparable<Amount> {
   Amount operator *(Amount other) =>
       isZero || other.isZero ? zero : Amount.fromLog(log10 + other.log10);
   Amount scale(num value) => this * Amount.fromNum(value);
-  Amount grow(double growth, int level) => isZero
+  Amount grow(double growth, num level) => isZero
       ? zero
       : Amount.fromLog(log10 + level * math.log(growth) / math.ln10);
   double ratio(Amount other) => isZero

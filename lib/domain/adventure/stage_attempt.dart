@@ -18,6 +18,7 @@ class TalentEffects {
         'stage_heal' => .3,
         'crit_protection' => .8,
         'shorter_travel' => .35,
+        'first_clear_gold' => 3,
         _ => .75,
       };
       if (!v.isFinite || v < 0 || v > limit) {
@@ -138,7 +139,7 @@ class StageAttempt {
         'Unknown saved talent profile; recovery required',
       );
     }
-    return StageAttempt(
+    final result = StageAttempt(
       id: json['id'] as int,
       stage: json['stage'] as int,
       profileId: json['profileId'] as String,
@@ -152,5 +153,14 @@ class StageAttempt {
           )
           .toList(),
     );
+    for (final e in result.ranks.entries) {
+      final expected = TalentProfile.candidate.curves[e.key]!.value(e.value);
+      if ((result.effects[e.key] - expected).abs() > 1e-12) {
+        throw const FormatException(
+          'Saved effect does not match its paid rank/profile',
+        );
+      }
+    }
+    return result;
   }
 }

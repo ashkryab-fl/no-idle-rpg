@@ -20,7 +20,7 @@ class GameSave {
   }) : adventure =
            adventure ??
            AdventureCheckpoint(hp: CharacterStats.calculate(character).maxHp);
-  static const currentVersion = 9;
+  static const currentVersion = 10;
   final AdventureCheckpoint adventure;
   final CharacterProgress character;
   final ActivityStatisticsService activity;

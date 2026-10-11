@@ -1,4 +1,5 @@
 import '../numbers/stable_math.dart';
+import 'progression_balance.dart';
 
 class TalentCurve {
   const TalentCurve({
@@ -46,18 +47,38 @@ class TalentCurve {
 
 class TalentProfile {
   const TalentProfile({
-    this.id = 'phase03_candidate_v1',
-    this.bossDamage = const TalentCurve(maximum: .5),
-    this.firstClearGold = const TalentCurve(maximum: .5),
-    this.stageHeal = const TalentCurve(maximum: .2),
-    this.critProtection = const TalentCurve(maximum: .6),
-    this.shorterTravel = const TalentCurve(maximum: .25),
-    this.stageGold = const TalentCurve(maximum: .5),
+    this.id = ProgressionBalance.profileId,
+    this.bossDamage = const TalentCurve(
+      maximum: ProgressionBalance.bossDamageTalent,
+      costGrowth: ProgressionBalance.talentCostGrowth,
+    ),
+    this.firstClearGold = const TalentCurve(
+      maximum: ProgressionBalance.firstClearGoldTalent,
+      costGrowth: ProgressionBalance.talentCostGrowth,
+    ),
+    this.stageHeal = const TalentCurve(
+      maximum: ProgressionBalance.stageHealTalent,
+      costGrowth: ProgressionBalance.talentCostGrowth,
+    ),
+    this.critProtection = const TalentCurve(
+      maximum: ProgressionBalance.critProtectionTalent,
+      costGrowth: ProgressionBalance.talentCostGrowth,
+    ),
+    this.shorterTravel = const TalentCurve(
+      maximum: ProgressionBalance.shorterTravelTalent,
+      costGrowth: ProgressionBalance.talentCostGrowth,
+    ),
+    this.stageGold = const TalentCurve(
+      maximum: ProgressionBalance.stageGoldTalent,
+      costGrowth: ProgressionBalance.talentCostGrowth,
+    ),
     this.firstBooks = 3,
     this.repeatBooks = 1,
     this.repeatLimit = 2,
     this.milestoneBooks = 5,
     this.stageGoldRepeatLimit = 2,
+    this.firstClearGoldBaseMultiplier =
+        ProgressionBalance.firstClearGoldBaseMultiplier,
   });
   static const candidate = TalentProfile();
   final String id;
@@ -72,6 +93,7 @@ class TalentProfile {
       repeatLimit,
       milestoneBooks,
       stageGoldRepeatLimit;
+  final double firstClearGoldBaseMultiplier;
   Map<String, TalentCurve> get curves => {
     'boss_damage': bossDamage,
     'first_clear_gold': firstClearGold,
@@ -82,6 +104,8 @@ class TalentProfile {
   };
   void validate() {
     if (id.isEmpty ||
+        !firstClearGoldBaseMultiplier.isFinite ||
+        firstClearGoldBaseMultiplier <= 0 ||
         firstBooks < 0 ||
         repeatBooks < 0 ||
         milestoneBooks < 0 ||
@@ -97,6 +121,7 @@ class TalentProfile {
           'stage_heal' => .3,
           'crit_protection' => .8,
           'shorter_travel' => .35,
+          'first_clear_gold' => 3,
           _ => .75,
         },
       );
@@ -111,5 +136,6 @@ class TalentProfile {
     'repeatLimit': repeatLimit,
     'milestoneBooks': milestoneBooks,
     'stageGoldRepeatLimit': stageGoldRepeatLimit,
+    'firstClearGoldBaseMultiplier': firstClearGoldBaseMultiplier,
   };
 }

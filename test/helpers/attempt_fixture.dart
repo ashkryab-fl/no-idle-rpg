@@ -10,6 +10,7 @@ void prepareWaveFixture(GameSimulation game, int stage, int wave) {
     game.character.talents,
     stage,
     game.spawner.plan(stage),
+    profile: game.talentProfile,
   );
   if (wave > 1) {
     game.character.talents.lastSettledAttempt = game.activeAttempt!.id;

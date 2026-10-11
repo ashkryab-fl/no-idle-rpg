@@ -149,7 +149,9 @@ Simulation використовує delta time accumulator із fixed step, а �
 
 ## Balance і progression
 
-Бойові, ворожі та фінансові коефіцієнти — `lib/core/balance/progression_balance.dart`. Версійований `EquipmentCurveProfile.candidate` (`phase02_candidate_v1`) містить окремі криві Weapon, Armor, Helmet і Amulet. `CharacterStats.calculate` застосовує їх один раз; runtime, preview та event simulator використовують цей resolver. `game_balance.dart` містить rendering/timing/platform settings.
+[Загальний висновок рефакторингу балансу](docs/balance_refactoring_summary.md).
+
+Бойові, ворожі та фінансові коефіцієнти — `lib/core/balance/progression_balance.dart`. Версійований `EquipmentCurveProfile.candidate` (`phase02_candidate_v1`) містить окремі криві Weapon, Armor, Helmet і Amulet. `CharacterStats.calculate` застосовує їх один раз; runtime і preview використовують цей resolver. `game_balance.dart` містить rendering/timing/platform settings.
 
 ```text
 tier = stage - 1
@@ -157,21 +159,23 @@ onVictory (after enemy death): kill Gold; kills += 1; stageKills += 1
 onStageClear: first/repeat/milestone Books, eligible Gold lines and snapshot heal
 after 5 stage victories: stage += 1; stageKills = 0
 onHeroDeath: stage = max(1, stage - 1); stageKills = 0
-enemyHP = baseHP × 1.08^tier; enemyDamage = baseDamage × 1.065^tier
+effectiveTier = tier (tier ≤ 40); інакше 40 + .35×x + .65×40×ln(1+x/40), x=tier−40
+enemyHP = baseHP × 1.08^effectiveTier; enemyDamage = baseDamage × 1.065^effectiveTier
+boss: HP ×2.2; damage ×1.2; Gold ×2; enemy crit .12, multiplier 2.0
 goldReward = baseGold × 1.10^tier
 Books: first clear 3; next two clears 1 each; later clears 0
 Books milestones: stages 5, 10, 20 and every further multiple of 20 → 5 each
-cost(level) = baseCost × 1.1405^level
-batchCost(level, n) = cost(level) × (1.1405^n - 1) / .1405
+cost(level) = baseCost × 1.1195^level
+batchCost(level, n) = cost(level) × (1.1195^n - 1) / .1195
 ```
 
-HUD показує `Stage N · Wave W/5`. Перші чотири хвилі — звичайні вороги; п’ята — бос із +30% до розміру та +10% до HP і damage. Перемоги не збільшують базові характеристики; лише обраний Stage recovery лікує живого героя після всіх п’яти хвиль. Смерть відкочує Stage на один (мінімум 1), wave на 1/5; Gold/Books, equipment і lifetime kills зберігаються. Respawn відновлює full HP. Armor живому герою додає фактичну deltaMaxHp, до нового max HP; мертвого героя покупка не оживляє. Інші предмети не лікують. Attack speed героя стала: 1 атака/с.
+HUD показує `Stage N · Wave W/5`. Перші чотири хвилі — звичайні вороги; п’ята — бос із +30% до розміру, HP ×2.2, damage ×1.2 і Gold ×2. Перемоги не збільшують базові характеристики; лише обраний Stage recovery лікує живого героя після всіх п’яти хвиль. Смерть відкочує Stage на один (мінімум 1), wave на 1/5; Gold/Books, equipment і lifetime kills зберігаються. Respawn відновлює full HP. Armor живому герою додає фактичну deltaMaxHp, до нового max HP; мертвого героя покупка не оживляє. Інші предмети не лікують. Attack speed героя стала: 1 атака/с.
 
-Gold купує тільки чотири зареєстровані предмети. Books купують шість талантів у трьох парах: Boss damage / First-clear Gold, Stage recovery / Crit protection, Shorter travel / Stage Gold. `TalentProfile.candidate` (`phase03_candidate_v1`) містить незалежні B/τ/R і ціни. Ранги 1–3 відкриваються після першого clear Stage 1/3/5 відповідної пари; 4–6 після 20, 7–10 після 100. Ціна наступного рангу — `3×1.6^n Books`, ефект — `B×(1−exp(−n/3))/(1−exp(−10/3))`. B: .5/.5/.2/.6/.25/.5.
+Gold купує тільки чотири зареєстровані предмети. Books купують шість талантів у трьох парах: Boss damage / First-clear Gold, Stage recovery / Crit protection, Shorter travel / Stage Gold. `TalentProfile.candidate` (`phase06_calibrated_v3`) містить незалежні B/τ/R і ціни. Ранги 1–3 відкриваються після першого clear Stage 1/3/5 відповідної пари; 4–6 після 20, 7–10 після 100. Ціна наступного рангу — `3×1.8^n Books`, ефект — `B×(1−exp(−n/3))/(1−exp(−10/3))`. B: .5/1.5/.2/.8/.25/.5.
 
 Купівля не обирає талант і не лікує. Вибір безкоштовний, одна альтернатива або none на пару. Незмінний `StageAttempt` фіксує ID/ранги/ефекти й п’ять ворогів, номінальні Gold rewards та travel distances перед першим продуктивним рухом. Зміни рангу/вибору під час спроби застосовуються до наступної. Equipment діє одразу. Clear/death завершує спробу; rest, suspend і restart зберігають її.
 
-`StageSettlement` — спільний runtime/runner resolver. Окремі lines: kill Gold, first-clear base (nominal boss Gold для всіх build), first-clear talent bonus, stage talent bonus (сума п’яти nominal kills), first/repeat/milestone Books. First-clear/milestone не повторюються. Stage Gold дає бонус лише на першому clear і двох повторних; ці три opportunities витрачаються й без активного таланта. Books за звичайні kills і старий random/exponential drop видалені. Після вичерпання бонусів звичайний kill Gold продовжує оплачувати equipment.
+`StageSettlement` — resolver контекстних нагород. Окремі lines: kill Gold, first-clear base (3×nominal boss Gold для всіх build), first-clear talent bonus, stage talent bonus (сума п’яти nominal kills), first/repeat/milestone Books. First-clear/milestone не повторюються. Stage Gold дає бонус лише на першому clear і двох повторних; ці три opportunities витрачаються й без активного таланта. Books за звичайні kills і старий random/exponential drop видалені. Після вичерпання бонусів звичайний kill Gold продовжує оплачувати equipment.
 
 Криві кандидата (`n` — рівень відповідного предмета):
 
@@ -183,7 +187,10 @@ Gold купує тільки чотири зареєстровані предм�
 
 Equipment UI показує before/after, фактичний count/cost і окремий gain: crit у відсоткових пунктах, multiplier у ×, HP/damage у %. Малі дельти мають додаткову точність. Постійні слоти не створюють inventory або replacement.
 
-Baseline другого етапу: 20 seed, 49 profile/policy/income конфігурацій, 30 хв / 1 / 3 / 7 / 49 / 210 productive hours. Адаптивний кандидат досягає медіанного highest Stage 30 за 7 годин і 69 за 210 годин; balanced за доступністю — 33 і 73. Видалення Books-дублів є головним джерелом сповільнення; типові ранги ще не доходять до crit soft-cap. Це технічний проміжний баланс: цінність ранніх crit items і пізній темп потребують наступного tuning. [Звіт A01–A14, команди й обмеження](docs/phase_02_acceptance_report.md). [Історичний етап 1](docs/phase_01_acceptance_report.md).
+Equipment і talents використовують спільний `PurchaseQuote<T>` з валютою, rank/count, пакетною/одиничною ціною, before/after/delta та `PurchaseLimit`. Preview й ціни беруться з domain quote; UI не клонує героя й не рахує ефект покупки повторно. Fractional ціни відображаються для обох валют. x10/MAX показують фактичний пакет; talent preview описує owned ability навіть для inactive альтернативи. Wallet, milestone gate, maximum rank, precision і explicit minimum effect мають різні причини. Production epsilon не введено; експериментальний minimumChanceGain пояснюється в Equipment UI.
+
+
+
 
 ### Великі числа
 
@@ -217,11 +224,12 @@ instance.lock         exclusive OS lock for process lifetime
 
 Main startup бере instance lock: одночасні процеси не повинні перезаписувати progression один одного. Writes serialized, JSON snapshot захоплюється до asynchronous I/O. На macOS rename atomic; на Windows replacement потребує delete + rename, тож backup захищає від crash між ними. Якщо primary пошкоджений, load пробує backup. Перевіряються не тільки JSON syntax, а й finite/nonnegative durations/distance, kill count та рівні покупок. Помилка запису backup не замовчується як помилка JSON. Якщо обидва пошкоджені або schema новіша — показується startup error із Retry/confirmed Reset, automatic overwrite немає.
 
-Save schema version 9. Зберігаються stage/stageKills, Books/Gold/equipment, таланти й queued selection, first-clear frontier, sparse repeat ledger, settlement cursor, незмінна активна спроба, HP і travel/combat/reward/death checkpoint, distance, lifetime kills, activity aggregates, settings і UTC timestamp. Відомі дорелізні v1–v8 primary/backup не мігруються: якщо немає актуального сейву, вони очищаються в serialized queue і гра починається заново. Legacy primary не блокує актуальний backup. Current JSON із полем character `upgrades` (навіть порожнім) є пошкодженим: потрібен валідний current backup або явна помилка. Пошкоджений JSON без читабельної версії не вважається legacy. Future version у primary чи backup блокує автоматичний перезапис. Зайві character level/XP поля ігноруються й не емітуються наступним записом.
+Save schema version 10. Зберігаються stage/stageKills, Books/Gold/equipment, таланти й queued selection, first-clear frontier, sparse repeat ledger, settlement cursor, незмінна активна спроба, HP і travel/combat/reward/death checkpoint, distance, lifetime kills, activity aggregates, settings і UTC timestamp. Відомі дорелізні v1–v9 primary/backup не мігруються: якщо немає актуального сейву, вони очищаються в serialized queue і гра починається заново. Legacy primary не блокує актуальний backup. Current JSON із полем character `upgrades` (навіть порожнім) є пошкодженим: потрібен валідний current backup або явна помилка. Пошкоджений JSON без читабельної версії не вважається legacy. Future version у primary чи backup блокує автоматичний перезапис. Зайві character level/XP поля ігноруються й не емітуються наступним записом.
 
 Capture копіює mutable character/activity/settings синхронно. Restart зберігає HP і selection snapshot; бойова хвиля відновлюється зі свіжим HP того самого запланованого ворога. Pending enemy death завершує оплату один раз; committed reward тільки відновлює hold. Dead checkpoint відновлює death/respawn без передчасного лікування. Boundary після clear явно має `attempt=null`. Невідомий talent profile або суперечливий cursor викликає recovery error/current backup, без перерахунку saved effects. Exact frame/RNG resume не реалізовано; backup може відкотити весь узгоджений checkpoint.
 
-Current HP і незавершений combat не зберігаються. Перезапуск починається з max HP, тому він досі може використовуватися для лікування; цей persistence-ризик винесений у звіт. Baseline запускається без restart.
+`FileGameSaveRepository.lastLoadStatus` відрізняє нову гру, current load, backup recovery і legacy reset. Recovery/reset відкривають меню з повідомленням; runtime error і startup notice закриваються окремо. Future/current failures зберігають чинний error flow, без автоматичного початку нової гри.
+
 
 Save: раз на хвилину (60 s), після кожного успішного character/equipment upgrade та зміни settings, на lifecycle inactive/paused/detached та перед controlled exit. Exit призупиняє simulation, завершує activity session і чекає save; повторні натискання не запускають паралельний exit. Якщо save або native quit не вдалися, гра відновлюється й показує помилку. Startup error UI теж підтримує native Quit. Force-kill/power-loss може втратити останні ≤60 s. Reset вимагає Flutter confirmation і очищає primary, backup та live progression; instance lock зберігається до виходу.
 
@@ -388,8 +396,7 @@ Sound preference зберігається, але audio playback поки не �
 
 [Checklist усіх 34 пунктів і pending platform matrix](docs/requirements_checklist.md).
 
-Актуальні результати перевірки етапу 3 наведено у [звіті](docs/phase_03_acceptance_report.md), результати етапу 2 — у [попередньому звіті](docs/phase_02_acceptance_report.md); старі build/runtime заміри вище є історичними.
 
-Tests покривають незмінність сили без покупок, контекстне stage лікування й відсутність free restart heal, upgrade cost/x10/MAX, crit/event timing, enemy/Gold scaling, finite stage Books, talent gates/snapshots/selection/reward idempotency, graph/variant eligibility і interruption, activity sessions/local midnight/suspend, save/load/current backup/legacy reset/future preservation, відсутність офлайн-нарахувань, enormous number formatting і FPS-independent simulation outcomes.
+Тести залишено тільки для критичних вузлів: арифметики валют, списання Gold/Books, незмінності активного знімка проходження, одноразових нагород, бойових ударів та надійного збереження/відновлення прогресу. Правила додавання тестів: [AGENTS.md](AGENTS.md).
 
 API references: [FlameGame](https://docs.flame-engine.org/latest/flame/game.html), [Flame image/animation API](https://docs.flame-engine.org/latest/flame/rendering/images.html), [Flutter macOS controller](https://api.flutter.dev/macos-embedder/interface_flutter_view_controller.html), [Apple idle timestamps](https://developer.apple.com/documentation/coregraphics/cgeventsource/secondssincelasteventtype(_:eventtype:)), [Win32 GetLastInputInfo](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getlastinputinfo).

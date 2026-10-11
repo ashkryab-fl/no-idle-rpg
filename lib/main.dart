@@ -21,17 +21,21 @@ Future<void> bootstrap() async {
   window.onCloseRequested(window.quit);
   FileGameSaveRepository? repository;
   try {
-    final support = await getApplicationSupportDirectory();
-    final saveDirectory = Directory('${support.path}/idle_companion');
-    _instanceLock ??= await AppInstanceLock.acquire(saveDirectory);
-    repository = FileGameSaveRepository(
-      Directory('${support.path}/idle_companion'),
+    const isolatedPath = String.fromEnvironment(
+      'IDLE_COMPANION_SAVE_DIRECTORY',
     );
+    final saveDirectory = isolatedPath.isNotEmpty
+        ? Directory(isolatedPath)
+        : Directory(
+            '${(await getApplicationSupportDirectory()).path}/idle_companion',
+          );
+    _instanceLock ??= await AppInstanceLock.acquire(saveDirectory);
+    repository = FileGameSaveRepository(saveDirectory);
     final save = await repository.load();
     final simulation = save?.restoreSimulation() ?? GameSimulation();
     await window.configure(
       alwaysOnTop: simulation.settings.alwaysOnTop,
-      expanded: false,
+      expanded: repository.lastLoadStatus.notice != null,
       heroVisible: simulation.settings.overallOpacity > 0,
     );
     runApp(
@@ -43,6 +47,7 @@ Future<void> bootstrap() async {
               repository,
               window,
               UserActivityService.native(),
+              startupNotice: repository.lastLoadStatus.notice,
             ),
           ),
         ],

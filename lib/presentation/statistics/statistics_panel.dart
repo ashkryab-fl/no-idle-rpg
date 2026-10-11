@@ -37,11 +37,14 @@ class StatisticsPanel extends StatelessWidget {
         ),
         row('DPS', number(stats.dps.scale(game.dpsMultiplier))),
         row('Damage', number(stats.damage)),
-        row('Crit chance', '${(stats.critChance * 100).toStringAsFixed(1)}%'),
-        row('Crit damage', '${stats.critDamage.toStringAsFixed(2)}×'),
+        row(
+          'Crit chance',
+          '${NumberFormatter.decimal(stats.critChance * 100)}%',
+        ),
+        row('Crit damage', '${NumberFormatter.decimal(stats.critDamage)}×'),
         row('HP / max HP', '${number(game.heroHp)} / ${number(stats.maxHp)}'),
         const Divider(),
-        row('Distance traveled', '${game.distance.toStringAsFixed(0)} m'),
+        row('Distance traveled', '${NumberFormatter.decimal(game.distance)} m'),
         row('Enemies killed', '${game.kills}'),
         row(
           'Active today',

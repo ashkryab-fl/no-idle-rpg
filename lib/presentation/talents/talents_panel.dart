@@ -1,41 +1,56 @@
 import 'package:flutter/material.dart';
 import '../../app/game_controller.dart';
-import '../../core/numbers/number_formatter.dart';
-import '../../domain/progression/upgrade_price.dart';
-import '../../domain/talents/talents.dart';
-import '../../domain/economy/reward.dart';
 import '../../core/numbers/amount.dart';
+import '../../core/numbers/number_formatter.dart';
+import '../../domain/economy/reward.dart';
+import '../../domain/talents/talents.dart';
 
-class TalentsPanel extends StatelessWidget {
+class TalentsPanel extends StatefulWidget {
   const TalentsPanel({super.key, required this.controller});
   final GameController controller;
-  String books(Amount value) {
-    if (value.log10 >= 6) return NumberFormatter.amount(value);
-    var text = value.toDouble().toStringAsFixed(6);
-    while (text.endsWith('0') && text.length - text.indexOf('.') > 3) {
-      text = text.substring(0, text.length - 1);
-    }
-    return text;
-  }
+
+  @override
+  State<TalentsPanel> createState() => _TalentsPanelState();
+}
+
+class _TalentsPanelState extends State<TalentsPanel> {
+  int? count = 1;
+
+  String books(Amount value) => NumberFormatter.price(value);
+  String percent(double value) => '${NumberFormatter.decimal(value * 100)}%';
 
   @override
   Widget build(BuildContext context) {
+    final controller = widget.controller;
     final game = controller.simulation;
     final progress = game.character.talents;
-    String percent(double value) => '${(value * 100).toStringAsFixed(2)}%';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text('${books(game.character.books)} Books'),
-        const Text(
-          'Buy ranks with Books, then select one talent per pair. Changes apply when the next stage attempt starts.',
-          style: TextStyle(fontSize: 11, color: Colors.white70),
-        ),
         Text(
-          'Current attempt: ${game.activeAttempt == null ? "waiting to start" : "Stage ${game.activeAttempt!.stage}"}',
+          '${books(game.character.books)} Books',
+          style: const TextStyle(color: Color(0xffffd58a)),
+        ),
+        const SizedBox(height: 4),
+        const Text(
+          'Choose one talent per pair. Changes apply next attempt.',
+          style: TextStyle(fontSize: 11, color: Colors.white60),
+        ),
+        const SizedBox(height: 12),
+        SegmentedButton<int>(
+          segments: const [
+            ButtonSegment(value: 1, label: Text('×1')),
+            ButtonSegment(value: 10, label: Text('×10')),
+            ButtonSegment(value: 0, label: Text('MAX')),
+          ],
+          selected: {count ?? 0},
+          showSelectedIcon: false,
+          onSelectionChanged: (selection) => setState(
+            () => count = selection.first == 0 ? null : selection.first,
+          ),
         ),
         for (final pair in TalentPair.values) ...[
-          const Divider(),
+          const SizedBox(height: 12),
           Row(
             children: [
               Expanded(
@@ -43,11 +58,13 @@ class TalentsPanel extends StatelessWidget {
                   TalentPair.boss => 'Boss hunting',
                   TalentPair.endurance => 'Endurance',
                   TalentPair.travel => 'Travel',
-                }),
+                }, style: const TextStyle(fontWeight: FontWeight.w600)),
               ),
               TextButton(
-                onPressed: () => controller.selectTalent(pair, null),
-                child: const Text('Select none'),
+                onPressed: progress.selectedForNextAttempt[pair] != null
+                    ? () => controller.selectTalent(pair, null)
+                    : null,
+                child: const Text('Clear'),
               ),
             ],
           ),
@@ -61,6 +78,7 @@ class TalentsPanel extends StatelessWidget {
                 final quote = game.talentPurchases.quote(
                   game.character,
                   definition.id,
+                  count: count,
                 );
                 final limit = progress.rankLimit(
                   definition,
@@ -69,71 +87,120 @@ class TalentsPanel extends StatelessWidget {
                 final active = game.activeAttempt?.ranks[definition.id];
                 final selected =
                     progress.selectedForNextAttempt[pair] == definition.id;
-                final nextValue = curve.value(
-                  rank < curve.cap ? rank + 1 : rank,
-                );
-                final cost = UpgradePrice(
-                  baseCost: curve.baseCost,
-                  costGrowth: curve.costGrowth,
-                ).batchCost(rank, 1);
                 final remaining = game.stage > progress.highestFirstClearedStage
-                    ? 3
+                    ? 1 + game.talentProfile.stageGoldRepeatLimit
                     : progress.repeatsRemaining(
                         game.stage,
                         game.talentProfile.stageGoldRepeatLimit,
                       );
+                final description = switch (definition.id) {
+                  'boss_damage' => 'Extra damage against bosses.',
+                  'first_clear_gold' =>
+                    'Bonus Gold on the first clear of a stage.',
+                  'stage_heal' => 'Heal after a stage; cannot revive.',
+                  'crit_protection' => 'Less bonus damage from enemy crits.',
+                  'shorter_travel' => 'Less travel time between enemies.',
+                  'stage_gold' =>
+                    'Bonus Gold for a limited number of stage clears.',
+                  _ => definition.description,
+                };
                 return Card(
                   key: ValueKey('talent_${definition.id}'),
+                  color: const Color(0x88232c3d),
+                  margin: const EdgeInsets.only(bottom: 8),
                   child: Padding(
-                    padding: const EdgeInsets.all(10),
+                    padding: const EdgeInsets.all(12),
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Text(
-                          '${definition.name} · Owned $rank/${curve.cap}',
-                          style: const TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                        Text(
-                          definition.description,
-                          style: const TextStyle(fontSize: 11),
-                        ),
-                        Text(
-                          'Owned effect ${percent(curve.value(rank))} → ${percent(nextValue)}',
-                        ),
-                        Text(
-                          'Current attempt: ${active == null ? "inactive" : "rank $active"} · Next attempt: ${selected ? "rank $rank" : "inactive"}',
-                        ),
-                        Text(
-                          'Active effect: ${percent(game.activeAttempt?.effects[definition.id] ?? 0)} · Selected next effect: ${percent(selected ? curve.value(rank) : 0)}',
-                          style: const TextStyle(fontSize: 11),
-                        ),
-                        Text(
-                          rank >= limit
-                              ? (quote.reason ?? '')
-                              : 'Next rank: ${books(cost)} Books · available through rank $limit',
-                          style: const TextStyle(fontSize: 11),
-                        ),
-                        if (definition.id == 'stage_gold')
-                          Text(
-                            'Stage ${game.stage}: $remaining eligible clears remaining${remaining == 0 ? " · reward exhausted" : ""}',
-                            style: const TextStyle(fontSize: 11),
-                          ),
-                        Wrap(
-                          spacing: 4,
+                        Row(
                           children: [
-                            for (final count in <int?>[1, 10, null])
-                              Builder(
-                                builder: (context) {
-                                  final q = game.talentPurchases.quote(
-                                    game.character,
-                                    definition.id,
-                                    count: count,
-                                  );
-                                  return TextButton(
+                            Expanded(
+                              child: Text(
+                                definition.name,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              '$rank/${curve.cap}',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Colors.white60,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Tooltip(
+                          message: definition.description,
+                          child: Text(
+                            description,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: Colors.white60,
+                            ),
+                          ),
+                        ),
+                        if (limit > 0) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            quote.canPurchase
+                                ? 'Bonus: ${percent(quote.before)} → ${percent(quote.after)}'
+                                : 'Bonus: ${percent(quote.before)}',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Color(0xff9bdfcc),
+                            ),
+                          ),
+                        ],
+                        if (active != null && active > 0) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            active == rank
+                                ? 'Active this stage'
+                                : 'Active this stage: ${percent(game.activeAttempt!.effects[definition.id])}',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: Color(0xff9bdfcc),
+                            ),
+                          ),
+                        ],
+                        if (definition.id == 'stage_gold' && limit > 0) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            remaining == 0
+                                ? 'Stage ${game.stage}: bonus used up'
+                                : 'Stage ${game.stage}: $remaining rewarded clears left',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: Colors.white60,
+                            ),
+                          ),
+                        ],
+                        if (quote.blockedReason != null) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            quote.blockedReason!,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: Colors.white60,
+                            ),
+                          ),
+                        ],
+                        if (limit > 0) ...[
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              if (rank < limit)
+                                Expanded(
+                                  child: FilledButton.tonal(
                                     key: ValueKey(
                                       'buy_${definition.id}_${count ?? "max"}',
                                     ),
-                                    onPressed: q.count > 0
+                                    onPressed: quote.canPurchase
                                         ? () => controller.purchaseTalent(
                                             definition.id,
                                             count,
@@ -143,29 +210,41 @@ class TalentsPanel extends StatelessWidget {
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         Text(
-                                          count == null ? 'MAX' : 'Buy ×$count',
+                                          quote.canPurchase
+                                              ? 'Buy +${quote.count}'
+                                              : 'Buy +1',
                                         ),
                                         Text(
-                                          '${q.count} ranks · ${books(q.cost)} Books',
-                                          style: const TextStyle(fontSize: 10),
+                                          '${books(quote.canPurchase ? quote.cost : quote.nextCost)} Books',
+                                          style: const TextStyle(fontSize: 11),
                                         ),
                                       ],
                                     ),
-                                  );
-                                },
+                                  ),
+                                )
+                              else
+                                const Spacer(),
+                              const SizedBox(width: 8),
+                              TextButton(
+                                key: ValueKey('select_${definition.id}'),
+                                onPressed: rank > 0 && !selected
+                                    ? () => controller.selectTalent(
+                                        pair,
+                                        definition.id,
+                                      )
+                                    : null,
+                                child: Text(
+                                  selected ? 'Selected' : 'Select',
+                                  style: selected
+                                      ? const TextStyle(
+                                          color: Color(0xff9bdfcc),
+                                        )
+                                      : null,
+                                ),
                               ),
-                            TextButton(
-                              key: ValueKey('select_${definition.id}'),
-                              onPressed: rank > 0 && limit > 0
-                                  ? () => controller.selectTalent(
-                                      pair,
-                                      definition.id,
-                                    )
-                                  : null,
-                              child: Text(selected ? 'Selected' : 'Select'),
-                            ),
-                          ],
-                        ),
+                            ],
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -173,26 +252,28 @@ class TalentsPanel extends StatelessWidget {
               },
             ),
         ],
-        const Divider(),
-        const Text(
-          'Latest reward sources',
-          style: TextStyle(fontWeight: FontWeight.w600),
-        ),
-        if (game.lastReward == null)
-          const Text('Complete a wave to receive a reward.'),
-        for (final line
-            in game.lastReward?.lines.entries ??
-                <MapEntry<RewardSource, Amount>>[])
-          Text(
-            '${switch (line.key) {
-              RewardSource.killGold => 'Enemy defeat',
-              RewardSource.firstClearBaseGold => 'First-clear reward',
-              RewardSource.firstClearBonusGold => 'First-clear talent bonus',
-              RewardSource.stageBonusGold => 'Stage talent bonus',
-              RewardSource.firstBooks => 'First-clear Books',
-              RewardSource.repeatBooks => 'Repeat-clear Books',
-              RewardSource.milestoneBooks => 'Milestone Books',
-            }}: ${(line.key.index < 4 ? NumberFormatter.amount(line.value) : books(line.value))} ${line.key.index < 4 ? "Gold" : "Books"}',
+        if (game.lastReward != null)
+          ExpansionTile(
+            tilePadding: EdgeInsets.zero,
+            title: const Text('Last rewards', style: TextStyle(fontSize: 12)),
+            children: [
+              for (final line in game.lastReward!.lines.entries)
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    '${switch (line.key) {
+                      RewardSource.killGold => 'Enemy defeat',
+                      RewardSource.firstClearBaseGold => 'First-clear reward',
+                      RewardSource.firstClearBonusGold => 'First-clear bonus',
+                      RewardSource.stageBonusGold => 'Stage bonus',
+                      RewardSource.firstBooks => 'First-clear Books',
+                      RewardSource.repeatBooks => 'Repeat-clear Books',
+                      RewardSource.milestoneBooks => 'Milestone Books',
+                    }}: ${line.key.index < 4 ? NumberFormatter.amount(line.value) : books(line.value)} ${line.key.index < 4 ? "Gold" : "Books"}',
+                    style: const TextStyle(fontSize: 11, color: Colors.white60),
+                  ),
+                ),
+            ],
           ),
       ],
     );

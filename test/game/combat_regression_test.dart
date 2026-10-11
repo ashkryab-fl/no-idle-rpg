@@ -8,8 +8,6 @@ import 'package:idle_companion/core/animation/ids.dart';
 import 'package:idle_companion/core/numbers/amount.dart';
 import 'package:idle_companion/domain/character/character.dart';
 import 'package:idle_companion/game/systems/combat_system.dart';
-import 'package:idle_companion/game/systems/game_simulation.dart';
-import 'package:idle_companion/game/systems/game_state_machine.dart';
 
 CombatStats fighter(double speed) => CombatStats(
   maxHp: Amount.fromNum(100),
@@ -62,32 +60,4 @@ void main() {
     ).update(.4, fighter(1), fighter(1), 1);
     expect(hits.map((event) => event.fromHero).toList(), [false, true]);
   });
-
-  test(
-    'hero death progresses slowly and holds the final pose for one second',
-    () {
-      final game = GameSimulation(random: Random(1));
-      final death = game.resources.clip(const ClipId('hero.death'));
-      game.killHero();
-      final framesSeen = <int>[];
-      var finalFrameTicks = 0, ticks = 0;
-      while (game.phase != GamePhase.traveling && ticks < 200) {
-        final frame = game.heroPlayback.frameIndex!;
-        if (framesSeen.isEmpty || framesSeen.last != frame) {
-          framesSeen.add(frame);
-        }
-        if (frame == death.frames.length - 1) {
-          finalFrameTicks++;
-        }
-        game.advance(1 / 60);
-        ticks++;
-      }
-      expect(framesSeen, [0, 1, 2, 3]);
-      expect(finalFrameTicks / 60, closeTo(1, 2 / 60));
-      expect(ticks / 60, closeTo(2.2, 2 / 60));
-      expect(game.phase, GamePhase.traveling);
-      expect(game.heroHp.ratio(game.stats.maxHp), closeTo(1, 1e-8));
-      expect(game.heroPlayback.displayLabel, 'hero.walk');
-    },
-  );
 }

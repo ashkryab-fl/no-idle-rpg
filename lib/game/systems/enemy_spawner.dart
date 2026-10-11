@@ -3,6 +3,7 @@ import '../../content/animations/enemies/goblin_clips.dart';
 import '../../core/animation/enemy_animation_content.dart';
 import '../../core/balance/game_balance.dart';
 import '../../core/balance/progression_balance.dart';
+import '../../core/balance/economy_profile.dart';
 import '../../core/numbers/amount.dart';
 import '../../domain/character/character.dart';
 import '../../domain/adventure/stage_attempt.dart';
@@ -61,23 +62,30 @@ class Enemy {
 }
 
 class EnemyFactory {
+  EnemyFactory({this.profile = EconomyProfile.candidate}) {
+    profile.validate();
+  }
+  final EconomyProfile profile;
   Enemy create(EnemyDefinition definition, int tier, {bool isBoss = false}) =>
       Enemy(
         definition,
         CombatStats(
           maxHp: Amount.fromNum(definition.baseHp)
-              .grow(ProgressionBalance.hpGrowth, tier)
-              .scale(isBoss ? ProgressionBalance.bossStatMultiplier : 1),
+              .grow(profile.hpGrowth, profile.effectiveTier(tier))
+              .scale(isBoss ? profile.bossHp : 1),
           damage: Amount.fromNum(definition.baseDamage)
-              .grow(ProgressionBalance.damageGrowth, tier)
-              .scale(isBoss ? ProgressionBalance.bossStatMultiplier : 1),
+              .grow(profile.damageGrowth, profile.effectiveTier(tier))
+              .scale(isBoss ? profile.bossDamage : 1),
           attackSpeed: definition.attackSpeed,
-          critChance: definition.critChance,
-          critDamage: definition.critDamage,
+          critChance: (definition.critChance * profile.critChanceFactor).clamp(
+            0,
+            1,
+          ),
+          critDamage: 1 + (definition.critDamage - 1) * profile.critBonusFactor,
         ),
         Amount.fromNum(
           definition.rewardGold,
-        ).grow(ProgressionBalance.goldRewardGrowth, tier),
+        ).grow(profile.goldGrowth, tier).scale(isBoss ? profile.bossGold : 1),
         isBoss: isBoss,
       );
 }
@@ -87,11 +95,13 @@ class EnemySpawner {
     this.random, {
     Random? travelRandom,
     List<EnemyDefinition>? definitions,
+    EconomyProfile profile = EconomyProfile.candidate,
   }) : travelRandom = travelRandom ?? random,
-       definitions = definitions ?? EnemyCatalog.definitions;
+       definitions = definitions ?? EnemyCatalog.definitions,
+       factory = EnemyFactory(profile: profile);
   final Random random, travelRandom;
   final List<EnemyDefinition> definitions;
-  final factory = EnemyFactory();
+  final EnemyFactory factory;
   double nextDistance() =>
       GameBalance.encounterMinDistance +
       travelRandom.nextDouble() *

@@ -15,11 +15,18 @@ import '../platform/user_activity_service.dart';
 enum OverlayPanel { menu, statistics, equipment, talents, settings, debug }
 
 class AppRuntime {
-  AppRuntime(this.simulation, this.repository, this.window, this.activity);
+  AppRuntime(
+    this.simulation,
+    this.repository,
+    this.window,
+    this.activity, {
+    this.startupNotice,
+  });
   final GameSimulation simulation;
   final GameSaveRepository repository;
   final DesktopWindowService window;
   final UserActivityService activity;
+  final String? startupNotice;
 }
 
 final runtimeProvider = Provider<AppRuntime>(
@@ -31,11 +38,13 @@ class AppUiState {
     this.revision = 0,
     this.panel,
     this.error,
+    this.notice,
     this.idleSeconds = 0,
   });
   final int revision;
   final OverlayPanel? panel;
   final String? error;
+  final String? notice;
   final double idleSeconds;
 }
 
@@ -76,7 +85,10 @@ class GameController extends Notifier<AppUiState> {
       _saveTimer?.cancel();
     });
     Future.microtask(pollActivity);
-    return const AppUiState();
+    return AppUiState(
+      panel: runtime.startupNotice == null ? null : OverlayPanel.menu,
+      notice: runtime.startupNotice,
+    );
   }
 
   GameSimulation get simulation => runtime.simulation;
@@ -86,6 +98,7 @@ class GameController extends Notifier<AppUiState> {
         revision: state.revision + 1,
         panel: state.panel,
         error: state.error,
+        notice: state.notice,
         idleSeconds: state.idleSeconds,
       );
     }
@@ -108,6 +121,7 @@ class GameController extends Notifier<AppUiState> {
         revision: state.revision + 1,
         panel: state.panel,
         error: state.error,
+        notice: state.notice,
         idleSeconds: seconds,
       );
     } catch (error) {
@@ -122,6 +136,7 @@ class GameController extends Notifier<AppUiState> {
       revision: state.revision + 1,
       panel: panel,
       error: state.error,
+      notice: state.notice,
       idleSeconds: state.idleSeconds,
     );
     try {
@@ -141,6 +156,7 @@ class GameController extends Notifier<AppUiState> {
       revision: state.revision + 1,
       panel: state.panel,
       error: message,
+      notice: state.notice,
       idleSeconds: state.idleSeconds,
     );
   }
@@ -149,6 +165,16 @@ class GameController extends Notifier<AppUiState> {
     state = AppUiState(
       revision: state.revision + 1,
       panel: state.panel,
+      notice: state.notice,
+      idleSeconds: state.idleSeconds,
+    );
+  }
+
+  void dismissNotice() {
+    state = AppUiState(
+      revision: state.revision + 1,
+      panel: state.panel,
+      error: state.error,
       idleSeconds: state.idleSeconds,
     );
   }
@@ -291,6 +317,7 @@ class GameController extends Notifier<AppUiState> {
       debugIdleSeconds = null;
       simulation.speed = 1;
       dismissError();
+      dismissNotice();
       await save();
       await show(OverlayPanel.settings);
     } catch (error) {
