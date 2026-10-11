@@ -28,16 +28,7 @@ Future<void> bootstrap() async {
       Directory('${support.path}/idle_companion'),
     );
     final save = await repository.load();
-    final simulation =
-        GameSimulation(
-            character: save?.character,
-            activity: save?.activity,
-            settings: save?.settings,
-          )
-          ..distance = save?.distance ?? 0
-          ..kills = save?.kills ?? 0
-          ..stage = save?.stage ?? 1
-          ..stageKills = save?.stageKills ?? 0;
+    final simulation = save?.restoreSimulation() ?? GameSimulation();
     await window.configure(
       alwaysOnTop: simulation.settings.alwaysOnTop,
       expanded: false,

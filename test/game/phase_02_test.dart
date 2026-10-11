@@ -70,7 +70,14 @@ void main() {
     bonus.runUntil(1800);
     expect(bonus.kills, base.kills);
     expect(bonus.stage, base.stage);
-    expect(bonus.goldEarned.ratio(base.goldEarned), closeTo(1.75, 1e-10));
+    expect(
+      bonus.killGoldEarned.ratio(base.killGoldEarned),
+      closeTo(1.75, 1e-10),
+    );
+    expect(
+      (bonus.goldEarned - bonus.killGoldEarned).toDouble(),
+      closeTo((base.goldEarned - base.killGoldEarned).toDouble(), 1e-8),
+    );
     expect(bonus.booksEarned.log10, base.booksEarned.log10);
     final first = ProgressionSimulation(
       random: ConstantRandom(),
@@ -95,9 +102,9 @@ void main() {
     );
     fast.runUntil(1800);
     expect(fast.kills, greaterThan(base.kills));
-    expect(fast.goldEarned.log10, closeTo(expectedGold.log10, 1e-12));
+    expect(fast.killGoldEarned.log10, closeTo(expectedGold.log10, 1e-12));
     // The per-kill reward is unchanged; higher income comes from more victories.
-    expect(fast.killGoldEarned.log10, fast.goldEarned.log10);
+    expect(fast.goldEarned > fast.killGoldEarned, isTrue);
   });
   test(
     'crafted high-crit contexts give both offensive crit items real effects',

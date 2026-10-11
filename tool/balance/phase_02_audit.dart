@@ -176,7 +176,7 @@ void main(List<String> args) {
       'checkpoints': checkpoints,
       'time': 'productive; no restart, rest or offline rewards',
       'booksIncome':
-          'unchanged random per-kill diagnostic source; booksSpent=0',
+          'current finite stage-settlement sources; booksSpent=0; archived phase-2 report requires reproduce_phase_03_previous.py',
       'profiles': {for (final (p, _, _) in runs) p.id: p.toJson()},
       'incomeInputs': {for (final (_, _, i) in runs) i.id: i.toJson()},
       'stageStressBasis':

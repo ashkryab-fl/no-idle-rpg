@@ -3,6 +3,7 @@ import '../../core/animation/animation_clip.dart';
 import '../../core/animation/attack_playback.dart';
 import '../../core/numbers/amount.dart';
 import '../../domain/character/character.dart';
+import '../../domain/adventure/stage_attempt.dart';
 
 class DamageEvent {
   const DamageEvent({
@@ -10,9 +11,10 @@ class DamageEvent {
     required this.amount,
     required this.critical,
     this.timeWithinStep = 0,
+    this.preventedCritBonus = Amount.zero,
   });
   final bool fromHero, critical;
-  final Amount amount;
+  final Amount amount, preventedCritBonus;
   final double timeWithinStep;
 }
 
@@ -35,48 +37,73 @@ class CombatSystem {
     bool fromHero, {
     double multiplier = 1,
     double timeWithinStep = 0,
+    TalentEffects? effects,
+    bool isBoss = false,
   }) {
     final critical = random.nextDouble() < stats.critChance;
+    final protection = effects?['crit_protection'] ?? 0;
+    final factor = critical
+        ? fromHero
+              ? stats.critDamage
+              : 1 + (stats.critDamage - 1) * (1 - protection)
+        : 1.0;
     return DamageEvent(
+      preventedCritBonus: !fromHero && critical
+          ? stats.damage.scale((stats.critDamage - 1) * protection)
+          : Amount.zero,
       fromHero: fromHero,
       amount: stats.damage.scale(
-        multiplier * (critical ? stats.critDamage : 1),
+        multiplier *
+            factor *
+            (fromHero && isBoss ? 1 + (effects?['boss_damage'] ?? 0) : 1),
       ),
       critical: critical,
       timeWithinStep: timeWithinStep,
     );
   }
 
-  List<DamageEvent> update(
+  Iterable<DamageEvent> update(
     double dt,
     CombatStats hero,
     CombatStats enemy,
-    double multiplier,
-  ) {
+    double multiplier, {
+    TalentEffects? effects,
+    bool isBoss = false,
+  }) {
     if (!dt.isFinite || dt < 0) throw ArgumentError.value(dt, 'dt');
-    final events = <DamageEvent>[];
+    final markers = <(CombatStats, bool, double)>[];
     for (final item in [(heroClock, hero, true), (enemyClock, enemy, false)]) {
       for (final marker in item.$1.advance(dt, 1 / item.$2.attackSpeed)) {
-        if (marker.marker.kind != AnimationMarkerKind.damage) continue;
-        events.add(
-          calculate(
-            item.$2,
-            item.$3,
-            multiplier: item.$3 ? multiplier : 1,
-            timeWithinStep: marker.timeWithinStep,
-          ),
-        );
+        if (marker.marker.kind == AnimationMarkerKind.damage) {
+          markers.add((item.$2, item.$3, marker.timeWithinStep));
+        }
       }
     }
-    events.sort((a, b) {
-      final order = a.timeWithinStep - b.timeWithinStep;
+    markers.sort((a, b) {
+      final order = a.$3 - b.$3;
       if (order.abs() > 1e-12) return order < 0 ? -1 : 1;
-      return a.fromHero == b.fromHero
+      return a.$2 == b.$2
           ? 0
-          : a.fromHero
+          : a.$2
           ? -1
           : 1;
     });
-    return events;
+    // Roll in chronological order, only for hits the caller consumes before a
+    // lethal boundary. Cache each roll so rereading the returned events is safe.
+    final rolls = [
+      for (final marker in markers)
+        () {
+          DamageEvent? cached;
+          return () => cached ??= calculate(
+            marker.$1,
+            marker.$2,
+            multiplier: marker.$2 ? multiplier : 1,
+            timeWithinStep: marker.$3,
+            effects: effects,
+            isBoss: isBoss,
+          );
+        }(),
+    ];
+    return rolls.map((roll) => roll());
   }
 }

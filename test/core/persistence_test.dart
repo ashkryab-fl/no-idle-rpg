@@ -5,6 +5,7 @@ import 'package:idle_companion/core/numbers/amount.dart';
 import 'package:idle_companion/core/persistence/game_save.dart';
 import 'package:idle_companion/core/persistence/game_save_repository.dart';
 import 'package:idle_companion/game/systems/game_simulation.dart';
+import '../helpers/attempt_fixture.dart';
 
 void main() {
   late Directory dir;
@@ -43,6 +44,7 @@ void main() {
         ..kills = 9
         ..stage = 10
         ..stageKills = 3;
+      prepareWaveFixture(game, 10, 4);
       game.character.gold = Amount.fromLog(900);
       game.character.equipment['weapon'] = 30;
       game.character.equipment['helmet'] = 4;
@@ -93,11 +95,7 @@ void main() {
     await repository.save(GameSave.capture(game, DateTime(2020, 1, 1)));
 
     final save = (await repository.load())!;
-    final restored = GameSimulation(
-      character: save.character,
-      activity: save.activity,
-      settings: save.settings,
-    );
+    final restored = save.restoreSimulation();
     expect(restored.character.toJson(), character);
   });
   test('current schema ignores injected hero level and experience', () async {
@@ -110,15 +108,15 @@ void main() {
     hero['level'] = 1000000;
     hero['xp'] = 'NaN';
     final save = GameSave.fromJson(json);
-    final restored = GameSimulation(character: save.character);
+    final restored = save.restoreSimulation();
     expect(restored.stats.maxHp.log10, game.stats.maxHp.log10);
     expect(restored.stats.damage.log10, game.stats.damage.log10);
-    expect(restored.heroHp.log10, game.stats.maxHp.log10);
+    expect(restored.heroHp.log10, game.heroHp.log10);
     expect(save.character.toJson().keys, isNot(contains('level')));
     expect(save.character.toJson().keys, isNot(contains('xp')));
   });
 
-  for (var version = 1; version <= 7; version++) {
+  for (var version = 1; version <= 8; version++) {
     test('v$version primary and backup reset without migrating', () async {
       final repository = FileGameSaveRepository(dir);
       final legacy = {'saveVersion': version, 'stage': 100000};
@@ -160,13 +158,13 @@ void main() {
       final repository = FileGameSaveRepository(dir);
       await File(
         '${dir.path}/save.json',
-      ).writeAsString('{"saveVersion":8,"stage":-1}');
-      for (final backup in ['{"saveVersion":6}', '{bad', '{"saveVersion":8}']) {
+      ).writeAsString('{"saveVersion":9,"stage":-1}');
+      for (final backup in ['{"saveVersion":6}', '{bad', '{"saveVersion":9}']) {
         await File('${dir.path}/save.backup.json').writeAsString(backup);
         await expectLater(repository.load(), throwsFormatException);
         expect(
           await File('${dir.path}/save.json').readAsString(),
-          '{"saveVersion":8,"stage":-1}',
+          '{"saveVersion":9,"stage":-1}',
         );
       }
     },
@@ -188,7 +186,7 @@ void main() {
       final otherName = futureName == 'save.json'
           ? 'save.backup.json'
           : 'save.json';
-      await File('${dir.path}/$futureName').writeAsString('{"saveVersion":9}');
+      await File('${dir.path}/$futureName').writeAsString('{"saveVersion":10}');
       await File(
         '${dir.path}/$otherName',
       ).writeAsString(jsonEncode(current.toJson()));
@@ -196,7 +194,7 @@ void main() {
       await expectLater(repository.save(current), throwsUnsupportedError);
       expect(
         await File('${dir.path}/$futureName').readAsString(),
-        '{"saveVersion":9}',
+        '{"saveVersion":10}',
       );
       await repository.reset();
     }

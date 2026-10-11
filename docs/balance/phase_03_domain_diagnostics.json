@@ -1,0 +1,571 @@
+{
+  "profile": {
+    "id": "phase03_candidate_v1",
+    "curves": {
+      "boss_damage": {
+        "cap": 10,
+        "tau": 3.0,
+        "maximum": 0.5,
+        "baseCost": 3.0,
+        "costGrowth": 1.6
+      },
+      "first_clear_gold": {
+        "cap": 10,
+        "tau": 3.0,
+        "maximum": 0.5,
+        "baseCost": 3.0,
+        "costGrowth": 1.6
+      },
+      "stage_heal": {
+        "cap": 10,
+        "tau": 3.0,
+        "maximum": 0.2,
+        "baseCost": 3.0,
+        "costGrowth": 1.6
+      },
+      "crit_protection": {
+        "cap": 10,
+        "tau": 3.0,
+        "maximum": 0.6,
+        "baseCost": 3.0,
+        "costGrowth": 1.6
+      },
+      "shorter_travel": {
+        "cap": 10,
+        "tau": 3.0,
+        "maximum": 0.25,
+        "baseCost": 3.0,
+        "costGrowth": 1.6
+      },
+      "stage_gold": {
+        "cap": 10,
+        "tau": 3.0,
+        "maximum": 0.5,
+        "baseCost": 3.0,
+        "costGrowth": 1.6
+      }
+    },
+    "firstBooks": 3,
+    "repeatBooks": 1,
+    "repeatLimit": 2,
+    "milestoneBooks": 5,
+    "stageGoldRepeatLimit": 2
+  },
+  "method": "Finite curves and exact rank-10 endpoints; production quotes; sparse frontier/used-repeat stress. Timings are local diagnostics, not cross-platform budgets.",
+  "curves": [
+    {
+      "id": "boss_damage",
+      "curve": {
+        "cap": 10,
+        "tau": 3.0,
+        "maximum": 0.5,
+        "baseCost": 3.0,
+        "costGrowth": 1.6
+      },
+      "ranks": [
+        {
+          "rank": 0,
+          "effect": 0.0,
+          "nextDelta": 0.14697762347515295,
+          "nextCostBooks": 3.0
+        },
+        {
+          "rank": 1,
+          "effect": 0.14697762347515295,
+          "nextDelta": 0.10531406917367228,
+          "nextCostBooks": 4.8
+        },
+        {
+          "rank": 2,
+          "effect": 0.2522916926488252,
+          "nextDelta": 0.0754608280068701,
+          "nextCostBooks": 7.68
+        },
+        {
+          "rank": 3,
+          "effect": 0.3277525206556953,
+          "nextDelta": 0.054070045988745985,
+          "nextCostBooks": 12.287999999999998
+        },
+        {
+          "rank": 4,
+          "effect": 0.3818225666444413,
+          "nextDelta": 0.03874288091510114,
+          "nextCostBooks": 19.6608
+        },
+        {
+          "rank": 5,
+          "effect": 0.42056544755954245,
+          "nextDelta": 0.027760487237501685,
+          "nextCostBooks": 31.45728
+        },
+        {
+          "rank": 6,
+          "effect": 0.44832593479704413,
+          "nextDelta": 0.01989125830245403,
+          "nextCostBooks": 50.331648
+        },
+        {
+          "rank": 7,
+          "effect": 0.46821719309949816,
+          "nextDelta": 0.01425270938041917,
+          "nextCostBooks": 80.53063680000001
+        },
+        {
+          "rank": 8,
+          "effect": 0.48246990247991733,
+          "nextDelta": 0.010212512531579065,
+          "nextCostBooks": 128.84901888000007
+        },
+        {
+          "rank": 9,
+          "effect": 0.4926824150114964,
+          "nextDelta": 0.0073175849885036,
+          "nextCostBooks": 206.15843020800003
+        },
+        {
+          "rank": 10,
+          "effect": 0.5,
+          "nextDelta": null,
+          "nextCostBooks": null
+        }
+      ],
+      "totalBooks": 544.755813888
+    },
+    {
+      "id": "first_clear_gold",
+      "curve": {
+        "cap": 10,
+        "tau": 3.0,
+        "maximum": 0.5,
+        "baseCost": 3.0,
+        "costGrowth": 1.6
+      },
+      "ranks": [
+        {
+          "rank": 0,
+          "effect": 0.0,
+          "nextDelta": 0.14697762347515295,
+          "nextCostBooks": 3.0
+        },
+        {
+          "rank": 1,
+          "effect": 0.14697762347515295,
+          "nextDelta": 0.10531406917367228,
+          "nextCostBooks": 4.8
+        },
+        {
+          "rank": 2,
+          "effect": 0.2522916926488252,
+          "nextDelta": 0.0754608280068701,
+          "nextCostBooks": 7.68
+        },
+        {
+          "rank": 3,
+          "effect": 0.3277525206556953,
+          "nextDelta": 0.054070045988745985,
+          "nextCostBooks": 12.287999999999998
+        },
+        {
+          "rank": 4,
+          "effect": 0.3818225666444413,
+          "nextDelta": 0.03874288091510114,
+          "nextCostBooks": 19.6608
+        },
+        {
+          "rank": 5,
+          "effect": 0.42056544755954245,
+          "nextDelta": 0.027760487237501685,
+          "nextCostBooks": 31.45728
+        },
+        {
+          "rank": 6,
+          "effect": 0.44832593479704413,
+          "nextDelta": 0.01989125830245403,
+          "nextCostBooks": 50.331648
+        },
+        {
+          "rank": 7,
+          "effect": 0.46821719309949816,
+          "nextDelta": 0.01425270938041917,
+          "nextCostBooks": 80.53063680000001
+        },
+        {
+          "rank": 8,
+          "effect": 0.48246990247991733,
+          "nextDelta": 0.010212512531579065,
+          "nextCostBooks": 128.84901888000007
+        },
+        {
+          "rank": 9,
+          "effect": 0.4926824150114964,
+          "nextDelta": 0.0073175849885036,
+          "nextCostBooks": 206.15843020800003
+        },
+        {
+          "rank": 10,
+          "effect": 0.5,
+          "nextDelta": null,
+          "nextCostBooks": null
+        }
+      ],
+      "totalBooks": 544.755813888
+    },
+    {
+      "id": "stage_heal",
+      "curve": {
+        "cap": 10,
+        "tau": 3.0,
+        "maximum": 0.2,
+        "baseCost": 3.0,
+        "costGrowth": 1.6
+      },
+      "ranks": [
+        {
+          "rank": 0,
+          "effect": 0.0,
+          "nextDelta": 0.05879104939006118,
+          "nextCostBooks": 3.0
+        },
+        {
+          "rank": 1,
+          "effect": 0.05879104939006118,
+          "nextDelta": 0.04212562766946892,
+          "nextCostBooks": 4.8
+        },
+        {
+          "rank": 2,
+          "effect": 0.1009166770595301,
+          "nextDelta": 0.030184331202748008,
+          "nextCostBooks": 7.68
+        },
+        {
+          "rank": 3,
+          "effect": 0.1311010082622781,
+          "nextDelta": 0.02162801839549841,
+          "nextCostBooks": 12.287999999999998
+        },
+        {
+          "rank": 4,
+          "effect": 0.15272902665777652,
+          "nextDelta": 0.015497152366040462,
+          "nextCostBooks": 19.6608
+        },
+        {
+          "rank": 5,
+          "effect": 0.16822617902381698,
+          "nextDelta": 0.011104194895000696,
+          "nextCostBooks": 31.45728
+        },
+        {
+          "rank": 6,
+          "effect": 0.17933037391881768,
+          "nextDelta": 0.007956503320981578,
+          "nextCostBooks": 50.331648
+        },
+        {
+          "rank": 7,
+          "effect": 0.18728687723979925,
+          "nextDelta": 0.005701083752167685,
+          "nextCostBooks": 80.53063680000001
+        },
+        {
+          "rank": 8,
+          "effect": 0.19298796099196694,
+          "nextDelta": 0.004085005012631648,
+          "nextCostBooks": 128.84901888000007
+        },
+        {
+          "rank": 9,
+          "effect": 0.1970729660045986,
+          "nextDelta": 0.0029270339954014235,
+          "nextCostBooks": 206.15843020800003
+        },
+        {
+          "rank": 10,
+          "effect": 0.2,
+          "nextDelta": null,
+          "nextCostBooks": null
+        }
+      ],
+      "totalBooks": 544.755813888
+    },
+    {
+      "id": "crit_protection",
+      "curve": {
+        "cap": 10,
+        "tau": 3.0,
+        "maximum": 0.6,
+        "baseCost": 3.0,
+        "costGrowth": 1.6
+      },
+      "ranks": [
+        {
+          "rank": 0,
+          "effect": 0.0,
+          "nextDelta": 0.1763731481701835,
+          "nextCostBooks": 3.0
+        },
+        {
+          "rank": 1,
+          "effect": 0.1763731481701835,
+          "nextDelta": 0.12637688300840672,
+          "nextCostBooks": 4.8
+        },
+        {
+          "rank": 2,
+          "effect": 0.30275003117859023,
+          "nextDelta": 0.09055299360824415,
+          "nextCostBooks": 7.68
+        },
+        {
+          "rank": 3,
+          "effect": 0.3933030247868344,
+          "nextDelta": 0.06488405518649515,
+          "nextCostBooks": 12.287999999999998
+        },
+        {
+          "rank": 4,
+          "effect": 0.4581870799733295,
+          "nextDelta": 0.046491457098121414,
+          "nextCostBooks": 19.6608
+        },
+        {
+          "rank": 5,
+          "effect": 0.5046785370714509,
+          "nextDelta": 0.03331258468500198,
+          "nextCostBooks": 31.45728
+        },
+        {
+          "rank": 6,
+          "effect": 0.5379911217564529,
+          "nextDelta": 0.0238695099629449,
+          "nextCostBooks": 50.331648
+        },
+        {
+          "rank": 7,
+          "effect": 0.5618606317193978,
+          "nextDelta": 0.017103251256502916,
+          "nextCostBooks": 80.53063680000001
+        },
+        {
+          "rank": 8,
+          "effect": 0.5789638829759007,
+          "nextDelta": 0.012255015037894945,
+          "nextCostBooks": 128.84901888000007
+        },
+        {
+          "rank": 9,
+          "effect": 0.5912188980137957,
+          "nextDelta": 0.008781101986204298,
+          "nextCostBooks": 206.15843020800003
+        },
+        {
+          "rank": 10,
+          "effect": 0.6,
+          "nextDelta": null,
+          "nextCostBooks": null
+        }
+      ],
+      "totalBooks": 544.755813888
+    },
+    {
+      "id": "shorter_travel",
+      "curve": {
+        "cap": 10,
+        "tau": 3.0,
+        "maximum": 0.25,
+        "baseCost": 3.0,
+        "costGrowth": 1.6
+      },
+      "ranks": [
+        {
+          "rank": 0,
+          "effect": 0.0,
+          "nextDelta": 0.07348881173757647,
+          "nextCostBooks": 3.0
+        },
+        {
+          "rank": 1,
+          "effect": 0.07348881173757647,
+          "nextDelta": 0.05265703458683614,
+          "nextCostBooks": 4.8
+        },
+        {
+          "rank": 2,
+          "effect": 0.1261458463244126,
+          "nextDelta": 0.03773041400343505,
+          "nextCostBooks": 7.68
+        },
+        {
+          "rank": 3,
+          "effect": 0.16387626032784766,
+          "nextDelta": 0.027035022994372992,
+          "nextCostBooks": 12.287999999999998
+        },
+        {
+          "rank": 4,
+          "effect": 0.19091128332222065,
+          "nextDelta": 0.01937144045755057,
+          "nextCostBooks": 19.6608
+        },
+        {
+          "rank": 5,
+          "effect": 0.21028272377977122,
+          "nextDelta": 0.013880243618750843,
+          "nextCostBooks": 31.45728
+        },
+        {
+          "rank": 6,
+          "effect": 0.22416296739852207,
+          "nextDelta": 0.009945629151227015,
+          "nextCostBooks": 50.331648
+        },
+        {
+          "rank": 7,
+          "effect": 0.23410859654974908,
+          "nextDelta": 0.007126354690209585,
+          "nextCostBooks": 80.53063680000001
+        },
+        {
+          "rank": 8,
+          "effect": 0.24123495123995867,
+          "nextDelta": 0.005106256265789533,
+          "nextCostBooks": 128.84901888000007
+        },
+        {
+          "rank": 9,
+          "effect": 0.2463412075057482,
+          "nextDelta": 0.0036587924942518,
+          "nextCostBooks": 206.15843020800003
+        },
+        {
+          "rank": 10,
+          "effect": 0.25,
+          "nextDelta": null,
+          "nextCostBooks": null
+        }
+      ],
+      "totalBooks": 544.755813888
+    },
+    {
+      "id": "stage_gold",
+      "curve": {
+        "cap": 10,
+        "tau": 3.0,
+        "maximum": 0.5,
+        "baseCost": 3.0,
+        "costGrowth": 1.6
+      },
+      "ranks": [
+        {
+          "rank": 0,
+          "effect": 0.0,
+          "nextDelta": 0.14697762347515295,
+          "nextCostBooks": 3.0
+        },
+        {
+          "rank": 1,
+          "effect": 0.14697762347515295,
+          "nextDelta": 0.10531406917367228,
+          "nextCostBooks": 4.8
+        },
+        {
+          "rank": 2,
+          "effect": 0.2522916926488252,
+          "nextDelta": 0.0754608280068701,
+          "nextCostBooks": 7.68
+        },
+        {
+          "rank": 3,
+          "effect": 0.3277525206556953,
+          "nextDelta": 0.054070045988745985,
+          "nextCostBooks": 12.287999999999998
+        },
+        {
+          "rank": 4,
+          "effect": 0.3818225666444413,
+          "nextDelta": 0.03874288091510114,
+          "nextCostBooks": 19.6608
+        },
+        {
+          "rank": 5,
+          "effect": 0.42056544755954245,
+          "nextDelta": 0.027760487237501685,
+          "nextCostBooks": 31.45728
+        },
+        {
+          "rank": 6,
+          "effect": 0.44832593479704413,
+          "nextDelta": 0.01989125830245403,
+          "nextCostBooks": 50.331648
+        },
+        {
+          "rank": 7,
+          "effect": 0.46821719309949816,
+          "nextDelta": 0.01425270938041917,
+          "nextCostBooks": 80.53063680000001
+        },
+        {
+          "rank": 8,
+          "effect": 0.48246990247991733,
+          "nextDelta": 0.010212512531579065,
+          "nextCostBooks": 128.84901888000007
+        },
+        {
+          "rank": 9,
+          "effect": 0.4926824150114964,
+          "nextDelta": 0.0073175849885036,
+          "nextCostBooks": 206.15843020800003
+        },
+        {
+          "rank": 10,
+          "effect": 0.5,
+          "nextDelta": null,
+          "nextCostBooks": null
+        }
+      ],
+      "totalBooks": 544.755813888
+    }
+  ],
+  "quoteLatency": [
+    {
+      "count": 1,
+      "quotes": 10000,
+      "microsecondsPerQuote": 2.2247
+    },
+    {
+      "count": 10,
+      "quotes": 10000,
+      "microsecondsPerQuote": 1.0238
+    },
+    {
+      "count": "MAX",
+      "quotes": 10000,
+      "microsecondsPerQuote": 1.0108
+    }
+  ],
+  "ledgerStress": [
+    {
+      "frontier": 1000000000000,
+      "repeatEntries": 0,
+      "saveBytes": 923,
+      "captureMicroseconds": 2227,
+      "encodeMicroseconds": 1921
+    },
+    {
+      "frontier": 1000000000000,
+      "repeatEntries": 1000,
+      "saveBytes": 8815,
+      "captureMicroseconds": 1289,
+      "encodeMicroseconds": 1481
+    },
+    {
+      "frontier": 1000000000000,
+      "repeatEntries": 100000,
+      "saveBytes": 989817,
+      "captureMicroseconds": 35263,
+      "encodeMicroseconds": 29180
+    }
+  ]
+}

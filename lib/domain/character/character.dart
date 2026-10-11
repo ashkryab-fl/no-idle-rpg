@@ -1,16 +1,19 @@
 import '../../core/balance/progression_balance.dart';
 import '../../core/numbers/amount.dart';
 import '../equipment/equipment.dart';
+import '../talents/talents.dart';
 import '../../core/balance/equipment_curve_profile.dart';
 
 class CharacterProgress {
   Amount gold = Amount.zero;
   Amount books = Amount.zero;
   final Map<String, int> equipment = {};
+  TalentProgress talents = TalentProgress();
   Map<String, Object?> toJson() => {
     'gold': gold.toJson(),
     'books': books.toJson(),
     'equipment': equipment,
+    'talents': talents.toJson(),
   };
   factory CharacterProgress.fromJson(Map<String, dynamic> json) {
     if (json.containsKey('upgrades')) {
@@ -20,7 +23,10 @@ class CharacterProgress {
     }
     final result = CharacterProgress()
       ..gold = Amount.fromJson(json['gold'])
-      ..books = Amount.fromJson(json['books']);
+      ..books = Amount.fromJson(json['books'])
+      ..talents = TalentProgress.fromJson(
+        Map<String, dynamic>.from(json['talents'] as Map? ?? {}),
+      );
     for (final pair in [('equipment', result.equipment)]) {
       final values = Map<String, dynamic>.from(json[pair.$1] as Map? ?? {});
       values.forEach((key, value) {

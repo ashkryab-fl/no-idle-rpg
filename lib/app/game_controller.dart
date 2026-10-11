@@ -6,12 +6,13 @@ import '../core/numbers/amount.dart';
 import '../core/persistence/game_save.dart';
 import '../core/persistence/game_save_repository.dart';
 import '../domain/activity/idle_level.dart';
+import '../domain/talents/talents.dart';
 import '../game/desktop_game.dart';
 import '../game/systems/game_simulation.dart';
 import '../platform/desktop_window_service.dart';
 import '../platform/user_activity_service.dart';
 
-enum OverlayPanel { menu, statistics, equipment, settings, debug }
+enum OverlayPanel { menu, statistics, equipment, talents, settings, debug }
 
 class AppRuntime {
   AppRuntime(this.simulation, this.repository, this.window, this.activity);
@@ -208,6 +209,20 @@ class GameController extends Notifier<AppUiState> {
     unawaited(save());
   }
 
+  void purchaseTalent(String id, int? count) {
+    if (_closing || _resetting || _disposed) return;
+    if (simulation.purchaseTalent(id, count: count) == 0) return;
+    refresh();
+    unawaited(save());
+  }
+
+  void selectTalent(TalentPair pair, String? id) {
+    if (_closing || _resetting || _disposed) return;
+    simulation.selectTalent(pair, id);
+    refresh();
+    unawaited(save());
+  }
+
   Future<void> updateSettings({
     bool? topmost,
     bool? sound,
@@ -255,6 +270,7 @@ class GameController extends Notifier<AppUiState> {
       hero.gold = Amount.zero;
       hero.books = Amount.zero;
       hero.equipment.clear();
+      hero.talents.reset();
       simulation.distance = 0;
       simulation.kills = 0;
       simulation.stage = 1;

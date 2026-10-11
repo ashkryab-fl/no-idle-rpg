@@ -1,6 +1,6 @@
 # Idle Companion
 
-Робочий desktop idle RPG MVP на Flutter + Flame для macOS та Windows. Поки користувач активний, герой іде, procedural вороги зупиняють рух, автоматичний бій дає Gold і Knowledge Books. Після смерті герой відроджується. Глобальна бездіяльність користувача переводить героя у відпочинок: після завершення поточного encounter він зупиняється й запускає типізований граф відпочинку.
+Робочий desktop idle RPG MVP на Flutter + Flame для macOS та Windows. Поки користувач активний, герой іде, procedural вороги зупиняють рух, автоматичний бій дає Gold; завершення етапів дає Knowledge Books для талантів. Після смерті герой відроджується. Глобальна бездіяльність користувача переводить героя у відпочинок: після завершення поточного encounter він зупиняється й запускає типізований граф відпочинку.
 
 Для героїні підключено прозорі RGBA спрайти: ходьба — 10 кадрів 512×512, 8 FPS; атака та смерть — по 4 кадри; бойова стійка — перший кадр атаки; відпочинок — сідання та цикл точіння меча зі спільною статичною позою. Рухомий фон циклічно показує три панорами: луки з хатиною та млином → струмок → пшеничні поля з дерев’яним парканом. Вороги, hit particles, damage numbers і drops малюються процедурно. Sprite-каталог містить лише встановлені PNG; відсутній заявлений sprite спричиняє помилку завантаження.
 
@@ -35,7 +35,7 @@ flutter analyze
 flutter test
 ```
 
-Клік по герою відкриває Quick Menu, а постійна кнопка-шестерня відкриває Settings. Statistics, Equipment, Settings і Debug Tools відкриваються в тому самому Flutter-вікні. Закриття панелі знову зменшує native window. `Quick Menu → Exit` і `Settings → Save & quit` зберігають прогрес перед виходом. macOS Quit / Cmd-Q та Windows WM_CLOSE також проходять через save handshake.
+Клік по герою відкриває Quick Menu, а постійна кнопка-шестерня відкриває Settings. Statistics, Equipment, Talents, Settings і Debug Tools відкриваються в тому самому Flutter-вікні. Закриття панелі знову зменшує native window. `Quick Menu → Exit` і `Settings → Save & quit` зберігають прогрес перед виходом. macOS Quit / Cmd-Q та Windows WM_CLOSE також проходять через save handshake.
 
 ## Overlay та platform layer
 
@@ -153,19 +153,25 @@ Simulation використовує delta time accumulator із fixed step, а �
 
 ```text
 tier = stage - 1
-onVictory (after enemy death): Gold/Books reward; kills += 1; stageKills += 1
+onVictory (after enemy death): kill Gold; kills += 1; stageKills += 1
+onStageClear: first/repeat/milestone Books, eligible Gold lines and snapshot heal
 after 5 stage victories: stage += 1; stageKills = 0
 onHeroDeath: stage = max(1, stage - 1); stageKills = 0
 enemyHP = baseHP × 1.08^tier; enemyDamage = baseDamage × 1.065^tier
 goldReward = baseGold × 1.10^tier
-bookDropAmount = baseBooks × 1.10^tier; bookDropChance = 0.28
+Books: first clear 3; next two clears 1 each; later clears 0
+Books milestones: stages 5, 10, 20 and every further multiple of 20 → 5 each
 cost(level) = baseCost × 1.1405^level
 batchCost(level, n) = cost(level) × (1.1405^n - 1) / .1405
 ```
 
-HUD показує `Stage N · Wave W/5`. Перші чотири хвилі — звичайні вороги; п’ята — бос із +30% до розміру та +10% до HP і damage. Перемоги не збільшують базові характеристики й не лікують. Смерть відкочує Stage на один (мінімум 1), wave на 1/5; Gold/Books, equipment і lifetime kills зберігаються. Respawn відновлює full HP. Armor живому герою додає фактичну deltaMaxHp, до нового max HP; мертвого героя покупка не оживляє. Інші предмети не лікують. Attack speed героя стала: 1 атака/с.
+HUD показує `Stage N · Wave W/5`. Перші чотири хвилі — звичайні вороги; п’ята — бос із +30% до розміру та +10% до HP і damage. Перемоги не збільшують базові характеристики; лише обраний Stage recovery лікує живого героя після всіх п’яти хвиль. Смерть відкочує Stage на один (мінімум 1), wave на 1/5; Gold/Books, equipment і lifetime kills зберігаються. Respawn відновлює full HP. Armor живому герою додає фактичну deltaMaxHp, до нового max HP; мертвого героя покупка не оживляє. Інші предмети не лікують. Attack speed героя стала: 1 атака/с.
 
-Gold купує тільки чотири зареєстровані предмети. Books показуються у Statistics, накопичуються зі старого random per-kill джерела й поки не витрачаються. Старі Books-stat каталог, map і command видалені; спеціалізація входить до наступного етапу.
+Gold купує тільки чотири зареєстровані предмети. Books купують шість талантів у трьох парах: Boss damage / First-clear Gold, Stage recovery / Crit protection, Shorter travel / Stage Gold. `TalentProfile.candidate` (`phase03_candidate_v1`) містить незалежні B/τ/R і ціни. Ранги 1–3 відкриваються після першого clear Stage 1/3/5 відповідної пари; 4–6 після 20, 7–10 після 100. Ціна наступного рангу — `3×1.6^n Books`, ефект — `B×(1−exp(−n/3))/(1−exp(−10/3))`. B: .5/.5/.2/.6/.25/.5.
+
+Купівля не обирає талант і не лікує. Вибір безкоштовний, одна альтернатива або none на пару. Незмінний `StageAttempt` фіксує ID/ранги/ефекти й п’ять ворогів, номінальні Gold rewards та travel distances перед першим продуктивним рухом. Зміни рангу/вибору під час спроби застосовуються до наступної. Equipment діє одразу. Clear/death завершує спробу; rest, suspend і restart зберігають її.
+
+`StageSettlement` — спільний runtime/runner resolver. Окремі lines: kill Gold, first-clear base (nominal boss Gold для всіх build), first-clear talent bonus, stage talent bonus (сума п’яти nominal kills), first/repeat/milestone Books. First-clear/milestone не повторюються. Stage Gold дає бонус лише на першому clear і двох повторних; ці три opportunities витрачаються й без активного таланта. Books за звичайні kills і старий random/exponential drop видалені. Після вичерпання бонусів звичайний kill Gold продовжує оплачувати equipment.
 
 Криві кандидата (`n` — рівень відповідного предмета):
 
@@ -211,7 +217,9 @@ instance.lock         exclusive OS lock for process lifetime
 
 Main startup бере instance lock: одночасні процеси не повинні перезаписувати progression один одного. Writes serialized, JSON snapshot захоплюється до asynchronous I/O. На macOS rename atomic; на Windows replacement потребує delete + rename, тож backup захищає від crash між ними. Якщо primary пошкоджений, load пробує backup. Перевіряються не тільки JSON syntax, а й finite/nonnegative durations/distance, kill count та рівні покупок. Помилка запису backup не замовчується як помилка JSON. Якщо обидва пошкоджені або schema новіша — показується startup error із Retry/confirmed Reset, automatic overwrite немає.
 
-Save schema version 8. Зберігаються stage/stageKills, Books/Gold/equipment, distance, lifetime kills, activity aggregates, settings і UTC timestamp. Відомі дорелізні v1–v7 primary/backup не мігруються: якщо немає актуального сейву, вони очищаються в serialized queue і гра починається заново. Legacy primary не блокує актуальний backup. Current JSON із полем character `upgrades` (навіть порожнім) є пошкодженим: потрібен валідний current backup або явна помилка. Пошкоджений JSON без читабельної версії не вважається legacy. Future version у primary чи backup блокує автоматичний перезапис. Зайві character level/XP поля ігноруються й не емітуються наступним записом.
+Save schema version 9. Зберігаються stage/stageKills, Books/Gold/equipment, таланти й queued selection, first-clear frontier, sparse repeat ledger, settlement cursor, незмінна активна спроба, HP і travel/combat/reward/death checkpoint, distance, lifetime kills, activity aggregates, settings і UTC timestamp. Відомі дорелізні v1–v8 primary/backup не мігруються: якщо немає актуального сейву, вони очищаються в serialized queue і гра починається заново. Legacy primary не блокує актуальний backup. Current JSON із полем character `upgrades` (навіть порожнім) є пошкодженим: потрібен валідний current backup або явна помилка. Пошкоджений JSON без читабельної версії не вважається legacy. Future version у primary чи backup блокує автоматичний перезапис. Зайві character level/XP поля ігноруються й не емітуються наступним записом.
+
+Capture копіює mutable character/activity/settings синхронно. Restart зберігає HP і selection snapshot; бойова хвиля відновлюється зі свіжим HP того самого запланованого ворога. Pending enemy death завершує оплату один раз; committed reward тільки відновлює hold. Dead checkpoint відновлює death/respawn без передчасного лікування. Boundary після clear явно має `attempt=null`. Невідомий talent profile або суперечливий cursor викликає recovery error/current backup, без перерахунку saved effects. Exact frame/RNG resume не реалізовано; backup може відкотити весь узгоджений checkpoint.
 
 Current HP і незавершений combat не зберігаються. Перезапуск починається з max HP, тому він досі може використовуватися для лікування; цей persistence-ризик винесений у звіт. Baseline запускається без restart.
 
@@ -223,7 +231,7 @@ Save: раз на хвилину (60 s), після кожного успішн�
 
 ### Новий enemy
 
-Додайте числові base values/weights/rewards у `ProgressionBalance`, а `EnemyDefinition` у `EnemyCatalog.definitions` у `game/systems/enemy_spawner.dart`: id/name/baseHp/baseDamage/attackSpeed/critChance/critDamage/rewardGold/rewardBooks/rewardBookChance/difficultyWeight та typed `EnemyAnimationContent`. Factory застосує незалежне HP/damage/Gold/Books scaling; spawner обере definition через weighted random. Поточні Canvas вороги явно посилаються на `ProceduralEnemyTimelines.content`. Для PNG ворога додайте clips/frames/rigs у resources і задайте `SpriteEnemyAnimationContent(idleId: ..., attackId: ..., deathId: ...)`. Усі три ClipId перевіряються строго; відсутній ресурс спричиняє помилку. Hit reaction лишається overlay.
+Додайте числові base values/weights/rewards у `ProgressionBalance`, а `EnemyDefinition` у `EnemyCatalog.definitions` у `game/systems/enemy_spawner.dart`: id/name/baseHp/baseDamage/attackSpeed/critChance/critDamage/rewardGold/difficultyWeight та typed `EnemyAnimationContent`. Factory застосує незалежне HP/damage/Gold scaling; spawner обере definition через weighted random. Поточні Canvas вороги явно посилаються на `ProceduralEnemyTimelines.content`. Для PNG ворога додайте clips/frames/rigs у resources і задайте `SpriteEnemyAnimationContent(idleId: ..., attackId: ..., deathId: ...)`. Усі три ClipId перевіряються строго; відсутній ресурс спричиняє помилку. Hit reaction лишається overlay.
 
 ### Equipment
 
@@ -380,8 +388,8 @@ Sound preference зберігається, але audio playback поки не �
 
 [Checklist усіх 34 пунктів і pending platform matrix](docs/requirements_checklist.md).
 
-Актуальні результати перевірки етапу 2 наведено у [звіті](docs/phase_02_acceptance_report.md); старі build/runtime заміри вище є історичними.
+Актуальні результати перевірки етапу 3 наведено у [звіті](docs/phase_03_acceptance_report.md), результати етапу 2 — у [попередньому звіті](docs/phase_02_acceptance_report.md); старі build/runtime заміри вище є історичними.
 
-Tests покривають незмінність сили без покупок, відсутність лікування за перемоги, upgrade cost/x10/MAX, crit/event timing, enemy/reward scaling, book drop chance, graph/variant eligibility і interruption, activity sessions/local midnight/suspend, save/load/current backup/legacy reset/future preservation, відсутність офлайн-нарахувань, enormous number formatting і FPS-independent simulation outcomes.
+Tests покривають незмінність сили без покупок, контекстне stage лікування й відсутність free restart heal, upgrade cost/x10/MAX, crit/event timing, enemy/Gold scaling, finite stage Books, talent gates/snapshots/selection/reward idempotency, graph/variant eligibility і interruption, activity sessions/local midnight/suspend, save/load/current backup/legacy reset/future preservation, відсутність офлайн-нарахувань, enormous number formatting і FPS-independent simulation outcomes.
 
 API references: [FlameGame](https://docs.flame-engine.org/latest/flame/game.html), [Flame image/animation API](https://docs.flame-engine.org/latest/flame/rendering/images.html), [Flutter macOS controller](https://api.flutter.dev/macos-embedder/interface_flutter_view_controller.html), [Apple idle timestamps](https://developer.apple.com/documentation/coregraphics/cgeventsource/secondssincelasteventtype(_:eventtype:)), [Win32 GetLastInputInfo](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getlastinputinfo).

@@ -6,6 +6,7 @@ import 'package:idle_companion/game/systems/game_simulation.dart';
 import 'package:idle_companion/game/systems/game_state_machine.dart';
 import '../../tool/balance/simulate_progression.dart';
 import 'phase_01_test.dart' show ConstantRandom;
+import '../helpers/attempt_fixture.dart';
 
 void main() {
   for (final (name, critRoll, hp, wave) in [
@@ -38,6 +39,14 @@ void main() {
             )
             ..hp = Amount.fromNum(hp)
             ..stageKills = wave - 1;
+      prepareWaveFixture(runtime, 1, wave);
+      if (wave > 1) {
+        model.activeAttempt = runtime.activeAttempt;
+        model.hero.talents.nextAttemptId =
+            runtime.character.talents.nextAttemptId;
+        model.hero.talents.lastSettledAttempt = runtime.activeAttempt!.id;
+        model.hero.talents.lastSettledWave = wave - 1;
+      }
       final hits = <Map<String, Object?>>[];
       runtime.spawnEnemy();
       var combatStarted = false;

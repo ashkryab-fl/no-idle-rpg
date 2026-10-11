@@ -72,7 +72,8 @@ void main(List<String> args) {
   stdout.writeln(
     const JsonEncoder.withIndent('  ').convert({
       'date': '2026-10-11',
-      'model': 'phase_02_equipment_only',
+      'model': 'phase_03_current_no_talents',
+      // Original phase-2 results are reproduced from their archived source.
       'seeds': seeds,
       'hoursPerDay': 7,
       'checkpointsProductiveHours': hours,
@@ -86,7 +87,6 @@ void main(List<String> args) {
         'hpGrowth': ProgressionBalance.hpGrowth,
         'damageGrowth': ProgressionBalance.damageGrowth,
         'goldGrowth': ProgressionBalance.goldRewardGrowth,
-        'bookGrowth': ProgressionBalance.bookRewardGrowth,
         'equipmentCostGrowth': ProgressionBalance.equipmentCostGrowth,
         'upgradeGrowth': ProgressionBalance.upgradeGrowth,
         'enemiesPerStage': ProgressionBalance.enemiesPerStage,
@@ -112,10 +112,6 @@ void main(List<String> args) {
             'goldLog': EnemyFactory()
                 .create(EnemyCatalog.definitions.single, stage - 1)
                 .gold
-                .toJson(),
-            'booksIfDropLog': EnemyFactory()
-                .create(EnemyCatalog.definitions.single, stage - 1)
-                .books
                 .toJson(),
           },
       ],

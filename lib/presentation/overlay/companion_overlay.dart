@@ -8,6 +8,7 @@ import '../../core/balance/game_balance.dart';
 import '../../core/balance/progression_balance.dart';
 import '../../core/numbers/number_formatter.dart';
 import '../equipment/equipment_panel.dart';
+import '../talents/talents_panel.dart';
 import '../settings/settings_panel.dart';
 import '../statistics/statistics_panel.dart';
 import 'debug_panel.dart';
@@ -208,6 +209,7 @@ class _CompanionOverlayState extends ConsumerState<CompanionOverlay>
     OverlayPanel.menu => 'Idle Companion',
     OverlayPanel.statistics => 'Statistics',
     OverlayPanel.equipment => 'Equipment',
+    OverlayPanel.talents => 'Talents',
     OverlayPanel.settings => 'Settings',
     OverlayPanel.debug => 'Debug Tools',
   };
@@ -253,6 +255,7 @@ class _CompanionOverlayState extends ConsumerState<CompanionOverlay>
     ),
     OverlayPanel.statistics => StatisticsPanel(controller: controller),
     OverlayPanel.equipment => EquipmentPanel(controller: controller),
+    OverlayPanel.talents => TalentsPanel(controller: controller),
     OverlayPanel.settings => SettingsPanel(controller: controller),
     OverlayPanel.debug => DebugPanel(controller: controller),
   };

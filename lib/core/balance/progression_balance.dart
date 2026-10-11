@@ -16,9 +16,6 @@ abstract final class ProgressionBalance {
   static const enemyWeight = 1.0;
 
   static const goldRewardGrowth = 1.10;
-  static const bookRewardGrowth = 1.10;
-  static const bookDropChance = .28;
-  static const baseBookReward = 1.0;
 
   static const upgradeGrowth = 1.05;
   // Small cost/power gap: stages slow down gradually over weeks of farming.

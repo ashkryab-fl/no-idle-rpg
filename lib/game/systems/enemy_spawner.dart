@@ -5,6 +5,7 @@ import '../../core/balance/game_balance.dart';
 import '../../core/balance/progression_balance.dart';
 import '../../core/numbers/amount.dart';
 import '../../domain/character/character.dart';
+import '../../domain/adventure/stage_attempt.dart';
 
 class EnemyDefinition {
   const EnemyDefinition({
@@ -18,8 +19,6 @@ class EnemyDefinition {
     this.scale = 1.0,
     this.critChance = ProgressionBalance.enemyCritChance,
     this.critDamage = ProgressionBalance.enemyCritDamage,
-    this.rewardBookChance = ProgressionBalance.bookDropChance,
-    this.rewardBooks = ProgressionBalance.baseBookReward,
     this.difficultyWeight = ProgressionBalance.enemyWeight,
   });
   final String id, name;
@@ -31,8 +30,6 @@ class EnemyDefinition {
       critChance,
       critDamage,
       rewardGold,
-      rewardBookChance,
-      rewardBooks,
       difficultyWeight;
 }
 
@@ -54,18 +51,12 @@ abstract final class EnemyCatalog {
 }
 
 class Enemy {
-  Enemy(
-    this.definition,
-    this.stats,
-    this.gold, {
-    Amount? books,
-    this.isBoss = false,
-  }) : books = books ?? Amount.fromNum(ProgressionBalance.baseBookReward),
-       hp = stats.maxHp;
+  Enemy(this.definition, this.stats, this.gold, {this.isBoss = false})
+    : hp = stats.maxHp;
   final EnemyDefinition definition;
   final bool isBoss;
   final CombatStats stats;
-  final Amount gold, books;
+  final Amount gold;
   Amount hp;
 }
 
@@ -88,22 +79,41 @@ class EnemyFactory {
           definition.rewardGold,
         ).grow(ProgressionBalance.goldRewardGrowth, tier),
         isBoss: isBoss,
-        books: Amount.fromNum(
-          definition.rewardBooks,
-        ).grow(ProgressionBalance.bookRewardGrowth, tier),
       );
 }
 
 class EnemySpawner {
-  EnemySpawner(this.random, {List<EnemyDefinition>? definitions})
-    : definitions = definitions ?? EnemyCatalog.definitions;
-  final Random random;
+  EnemySpawner(
+    this.random, {
+    Random? travelRandom,
+    List<EnemyDefinition>? definitions,
+  }) : travelRandom = travelRandom ?? random,
+       definitions = definitions ?? EnemyCatalog.definitions;
+  final Random random, travelRandom;
   final List<EnemyDefinition> definitions;
   final factory = EnemyFactory();
   double nextDistance() =>
       GameBalance.encounterMinDistance +
-      random.nextDouble() *
+      travelRandom.nextDouble() *
           (GameBalance.encounterMaxDistance - GameBalance.encounterMinDistance);
+  List<EncounterPlan> plan(int stage) => List.generate(5, (i) {
+    final foe = spawn(stage - 1, isBoss: i == 4);
+    return EncounterPlan(foe.definition.id, nextDistance(), foe.gold);
+  });
+  Enemy planned(StageAttempt attempt, int wave) {
+    final plan = attempt.encounters[wave - 1];
+    final definition = definitions.firstWhere(
+      (d) => d.id == plan.enemyId,
+      orElse: () => throw StateError("Unknown saved enemy ${plan.enemyId}"),
+    );
+    final foe = factory.create(
+      definition,
+      attempt.stage - 1,
+      isBoss: wave == 5,
+    );
+    return Enemy(definition, foe.stats, plan.gold, isBoss: wave == 5);
+  }
+
   Enemy spawn(int tier, {bool isBoss = false}) {
     var roll =
         random.nextDouble() *

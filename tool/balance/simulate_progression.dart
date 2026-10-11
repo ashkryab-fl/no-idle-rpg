@@ -15,7 +15,11 @@ import 'package:idle_companion/domain/equipment/equipment.dart';
 import 'package:idle_companion/core/balance/equipment_curve_profile.dart';
 import 'package:idle_companion/domain/equipment/equipment_purchase.dart';
 import 'package:idle_companion/game/systems/combat_system.dart';
-import 'package:idle_companion/game/systems/drop_system.dart';
+import 'package:idle_companion/core/balance/talent_profile.dart';
+import 'package:idle_companion/domain/talents/talents.dart';
+import 'package:idle_companion/domain/adventure/stage_attempt.dart';
+import 'package:idle_companion/domain/adventure/stage_settlement.dart';
+import 'package:idle_companion/domain/economy/reward.dart';
 import 'package:idle_companion/game/systems/enemy_spawner.dart';
 
 export 'package:idle_companion/game/systems/combat_system.dart'
@@ -65,6 +69,13 @@ class ProgressionSimulation {
   ProgressionSimulation({
     int seed = 1,
     Random? random,
+    Random? travelRandom,
+    Random? selectionRandom,
+    this.talentProfile = TalentProfile.candidate,
+    this.talentPolicy = 'none',
+    this.talentChoices = const [],
+    this.talentInterval = 300,
+    this.fixedOwnedRank,
     CharacterProgress? character,
     List<EnemyDefinition>? definitions,
     this.curveProfile = EquipmentCurveProfile.candidate,
@@ -76,13 +87,18 @@ class ProgressionSimulation {
     this.onPurchase,
   }) : random = random ?? Random(seed),
        hero = character ?? CharacterProgress() {
-    spawner = EnemySpawner(this.random, definitions: definitions);
+    spawner = EnemySpawner(
+      selectionRandom ?? Random(seed * 7919 + 17),
+      travelRandom: travelRandom ?? Random(seed * 104729 + 29),
+      definitions: definitions,
+    );
     combat = CombatSystem(
       this.random,
       heroPlayback: AttackPlayback(resources.clip(const ClipId('hero.attack'))),
       enemyPlayback: AttackPlayback(ProceduralEnemyTimelines.attack),
     );
-    drops = DropSystem(this.random);
+    talentPurchases = TalentPurchases(profile: talentProfile);
+    settlement = StageSettlement(profile: talentProfile);
     purchases = EquipmentPurchases(profile: curveProfile);
     stats = CharacterStats.calculate(hero, profile: curveProfile);
     hp = stats.maxHp;
@@ -103,7 +119,50 @@ class ProgressionSimulation {
   final resources = defaultAnimationResources();
   late final EnemySpawner spawner;
   late final CombatSystem combat;
-  late final DropSystem drops;
+  final TalentProfile talentProfile;
+  final String talentPolicy;
+  final List<String> talentChoices;
+  final double talentInterval;
+  final int? fixedOwnedRank;
+  late final TalentPurchases talentPurchases;
+  late final StageSettlement settlement;
+  StageAttempt? activeAttempt;
+  final sources = <RewardSource, Amount>{};
+  final booksSpent = <String, Amount>{};
+  final talentTimeline = <Map<String, Object?>>[];
+  final gateTimeline = <int, double>{};
+  Amount stageHealing = Amount.zero, preventedCrit = Amount.zero;
+  int critHits = 0, lethalCrits = 0;
+  bool _lastDeathWasCrit = false;
+  final selectionTimeline = <Map<String, Object?>>[];
+  double travelSeconds = 0, savedTravelSeconds = 0, _nextTalentPurchase = 0;
+  bool _restRequested = false, _resting = false;
+  double _restStart = 0, restSeconds = 0;
+  double get productiveSeconds =>
+      elapsed - restSeconds - (_resting ? elapsed - _restStart : 0);
+  void requestRest() {
+    _restRequested = true;
+  }
+
+  void resumeAdventure() {
+    _restRequested = false;
+    if (!_resting) return;
+    restSeconds += elapsed - _restStart;
+    _resting = false;
+    _travel();
+  }
+
+  void runDutyUntil(double deadline, double duty) {
+    if (duty <= 0 || duty > 1) throw ArgumentError.value(duty);
+    while (elapsed < deadline) {
+      final end = min(deadline, elapsed + 3600);
+      resumeAdventure();
+      runUntil(min(end, elapsed + 3600 * duty));
+      if (duty < 1) requestRest();
+      runUntil(end);
+    }
+  }
+
   late CombatStats stats;
   late Amount hp;
   int stage = 1, stageKills = 0, kills = 0, deaths = 0;
@@ -151,26 +210,50 @@ class ProgressionSimulation {
   }
 
   void _travel() {
+    if (_restRequested) {
+      _resting = true;
+      _restStart = elapsed;
+      return;
+    }
     if (elapsed >= _nextUpgrade) {
       invest();
       _nextUpgrade = elapsed + upgradeInterval;
     }
-    final travel =
-        spawner.nextDistance() /
-            GameBalance.movementSpeed *
-            income.travelFactor +
-        GameBalance.approachDuration;
+    if (elapsed >= _nextTalentPurchase) {
+      investTalents();
+      _nextTalentPurchase = elapsed + talentInterval;
+    }
+    if (activeAttempt == null) {
+      selectTalents();
+      activeAttempt = StageAttempt.begin(
+        hero.talents,
+        stage,
+        spawner.plan(stage),
+        profile: talentProfile,
+      );
+    }
+    final baseTravel =
+        activeAttempt!.encounters[stageKills].distance /
+        GameBalance.movementSpeed;
+    final movement =
+        baseTravel *
+        (1 - activeAttempt!.effects['shorter_travel']) *
+        income.travelFactor;
+    travelSeconds += movement;
+    savedTravelSeconds += baseTravel - movement;
+    final travel = movement + GameBalance.approachDuration;
     _schedule(elapsed + travel, _encounter);
   }
 
   void _encounter() {
-    final foe = spawner.spawn(
-      stage - 1,
-      isBoss: stageKills + 1 == ProgressionBalance.enemiesPerStage,
-    );
+    final foe = spawner.planned(activeAttempt!, stageKills + 1);
     enemy = foe;
     final start = elapsed, beforeHp = hp, maxHp = stats.maxHp;
     final encounterStage = stage, wave = stageKills + 1;
+    final encounterAttempt = activeAttempt!;
+    final encounterEquipment = onEncounter == null
+        ? null
+        : Map.of(hero.equipment);
     final hits = <DamageEvent>[];
     final heroPeriod = 1 / stats.attackSpeed;
     final enemyPeriod = 1 / foe.stats.attackSpeed;
@@ -201,6 +284,8 @@ class ProgressionSimulation {
         'start': start,
         'confirmedAt': elapsed,
         'hpBeforeLog': beforeHp.toJson(),
+        'equipment': encounterEquipment,
+        'attempt': encounterAttempt.toJson(),
         'hpAfterLog': hp.toJson(),
         'hits': [
           for (final hit in hits)
@@ -208,6 +293,7 @@ class ProgressionSimulation {
               'hero': hit.fromHero,
               'critical': hit.critical,
               'amountLog': hit.amount.toJson(),
+              'preventedCritBonusLog': hit.preventedCritBonus.toJson(),
               'time': hit.timeWithinStep,
             },
         ],
@@ -223,6 +309,8 @@ class ProgressionSimulation {
           fromHero ? stats : foe.stats,
           fromHero,
           timeWithinStep: hitTime,
+          effects: activeAttempt?.effects,
+          isBoss: foe.isBoss,
         );
         if (onEncounter != null) hits.add(hit);
         if (fromHero) {
@@ -234,20 +322,47 @@ class ProgressionSimulation {
               elapsed + foe.definition.animations.death(resources).duration,
               () {
                 _rewardPending = false;
-                final reward = drops.roll(foe);
-                var receivedGold = reward.gold.scale(income.killGoldMultiplier);
-                killGoldEarned = killGoldEarned + receivedGold;
+                final result = settlement.settle(
+                  hero,
+                  activeAttempt!,
+                  wave,
+                  hp: hp,
+                  maxHp: stats.maxHp,
+                  killMultiplier: income.killGoldMultiplier,
+                );
+                final reward = result.reward;
+                hp = result.hp;
+                stageHealing = stageHealing + result.healed;
+                for (final line in reward.lines.entries) {
+                  sources[line.key] =
+                      (sources[line.key] ?? Amount.zero) + line.value;
+                }
+                var receivedGold = reward.gold;
+                killGoldEarned =
+                    killGoldEarned +
+                    (reward.lines[RewardSource.killGold] ?? Amount.zero);
                 if (foe.isBoss) {
+                  // Historical phase-2 income stresses are kept explicitly diagnostic.
                   final stageBonus = foe.gold.scale(income.stageGoldBonus);
                   final firstBonus = _firstRewardedStages.add(encounterStage)
                       ? foe.gold.scale(income.firstClearGoldBonus)
                       : Amount.zero;
+                  hero.gold = hero.gold + stageBonus + firstBonus;
                   receivedGold = receivedGold + stageBonus + firstBonus;
-                  stageGoldEarned = stageGoldEarned + stageBonus;
-                  firstGoldEarned = firstGoldEarned + firstBonus;
+                  stageGoldEarned =
+                      stageGoldEarned +
+                      stageBonus +
+                      (reward.lines[RewardSource.stageBonusGold] ??
+                          Amount.zero);
+                  firstGoldEarned =
+                      firstGoldEarned +
+                      firstBonus +
+                      (reward.lines[RewardSource.firstClearBonusGold] ??
+                          Amount.zero);
+                  if (const [1, 3, 5, 20, 100].contains(encounterStage)) {
+                    gateTimeline.putIfAbsent(encounterStage, () => elapsed);
+                  }
                 }
-                hero.gold = hero.gold + receivedGold;
-                hero.books = hero.books + reward.books;
                 goldEarned = goldEarned + receivedGold;
                 _recentGold.add((elapsed, receivedGold));
                 if (_recentGold.length > 200) _recentGold.removeAt(0);
@@ -259,6 +374,7 @@ class ProgressionSimulation {
                 if (stageKills == ProgressionBalance.enemiesPerStage) {
                   stage++;
                   stageKills = 0;
+                  activeAttempt = null;
                   if (!_firstEntry.containsKey(stage)) {
                     firstClearSeconds.add(
                       elapsed - (_firstEntry[stage - 1] ?? start),
@@ -277,10 +393,16 @@ class ProgressionSimulation {
           }
         } else {
           damageReceived = damageReceived + hit.amount;
+          preventedCrit = preventedCrit + hit.preventedCritBonus;
+          if (hit.critical) critHits++;
           hp = hp - hit.amount;
           nextEnemy += enemyPeriod;
           if (hp.isZero) {
             deaths++;
+            _lastDeathWasCrit = hit.critical;
+            if (hit.critical) lethalCrits++;
+            hero.talents.abandonAttempt(encounterAttempt.id);
+            activeAttempt = null;
             stage = max(1, stage - 1);
             stageKills = 0;
             record(false, hitTime);
@@ -304,6 +426,133 @@ class ProgressionSimulation {
       });
     };
     scheduleHit();
+  }
+
+  List<String> desiredTalents() {
+    if (talentPolicy == 'none') return [];
+    if (talentChoices.isNotEmpty) return talentChoices;
+    if (talentPolicy == 'contextual') {
+      return TalentCatalog.items.map((d) => d.id).toList();
+    }
+    final economy = talentPolicy == 'economy_first';
+    final travel = talentPolicy == 'travel_first';
+    final protection = talentPolicy == 'protection';
+    final all = talentPolicy == 'uniform';
+    if (all) return TalentCatalog.items.map((d) => d.id).toList();
+    return [
+      economy ? 'first_clear_gold' : 'boss_damage',
+      protection ? 'crit_protection' : 'stage_heal',
+      economy ? 'stage_gold' : 'shorter_travel',
+      if (travel) 'stage_gold',
+    ];
+  }
+
+  void investTalents() {
+    if (talentPolicy == 'selection_only') return;
+    final desired = desiredTalents();
+    if (talentPolicy == 'wrong_first' &&
+        hero.talents.ownedRanks.isEmpty &&
+        hero.talents.highestFirstClearedStage >= 1) {
+      final q = talentPurchases.quote(hero, 'first_clear_gold');
+      if (talentPurchases.purchase(hero, 'first_clear_gold') > 0) {
+        booksSpent['first_clear_gold'] = q.cost;
+        talentTimeline.add({
+          'time': elapsed,
+          'id': 'first_clear_gold',
+          'rank': 1,
+          'cost': q.cost.toDouble(),
+          'wrongFirst': true,
+        });
+      }
+    }
+    if (fixedOwnedRank != null) {
+      // Controlled comparison: equal owned ranks, gated, without claiming funding.
+      for (final d in TalentCatalog.items) {
+        final rank = min(
+          fixedOwnedRank!,
+          hero.talents.rankLimit(d, talentProfile),
+        );
+        if (rank > 0) hero.talents.ownedRanks[d.id] = rank;
+      }
+      return;
+    }
+    for (var n = 0; n < 30; n++) {
+      final quotes =
+          [
+              for (final id in desired) talentPurchases.quote(hero, id),
+            ].where((q) => q.count > 0).toList()
+            ..sort((a, b) => a.rank.compareTo(b.rank));
+      if (quotes.isEmpty) break;
+      final q = quotes.first;
+      talentPurchases.purchase(hero, q.id);
+      booksSpent[q.id] = (booksSpent[q.id] ?? Amount.zero) + q.cost;
+      talentTimeline.add({
+        'time': elapsed,
+        'stage': stage,
+        'id': q.id,
+        'rank': q.rank + 1,
+        'cost': q.cost.toDouble(),
+      });
+    }
+  }
+
+  void selectTalents() {
+    final choices = desiredTalents();
+    for (final pair in TalentPair.values) {
+      final eligible = choices
+          .where(
+            (id) =>
+                TalentCatalog.require(id).pair == pair &&
+                (hero.talents.ownedRanks[id] ?? 0) > 0,
+          )
+          .toList();
+      String? selected = eligible.isEmpty ? null : eligible.first;
+      if (talentPolicy == 'contextual' && eligible.length > 1) {
+        final boss = spawner.factory.create(
+          spawner.definitions.first,
+          stage - 1,
+          isBoss: true,
+        );
+        selected = switch (pair) {
+          TalentPair.boss =>
+            stage > hero.talents.highestFirstClearedStage &&
+                    boss.stats.maxHp.ratio(stats.dps) < 4
+                ? 'first_clear_gold'
+                : 'boss_damage',
+          TalentPair.endurance =>
+            _lastDeathWasCrit ? 'crit_protection' : 'stage_heal',
+          TalentPair.travel =>
+            stage > hero.talents.highestFirstClearedStage ||
+                    hero.talents.repeatsRemaining(
+                          stage,
+                          talentProfile.stageGoldRepeatLimit,
+                        ) >
+                        0
+                ? 'stage_gold'
+                : 'shorter_travel',
+        };
+      }
+      if (talentPolicy == 'uniform' && eligible.length > 1) {
+        selected = eligible[(stage ~/ 5) % eligible.length];
+      }
+      talentPurchases.select(hero, pair, selected);
+    }
+    if (talentPolicy == 'contextual' &&
+        (selectionTimeline.isEmpty ||
+            jsonEncode(selectionTimeline.last['selected']) !=
+                jsonEncode({
+                  for (final e in hero.talents.selectedForNextAttempt.entries)
+                    e.key.name: e.value,
+                }))) {
+      selectionTimeline.add({
+        'time': elapsed,
+        'stage': stage,
+        'selected': {
+          for (final e in hero.talents.selectedForNextAttempt.entries)
+            e.key.name: e.value,
+        },
+      });
+    }
   }
 
   /// Explicit between-encounter purchases; returns actual successful counts.
@@ -495,7 +744,37 @@ class ProgressionSimulation {
           .toJson(),
       'profile': curveProfile.id,
       'income': income.id,
-      'booksSpent': 0,
+      'talentProfile': talentProfile.id,
+      'talentPolicy': talentPolicy,
+      'talentRanks': Map.of(hero.talents.ownedRanks),
+      'selectedTalents': {
+        for (final e in hero.talents.selectedForNextAttempt.entries)
+          e.key.name: e.value,
+      },
+      'booksSpent': booksSpent.values
+          .fold(Amount.zero, (a, b) => a + b)
+          .toDouble(),
+      'booksSpentByTalent': {
+        for (final e in booksSpent.entries) e.key: e.value.toDouble(),
+      },
+      'rewardSources': {
+        for (final e in sources.entries) e.key.name: e.value.toDouble(),
+      },
+      'stageHealingLog': stageHealing.toJson(),
+      'preventedCritBonusLog': preventedCrit.toJson(),
+      'critHits': critHits,
+      'lethalCrits': lethalCrits,
+      'travelSeconds': travelSeconds,
+      'savedTravelSeconds': savedTravelSeconds,
+      'openSeconds': elapsed,
+      'actualProductiveSeconds': productiveSeconds,
+      'restSeconds': elapsed - productiveSeconds,
+      'claimLedgerEntries': hero.talents.usedRepeats.length,
+      'claimLedgerBytes': utf8.encode(jsonEncode(hero.talents.toJson())).length,
+      'talentTimeline': List.of(talentTimeline),
+      'gateTimeline': {
+        for (final e in gateTimeline.entries) '${e.key}': e.value,
+      },
       'goldSpentLog': {
         for (final e in goldSpent.entries) e.key: e.value.toJson(),
       },
@@ -509,6 +788,7 @@ class ProgressionSimulation {
       'stage': stage,
       'wave': stageKills + 1,
       'highestStage': _firstEntry.keys.reduce(max),
+      'firstClearFrontier': hero.talents.highestFirstClearedStage,
       'kills': kills,
       'deaths': deaths,
       'deathsPer100RecentEncounters': recentDeaths.isEmpty

@@ -3,6 +3,8 @@ import '../../domain/character/character.dart';
 import '../../domain/settings.dart';
 import '../../game/systems/game_simulation.dart';
 import '../balance/progression_balance.dart';
+import '../../domain/adventure/adventure_checkpoint.dart';
+import '../../game/systems/enemy_spawner.dart';
 
 class GameSave {
   GameSave({
@@ -14,8 +16,12 @@ class GameSave {
     this.kills = 0,
     this.stage = 1,
     this.stageKills = 0,
-  });
-  static const currentVersion = 8;
+    AdventureCheckpoint? adventure,
+  }) : adventure =
+           adventure ??
+           AdventureCheckpoint(hp: CharacterStats.calculate(character).maxHp);
+  static const currentVersion = 9;
+  final AdventureCheckpoint adventure;
   final CharacterProgress character;
   final ActivityStatisticsService activity;
   final GameSettings settings;
@@ -24,15 +30,31 @@ class GameSave {
   final int kills;
   final int stage, stageKills;
   factory GameSave.capture(GameSimulation game, DateTime now) => GameSave(
-    character: game.character,
-    activity: game.activity,
-    settings: game.settings,
+    character: CharacterProgress.fromJson(game.character.toJson()),
+    activity: ActivityStatisticsService.fromJson(game.activity.toJson()),
+    settings: GameSettings.fromJson(game.settings.toJson()),
     lastSaveTime: now,
     distance: game.distance,
     kills: game.kills,
     stage: game.stage,
     stageKills: game.stageKills,
+    adventure: game.captureAdventure(),
   );
+  GameSimulation restoreSimulation() {
+    final simulation =
+        GameSimulation(
+            character: CharacterProgress.fromJson(character.toJson()),
+            activity: ActivityStatisticsService.fromJson(activity.toJson()),
+            settings: GameSettings.fromJson(settings.toJson()),
+          )
+          ..distance = distance
+          ..kills = kills
+          ..stage = stage
+          ..stageKills = stageKills;
+    simulation.restoreAdventure(adventure);
+    return simulation;
+  }
+
   Map<String, Object?> toJson() => {
     'saveVersion': currentVersion,
     'character': character.toJson(),
@@ -42,6 +64,7 @@ class GameSave {
     'kills': kills,
     'stage': stage,
     'stageKills': stageKills,
+    'adventure': adventure.toJson(),
     'lastSaveTime': lastSaveTime.toUtc().toIso8601String(),
   };
   factory GameSave.fromJson(Map<String, dynamic> source) {
@@ -67,10 +90,58 @@ class GameSave {
         'Invalid distance, kills or stage progression',
       );
     }
+    final character = CharacterProgress.fromJson(
+      Map<String, dynamic>.from(json['character'] as Map),
+    );
+    final adventure = AdventureCheckpoint.fromJson(
+      Map<String, dynamic>.from(json['adventure'] as Map),
+    );
+    final attempt = adventure.attempt;
+    final dead = adventure.phase == 'heroDeath' || adventure.phase == 'respawn';
+    if (stage > character.talents.highestFirstClearedStage + 1 ||
+        adventure.hp > CharacterStats.calculate(character).maxHp ||
+        dead != adventure.hp.isZero ||
+        (attempt != null &&
+            (attempt.stage != stage ||
+                attempt.id != character.talents.nextAttemptId - 1 ||
+                attempt.id < character.talents.lastSettledAttempt ||
+                attempt.ranks.entries.any(
+                  (e) => e.value > (character.talents.ownedRanks[e.key] ?? 0),
+                ) ||
+                attempt.encounters.any(
+                  (e) =>
+                      !EnemyCatalog.definitions.any((d) => d.id == e.enemyId),
+                ))) ||
+        (attempt == null &&
+            (stageKills != 0 ||
+                !const [
+                  'traveling',
+                  'reward',
+                  'heroDeath',
+                  'respawn',
+                ].contains(adventure.phase) ||
+                (adventure.phase == 'traveling' &&
+                    (!adventure.needsTravelTarget ||
+                        adventure.travelRemaining != 0))))) {
+      throw const FormatException('Inconsistent adventure checkpoint');
+    }
+    if (attempt != null) {
+      final cursor = character.talents.lastSettledAttempt == attempt.id
+          ? character.talents.lastSettledWave
+          : 0;
+      if (cursor != stageKills ||
+          dead ||
+          (adventure.phase == 'reward' &&
+              (cursor == 0 || adventure.lastReward == null)) ||
+          (adventure.phase == 'traveling' &&
+              !adventure.needsTravelTarget &&
+              adventure.travelRemaining == 0)) {
+        throw const FormatException('Inconsistent wave settlement cursor');
+      }
+    }
     return GameSave(
-      character: CharacterProgress.fromJson(
-        Map<String, dynamic>.from(json['character'] as Map),
-      ),
+      character: character,
+      adventure: adventure,
       activity: ActivityStatisticsService.fromJson(
         Map<String, dynamic>.from(json['activity'] as Map? ?? {}),
       ),

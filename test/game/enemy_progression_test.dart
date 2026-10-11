@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
+import '../helpers/attempt_fixture.dart';
 import 'package:idle_companion/core/balance/game_balance.dart';
 import 'package:idle_companion/core/balance/progression_balance.dart';
 import 'package:idle_companion/core/numbers/amount.dart';
@@ -10,6 +11,7 @@ import 'package:idle_companion/game/systems/game_state_machine.dart';
 void main() {
   test('four normal waves and a stronger fifth-wave boss clear a stage', () {
     final game = GameSimulation(random: Random(1))..stage = 7;
+    prepareWaveFixture(game, 7, 1);
     double? normalHp, normalDamage;
     for (var wave = 1; wave <= 5; wave++) {
       expect(game.wave, wave);
@@ -46,6 +48,7 @@ void main() {
     final game = GameSimulation(random: Random(1))
       ..stage = 10
       ..stageKills = 4;
+    prepareWaveFixture(game, 10, 5);
     game.spawnEnemy();
     expect(game.enemy!.isBoss, true);
     game.killHero();
@@ -60,6 +63,7 @@ void main() {
     final game = GameSimulation(random: Random(1))
       ..stage = 9
       ..stageKills = ProgressionBalance.enemiesPerStage - 1;
+    prepareWaveFixture(game, 9, 5);
     game.spawnEnemy();
     game.killEnemy();
     expect(game.stage, 9);
@@ -91,6 +95,7 @@ void main() {
         ..books = Amount.fromNum(10);
       game.character.equipment['weapon'] = 2;
       game.character.equipment['armor'] = 3;
+      prepareWaveFixture(game, 10, 5);
       final damage = game.stats.damage.log10;
       final maxHp = game.stats.maxHp.log10;
       var previousGold = game.character.gold;

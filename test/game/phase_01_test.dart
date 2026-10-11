@@ -147,14 +147,18 @@ void main() {
           ..gold = Amount.fromNum(456)
           ..books = Amount.fromNum(7);
         game.character.equipment['weapon'] = 3;
-        final before = game.character.toJson();
         game.spawnEnemy();
+        final before = game.character.toJson();
         game.killHero();
         expect(game.stage, max(1, stage - 1));
         expect(game.wave, 1);
         expect(game.heroHp.isZero, isTrue);
         expect(game.kills, 123);
-        expect(game.character.toJson(), before);
+        expect(game.character.gold.toJson(), before['gold']);
+        expect(game.character.books.toJson(), before['books']);
+        expect(game.character.equipment, before['equipment']);
+        expect(game.character.talents.highestFirstClearedStage, 0);
+        expect(game.character.talents.lastSettledWave, 5);
         game.advance(3);
         expect(game.heroHp.log10, game.stats.maxHp.log10);
       },

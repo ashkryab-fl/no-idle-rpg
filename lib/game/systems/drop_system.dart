@@ -1,15 +1,8 @@
-import 'dart:math';
-import '../../core/numbers/amount.dart';
 import '../../domain/economy/reward.dart';
 import 'enemy_spawner.dart';
 
-class DropSystem {
-  DropSystem(this.random);
-  final Random random;
-  Reward roll(Enemy enemy, {double multiplier = 1}) => Reward(
-    gold: enemy.gold.scale(multiplier),
-    books: random.nextDouble() < enemy.definition.rewardBookChance
-        ? enemy.books.scale(multiplier)
-        : Amount.zero,
-  );
+/// Individual enemies pay Gold only. Books belong to stage settlement.
+abstract final class DropSystem {
+  static Reward killReward(Enemy enemy, {double multiplier = 1}) =>
+      Reward.fromLines({RewardSource.killGold: enemy.gold.scale(multiplier)});
 }

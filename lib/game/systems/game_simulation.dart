@@ -16,7 +16,11 @@ import '../../domain/settings.dart';
 import '../../domain/equipment/equipment_purchase.dart';
 import '../../core/balance/equipment_curve_profile.dart';
 import 'combat_system.dart';
-import 'drop_system.dart';
+import '../../core/balance/talent_profile.dart';
+import '../../domain/talents/talents.dart';
+import '../../domain/adventure/stage_attempt.dart';
+import '../../domain/adventure/stage_settlement.dart';
+import '../../domain/adventure/adventure_checkpoint.dart';
 import 'enemy_spawner.dart';
 import 'game_state_machine.dart';
 
@@ -42,6 +46,9 @@ class GameSimulation {
     this.curveProfile = EquipmentCurveProfile.candidate,
     Random? random,
     Random? idleRandom,
+    Random? travelRandom,
+    Random? selectionRandom,
+    this.talentProfile = TalentProfile.candidate,
     AnimationResources? resources,
     AnimationGraphDefinition? restGraph,
     CharacterProgress? character,
@@ -53,8 +60,12 @@ class GameSimulation {
        character = character ?? CharacterProgress(),
        activity = activity ?? ActivityStatisticsService(),
        settings = settings ?? GameSettings() {
-    spawner = EnemySpawner(this.random);
-    drops = DropSystem(this.random);
+    spawner = EnemySpawner(
+      selectionRandom ?? Random(this.random.nextInt(1 << 32)),
+      travelRandom: travelRandom ?? Random(this.random.nextInt(1 << 32)),
+    );
+    talentPurchases = TalentPurchases(profile: talentProfile);
+    settlement = StageSettlement(profile: talentProfile);
     final rest = RestCoordinator(
       idleRandom ?? Random(this.random.nextInt(1 << 32)),
       this.resources,
@@ -69,7 +80,7 @@ class GameSimulation {
     );
     purchases = EquipmentPurchases(profile: curveProfile);
     heroHp = stats.maxHp;
-    encounterRemaining = spawner.nextDistance();
+    encounterRemaining = 0;
     machine.transition(GamePhase.traveling);
   }
   final Random random;
@@ -83,7 +94,13 @@ class GameSimulation {
   late final EquipmentPurchases purchases;
   late final EnemySpawner spawner;
   late final CombatSystem combat;
-  late final DropSystem drops;
+  final TalentProfile talentProfile;
+  late final TalentPurchases talentPurchases;
+  late final StageSettlement settlement;
+  StageAttempt? activeAttempt;
+  StageAttempt? _enemyAttempt;
+  int _enemyWave = 0;
+  bool _needsTravelTarget = true;
   late final HeroAnimationCoordinator heroAnimations;
   late final EnemyAnimationCoordinator enemyAnimations;
   RestCoordinator get idle => heroAnimations.rest;
@@ -149,6 +166,11 @@ class GameSimulation {
     heroHitRemaining = max(0, heroHitRemaining - dt);
     enemyHitRemaining = max(0, enemyHitRemaining - dt);
     machine.elapsed += dt;
+    if (phase == GamePhase.traveling &&
+        travelTime > 0 &&
+        !idle.blocksAdventure) {
+      _prepareTravel();
+    }
     final movement = phase == GamePhase.traveling
         ? GameBalance.movementSpeed * movementMultiplier * travelTime
         : phase == GamePhase.enemyApproach
@@ -161,7 +183,7 @@ class GameSimulation {
         break;
       case GamePhase.traveling:
         encounterRemaining -= movement;
-        if (encounterRemaining <= 0) spawnEnemy();
+        if (!_needsTravelTarget && encounterRemaining <= 0) spawnEnemy();
       case GamePhase.enemyApproach:
         if (_approachRemaining <= 1e-9) {
           combat.reset();
@@ -174,6 +196,8 @@ class GameSimulation {
           stats,
           foe.stats,
           dpsMultiplier,
+          effects: activeAttempt?.effects,
+          isBoss: foe.isBoss,
         )) {
           if (phase != GamePhase.combat) break;
           events.add(VisualEvent('hit', damage: event));
@@ -188,19 +212,30 @@ class GameSimulation {
               _heroDied();
             }
           }
+          if (phase != GamePhase.combat) break;
         }
       case GamePhase.enemyDeath:
         if (enemyAnimations.deathCompleted) {
-          lastReward = drops.roll(enemy!, multiplier: rewardMultiplier);
-          character.gold = character.gold + lastReward!.gold;
-          character.books = character.books + lastReward!.books;
-          kills++;
-          stageKills++;
-          if (stageKills >= ProgressionBalance.enemiesPerStage) {
-            stage++;
-            stageKills = 0;
+          final result = settlement.settle(
+            character,
+            _enemyAttempt!,
+            _enemyWave,
+            hp: heroHp,
+            maxHp: stats.maxHp,
+            killMultiplier: rewardMultiplier,
+          );
+          if (result.applied) {
+            lastReward = result.reward;
+            heroHp = result.hp;
+            kills++;
+            stageKills++;
+            if (stageKills >= ProgressionBalance.enemiesPerStage) {
+              stage++;
+              stageKills = 0;
+              activeAttempt = null;
+            }
+            events.add(VisualEvent('reward', reward: lastReward));
           }
-          events.add(VisualEvent('reward', reward: lastReward));
           machine.transition(GamePhase.reward);
         }
       case GamePhase.reward:
@@ -238,12 +273,16 @@ class GameSimulation {
     heroAnimations.reset();
     enemyAnimations.reset();
     enemy = null;
+    _enemyAttempt = null;
+    _enemyWave = 0;
     lastReward = null;
     events.clear();
     combat.reset();
     machine.phase = GamePhase.boot;
     machine.transition(GamePhase.traveling);
-    encounterRemaining = spawner.nextDistance();
+    activeAttempt = null;
+    _needsTravelTarget = true;
+    encounterRemaining = 0;
     heroHitRemaining = 0;
     enemyHitRemaining = 0;
     _accumulator = 0;
@@ -251,13 +290,19 @@ class GameSimulation {
 
   void _travel() {
     enemy = null;
-    encounterRemaining = spawner.nextDistance();
+    _enemyAttempt = null;
+    _enemyWave = 0;
+    _needsTravelTarget = true;
+    encounterRemaining = 0;
     machine.transition(GamePhase.traveling);
   }
 
   void spawnEnemy() {
     if (phase != GamePhase.traveling || isResting) return;
-    enemy = spawner.spawn(enemyTier, isBoss: isBossWave);
+    _prepareTravel();
+    _enemyAttempt = activeAttempt;
+    _enemyWave = wave;
+    enemy = spawner.planned(_enemyAttempt!, _enemyWave);
     _enemySpawnDistance = distance;
     machine.transition(GamePhase.enemyApproach);
     _synchronizeAnimations();
@@ -279,10 +324,81 @@ class GameSimulation {
   }
 
   void _heroDied() {
+    if (activeAttempt != null) {
+      character.talents.abandonAttempt(activeAttempt!.id);
+    }
     deathPolicy.onDeath(character);
+    activeAttempt = null;
+    _needsTravelTarget = true;
     if (stage > 1) stage--;
     stageKills = 0;
     machine.transition(GamePhase.heroDeath);
+    _synchronizeAnimations();
+  }
+
+  void _prepareTravel() {
+    activeAttempt ??= StageAttempt.begin(
+      character.talents,
+      stage,
+      spawner.plan(stage),
+      profile: talentProfile,
+    );
+    if (_needsTravelTarget) {
+      encounterRemaining =
+          activeAttempt!.encounters[stageKills].distance *
+          (1 - activeAttempt!.effects['shorter_travel']);
+      _needsTravelTarget = false;
+    }
+  }
+
+  int purchaseTalent(String id, {int? count = 1}) =>
+      talentPurchases.purchase(character, id, count: count);
+  void selectTalent(TalentPair pair, String? id) =>
+      talentPurchases.select(character, pair, id);
+
+  AdventureCheckpoint captureAdventure() => AdventureCheckpoint(
+    hp: heroHp,
+    attempt: activeAttempt,
+    phase: phase.name,
+    elapsed: machine.elapsed,
+    travelRemaining: max(0, encounterRemaining),
+    needsTravelTarget: _needsTravelTarget,
+    lastReward: lastReward,
+  );
+
+  void restoreAdventure(AdventureCheckpoint checkpoint) {
+    heroAnimations.reset();
+    enemyAnimations.reset();
+    combat.reset();
+    enemy = null;
+    _enemyAttempt = null;
+    _enemyWave = 0;
+    events.clear();
+    _accumulator = 0;
+    heroHitRemaining = enemyHitRemaining = 0;
+    heroHp = checkpoint.hp;
+    activeAttempt = checkpoint.attempt;
+    _needsTravelTarget = checkpoint.needsTravelTarget;
+    encounterRemaining = checkpoint.travelRemaining;
+    lastReward = checkpoint.lastReward;
+    machine.phase = GamePhase.values.byName(checkpoint.phase);
+    machine.elapsed = checkpoint.elapsed;
+    // Combat resumes at the same planned wave with fresh enemy HP and saved hero HP.
+    // A killed enemy remains unsettled; a committed reward only resumes its hold.
+    if (phase == GamePhase.combat ||
+        phase == GamePhase.enemyApproach ||
+        phase == GamePhase.enemyDeath) {
+      _enemyAttempt = activeAttempt;
+      _enemyWave = wave;
+      enemy = spawner.planned(_enemyAttempt!, _enemyWave);
+      _enemySpawnDistance = distance - GameBalance.enemyApproachDistance;
+      if (phase == GamePhase.enemyDeath) {
+        enemy!.hp = Amount.zero;
+      } else {
+        machine.phase = GamePhase.combat;
+      }
+      machine.elapsed = 0;
+    }
     _synchronizeAnimations();
   }
 
