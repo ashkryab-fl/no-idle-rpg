@@ -1,6 +1,6 @@
 # Idle Companion
 
-Робочий desktop idle RPG MVP на Flutter + Flame для macOS та Windows. Поки користувач активний, герой іде, procedural вороги зупиняють рух, автоматичний бій дає Gold, XP і Knowledge Books. Після смерті герой відроджується. Глобальна бездіяльність користувача переводить героя у відпочинок: після завершення поточного encounter він зупиняється й запускає типізований граф відпочинку.
+Робочий desktop idle RPG MVP на Flutter + Flame для macOS та Windows. Поки користувач активний, герой іде, procedural вороги зупиняють рух, автоматичний бій дає Gold і Knowledge Books. Після смерті герой відроджується. Глобальна бездіяльність користувача переводить героя у відпочинок: після завершення поточного encounter він зупиняється й запускає типізований граф відпочинку.
 
 Для героїні підключено прозорі RGBA спрайти: ходьба — 10 кадрів 512×512, 8 FPS; атака та смерть — по 4 кадри; бойова стійка — перший кадр атаки; відпочинок — сідання та цикл точіння меча зі спільною статичною позою. Рухомий фон циклічно показує три панорами: луки з хатиною та млином → струмок → пшеничні поля з дерев’яним парканом. Вороги, hit particles, damage numbers і drops малюються процедурно. Sprite-каталог містить лише встановлені PNG; відсутній заявлений sprite спричиняє помилку завантаження.
 
@@ -35,7 +35,7 @@ flutter analyze
 flutter test
 ```
 
-Клік по герою відкриває Quick Menu, а постійна кнопка-шестерня відкриває Settings. Statistics, Character Upgrades, Equipment, Settings і Debug Tools відкриваються в тому самому Flutter-вікні. Закриття панелі знову зменшує native window. `Quick Menu → Exit` і `Settings → Save & quit` зберігають прогрес перед виходом. macOS Quit / Cmd-Q та Windows WM_CLOSE також проходять через save handshake.
+Клік по герою відкриває Quick Menu, а постійна кнопка-шестерня відкриває Settings. Statistics, Equipment, Settings і Debug Tools відкриваються в тому самому Flutter-вікні. Закриття панелі знову зменшує native window. `Quick Menu → Exit` і `Settings → Save & quit` зберігають прогрес перед виходом. macOS Quit / Cmd-Q та Windows WM_CLOSE також проходять через save handshake.
 
 ## Overlay та platform layer
 
@@ -107,7 +107,7 @@ lib/
   game/animation/       Semantic coordinators and Flame SpriteFrameCache
   domain/
     character/          CharacterProgress, CombatStats, stat calculations
-    progression/        InfiniteUpgradeDefinition, character upgrade catalog
+    progression/        UpgradePrice geometric financial math
     equipment/          Fixed equipment definitions
     activity/           Rest coordinator/policy/selector, activity statistics
     economy/            Reward model
@@ -117,7 +117,7 @@ lib/
     components/         Hero/enemy actors, environment, effects
     systems/            State machine, pure-Dart simulation, combat, spawn, drops, progression
   platform/             Native window/activity abstractions and adapters
-  presentation/         Overlay, statistics, upgrades, equipment, settings, debug UI
+  presentation/         Overlay, statistics, equipment, settings, debug UI
 ```
 
 Domain, number arithmetic і game systems залежать тільки від Dart. Flame visual components читають simulation model і споживають transient `VisualEvent`s. Riverpod controller сполучає simulation, UI, persistence і platform services; UI snapshot оновлюється 4 Hz, сама симуляція має fixed step 1/60 s.
@@ -129,7 +129,7 @@ BOOT → TRAVELING → ENEMY_APPROACH → COMBAT → ENEMY_DEATH → REWARD → 
                                        ↘ HERO_DEATH → RESPAWN → TRAVELING
 ```
 
-Переходи явно перевіряє `GameStateMachine`. Hero death також може бути викликаний debug tools під час travel/approach/reward. Enemy death animation завершується перед розрахунком reward. Смерть відкочує поточний етап на 1 (мінімум 1) та обнуляє stageKills; respawn відновлює full HP. `NoDeathPenalty` зберігає постійний character progress: level, XP, Gold, Books і придбані upgrades/equipment не втрачаються.
+Переходи явно перевіряє `GameStateMachine`. Hero death також може бути викликаний debug tools під час travel/approach/reward. Enemy death animation завершується перед розрахунком reward. Смерть відкочує поточний етап на 1 (мінімум 1) та обнуляє stageKills; respawn відновлює full HP. `NoDeathPenalty` зберігає постійний character progress: Gold, Books і придбане equipment не втрачаються.
 
 Пул спавну містить лише ворогів із підключеними sprite assets; зараз це `gobli_low`. `EnemyDefinition.scale` задає візуальний масштаб типу ворога (типово 1.0); для гобліна він 0.8. Масштаб застосовується навколо точки контакту із землею до всіх поз. Бос додатково множить його на 1.30 (гоблін-бос: 1.04). ГГ має загальний візуальний множник 1.15 (`GameBalance.heroScale`). Під час `ENEMY_APPROACH` ворог стоїть у кадрі 0, а його screen position зміщується на ту саму дистанцію, що background і road. Швидкість камери — 32 units/s: від `enemySpawnX=386` до `enemyCombatX=254` підхід займає приблизно 4.125 s. Після досягнення бойової позиції камера й ворог зупиняються одночасно.
 
@@ -149,48 +149,39 @@ Simulation використовує delta time accumulator із fixed step, а �
 
 ## Balance і progression
 
-Усі числові coefficients бою, етапів, луту, XP, вартості й сили апгрейдів та base enemy values — `lib/core/balance/progression_balance.dart`. `game_balance.dart` містить rendering/timing/platform settings. `EnemyCatalog`, `UpgradeCatalog` і `EquipmentCatalog` містять IDs/names/curves та посилання на ці константи. Widgets не містять progression formulas.
+Бойові, ворожі та фінансові коефіцієнти — `lib/core/balance/progression_balance.dart`. Версійований `EquipmentCurveProfile.candidate` (`phase02_candidate_v1`) містить окремі криві Weapon, Armor, Helmet і Amulet. `CharacterStats.calculate` застосовує їх один раз; runtime, preview та event simulator використовують цей resolver. `game_balance.dart` містить rendering/timing/platform settings.
 
 ```text
 tier = stage - 1
-onVictory: kills += 1; stageKills += 1; addXp(character, xpReward)
-after 12 stage victories: stage += 1; stageKills = 0
+onVictory (after enemy death): Gold/Books reward; kills += 1; stageKills += 1
+after 5 stage victories: stage += 1; stageKills = 0
 onHeroDeath: stage = max(1, stage - 1); stageKills = 0
-enemyHP = baseHP × 1.08^tier
-enemyDamage = baseDamage × 1.065^tier
+enemyHP = baseHP × 1.08^tier; enemyDamage = baseDamage × 1.065^tier
 goldReward = baseGold × 1.10^tier
 bookDropAmount = baseBooks × 1.10^tier; bookDropChance = 0.28
-xpReward = baseXPReward × 1.07^tier
-xpRequired(level) = 45 × 1.12^(level - 1)
-characterLevelStatMultiplier = 1.015^(level - 1)
-
-upgradeCost(level) = baseCost × costGrowth^level
-costGrowth: Gold equipment = 1.1405; Books upgrades = 1.1605
-batchCost(level, n) = cost(level) × (costGrowth^n - 1) / (costGrowth - 1)
-MAX = floor(log(1 + wallet / cost(level) × (costGrowth - 1)) / log(costGrowth))
+cost(level) = baseCost × 1.1405^level
+batchCost(level, n) = cost(level) × (1.1405^n - 1) / .1405
 ```
 
-HUD показує `Stage N · Wave W/5`. Перші чотири хвилі — звичайні вороги; п’ята — бос із +30% до розміру та +10% до HP і damage. Наступний етап відкривається тільки після перемоги над босом. Етап визначає складність ворогів і rewards; XP та character level визначають постійну силу героя (+1.5% HP і damage за рівень, із compound growth). Distance, час, lifetime kills і character level не підвищують етап. Після смерті на Stage 10 герой повертається на початок Stage 9 (хвиля 1/5), знову проходить чотири звичайні бої та боса, отримуючи Gold/Books/XP, та повертається на Stage 10. Повторення циклу накопичує валюту й XP для постійних апгрейдів. Смерть на Stage 1 залишає Stage 1 та обнуляє тільки stageKills. Character level/XP, Gold/Books, upgrades/equipment та lifetime kills зберігаються. Формули, джерела та критерії оцінки балансу — [docs/stage_balance.md](docs/stage_balance.md).
+HUD показує `Stage N · Wave W/5`. Перші чотири хвилі — звичайні вороги; п’ята — бос із +30% до розміру та +10% до HP і damage. Перемоги не збільшують базові характеристики й не лікують. Смерть відкочує Stage на один (мінімум 1), wave на 1/5; Gold/Books, equipment і lifetime kills зберігаються. Respawn відновлює full HP. Armor живому герою додає фактичну deltaMaxHp, до нового max HP; мертвого героя покупка не оживляє. Інші предмети не лікують. Attack speed героя стала: 1 атака/с.
 
-MAX працює без sequential level loops; після математичного розрахунку є rounding correction. Для costGrowth = 1 використовується flat-cost формула; для growth дуже близько до 1 — чисельно стабільні expm1/log1p series. Ці крайні випадки також покриті tests. x10 купує до 10 доступних рівнів, показуючи фактичну кількість і сумарну ціну.
+Gold купує тільки чотири зареєстровані предмети. Books показуються у Statistics, накопичуються зі старого random per-kill джерела й поки не витрачаються. Старі Books-stat каталог, map і command видалені; спеціалізація входить до наступного етапу.
 
-Прокачка поступово відстає від enemy HP: ціни Gold/Books ростуть на 14.05%/16.05% за upgrade, а HP/damage — на 5%. Результат 30-денної event simulation із 8 активними годинами на день і збалансованими покупками раз на годину: медіанний час етапу приблизно 1.39 хв на день 1, 3.02 хв на день 14 та 9.42 хв на день 30 для п’яти хвиль із босом. Це довгостроковий тренд; випадкові вороги, crit, покупки та deaths змінюють час окремих етапів. Сценарії й обмеження — [docs/stage_balance.md](docs/stage_balance.md); відтворення: `dart run tool/balance/simulate_progression.dart --hours-per-day 8 --seeds 3`.
+Криві кандидата (`n` — рівень відповідного предмета):
 
-Books upgrades і equipment contributions додають рівні відповідного stat:
+- Weapon/Armor: `E(n)=n` до 100; далі `100 + .5*x + 100*ln(1+x/200)`, `x=n-100`. Damage=`14×1.05^E`, HP=`120×1.05^E`, обчислені через log10 без округлення E.
+- Helmet: `c=.05+.001*n` до 200 (25%); далі `.8-.55*exp(-(n-200)/550)`.
+- Amulet: `m=1.5+.01*n` до 150 (×3); далі `3+2*ln(1+(n-150)/200)`.
 
-- Damage і Max HP: `base × 1.05^combinedUpgradeLevel × levelStatMultiplier`;
-- Crit Chance: `min(0.8, 0.05 + 0.001 × combinedUpgradeLevel)` — +0.1 відсоткового пункту за рівень;
-- Crit Damage: `1.5 + 0.01 × combinedUpgradeLevel` — +0.01× за рівень.
+`EquipmentPurchases` перевіряє ID, Gold wallet, count і представлений ефект. Команда повторно рахує quote за поточним станом. x10/MAX можуть купити менше рівнів та оплачують лише фактичний count. MAX використовує closed-form affordability та до 53 probes монотонного аналітичного guard; фінальна перевірка не дозволяє списати Gold за нульовий effect. Технічна межа rank — `2^53−1`. Guard порівнює аналітичну дельту з double precision spacing; продуктового epsilon у production немає. Ціни Weapon/Armor починаються з 20, Helmet з 35, Amulet з 30 Gold.
 
-Швидкість героя стала: `ProgressionBalance.heroAttackSpeed = 1.0` атака/с. Вона залишається у `CombatStats`, але відсутня у Statistics, character upgrade catalog і equipment catalog. Старі збережені рівні `speed`/`boots` не впливають на характеристики; рівні критів перераховуються за новими коефіцієнтами.
+Equipment UI показує before/after, фактичний count/cost і окремий gain: crit у відсоткових пунктах, multiplier у ×, HP/damage у %. Малі дельти мають додаткову точність. Постійні слоти не створюють inventory або replacement.
 
-`CombatStats.dps` включає attack speed, crit chance і crit multiplier. UI підписує характеристику, показує фактичний total stat зараз і після вибраної покупки x1/x10/MAX, а також окремий сумарний bonus поточного upgrade/item. Для crit chance бонус вказано у відсоткових пунктах. `InfiniteUpgradeDefinition.effect` застосовує `curve`, `valueGrowth`, `softCapRate` та `bonusPerLevel`; effect formulas знаходяться в domain, не widgets. Equipment slots постійні: Weapon, Armor, Helmet, Amulet. Inventory/equipment replacement відсутні. Кожен слот підтримує x1/x10/MAX.
-
-Gold гарантований, Books мають per-enemy configured chance (default 28%); кількість Gold і Books зростає на 10% за етап, XP на 7%. `EnemyFactory` обчислює всі три нагороди; `DropSystem` застосовує chance для Books і activity multiplier до Gold/Books, XP не множиться. Валюти зберігаються як `Amount`, без округлення кожного drop. `DropSystem` повертає renderer-independent `Reward`. Обґрунтування цін/сили та приклади — [docs/stage_balance.md](docs/stage_balance.md).
+Baseline другого етапу: 20 seed, 49 profile/policy/income конфігурацій, 30 хв / 1 / 3 / 7 / 49 / 210 productive hours. Адаптивний кандидат досягає медіанного highest Stage 30 за 7 годин і 69 за 210 годин; balanced за доступністю — 33 і 73. Видалення Books-дублів є головним джерелом сповільнення; типові ранги ще не доходять до crit soft-cap. Це технічний проміжний баланс: цінність ранніх crit items і пізній темп потребують наступного tuning. [Звіт A01–A14, команди й обмеження](docs/phase_02_acceptance_report.md). [Історичний етап 1](docs/phase_01_acceptance_report.md).
 
 ### Великі числа
 
-Звичайний `double` переповнився б при довгій exponential progression. `Amount` зберігає невід'ємну величину у log10-space. Наприклад, HP 1e12000 має finite stored exponent 12000. Combat, currency, XP, costs і rewards використовують цей abstraction; UI використовує `NumberFormatter` (`K/M/B/T/Qa/...`, далі scientific notation).
+Звичайний `double` переповнився б при довгій exponential progression. `Amount` зберігає невід'ємну величину у log10-space. Наприклад, HP 1e12000 має finite stored exponent 12000. Combat, currency, costs і rewards використовують цей abstraction; UI використовує `NumberFormatter` (`K/M/B/T/Qa/...`, далі scientific notation).
 
 Це приблизно 15 significant digits, а не arbitrary-precision decimal. Додавання дуже малого drop до набагато більшої currency може губитися нижче precision. Level counters — exact practical integer metadata, не великий економічний value; захисний arithmetic ceiling 2^53−1 забезпечує точність математичних bulk purchases, без gameplay max-level tuning. Distance/time — bounded real-world double aggregates. Для подальшого переходу на decimal/big-number backend достатньо замінити `Amount` та formatter, не widgets/combat contracts.
 
@@ -218,27 +209,25 @@ save.tmp              flushed temporary write
 instance.lock         exclusive OS lock for process lifetime
 ```
 
-Main startup бере instance lock: одночасні процеси не повинні перезаписувати progression один одного. Writes serialized, JSON snapshot захоплюється до asynchronous I/O. На macOS rename atomic; на Windows replacement потребує delete + rename, тож backup захищає від crash між ними. Якщо primary пошкоджений, load пробує backup. Перевіряються не тільки JSON syntax, а й finite/nonnegative durations/distance, kill count, character та upgrade levels. Помилка запису backup не замовчується як помилка JSON. Якщо обидва пошкоджені або schema новіша — показується startup error із Retry/confirmed Reset, automatic overwrite немає.
+Main startup бере instance lock: одночасні процеси не повинні перезаписувати progression один одного. Writes serialized, JSON snapshot захоплюється до asynchronous I/O. На macOS rename atomic; на Windows replacement потребує delete + rename, тож backup захищає від crash між ними. Якщо primary пошкоджений, load пробує backup. Перевіряються не тільки JSON syntax, а й finite/nonnegative durations/distance, kill count та рівні покупок. Помилка запису backup не замовчується як помилка JSON. Якщо обидва пошкоджені або schema новіша — показується startup error із Retry/confirmed Reset, automatic overwrite немає.
 
-Save schema version 6. Зберігаються stage/stageKills, character Level/XP/Books/Gold/upgrades/equipment, distance, lifetime kills, activity aggregates, settings і UTC timestamp. `SaveMigrator` підтримує v1–v5: старий `enemyProgressKills` (або lifetime kills за його відсутності) перетворюється на stage/stageKills за колишнім кроком 12 перемог; character progression зберігається. Старий прихований counter видаляється. Для сейвів v1–v5 номер стейджа зберігається, а прогрес із 12 боїв перераховується як `floor(oldStageKills × 5 / 12)`: навіть після 11 старих перемог потрібно пройти боса.
+Save schema version 8. Зберігаються stage/stageKills, Books/Gold/equipment, distance, lifetime kills, activity aggregates, settings і UTC timestamp. Відомі дорелізні v1–v7 primary/backup не мігруються: якщо немає актуального сейву, вони очищаються в serialized queue і гра починається заново. Legacy primary не блокує актуальний backup. Current JSON із полем character `upgrades` (навіть порожнім) є пошкодженим: потрібен валідний current backup або явна помилка. Пошкоджений JSON без читабельної версії не вважається legacy. Future version у primary чи backup блокує автоматичний перезапис. Зайві character level/XP поля ігноруються й не емітуються наступним записом.
+
+Current HP і незавершений combat не зберігаються. Перезапуск починається з max HP, тому він досі може використовуватися для лікування; цей persistence-ризик винесений у звіт. Baseline запускається без restart.
 
 Save: раз на хвилину (60 s), після кожного успішного character/equipment upgrade та зміни settings, на lifecycle inactive/paused/detached та перед controlled exit. Exit призупиняє simulation, завершує activity session і чекає save; повторні натискання не запускають паралельний exit. Якщо save або native quit не вдалися, гра відновлюється й показує помилку. Startup error UI теж підтримує native Quit. Force-kill/power-loss може втратити останні ≤60 s. Reset вимагає Flutter confirmation і очищає primary, backup та live progression; instance lock зберігається до виходу.
 
-Валюта (Gold/Books) та XP нараховуються тільки під час роботи симуляції в запущеному додатку. Після закриття й повторного запуску відновлюється збережений прогрес без нагород за час відсутності. Тривалі паузи під час сну комп’ютера відкидаються без симуляції боїв.
+Валюта (Gold/Books) нараховується тільки під час роботи симуляції в запущеному додатку. Після закриття й повторного запуску відновлюється збережений прогрес без нагород за час відсутності. Тривалі паузи під час сну комп’ютера відкидаються без симуляції боїв.
 
 ## Як розширювати catalogs
 
 ### Новий enemy
 
-Додайте числові base values/weights/rewards у `ProgressionBalance`, а `EnemyDefinition` у `EnemyCatalog.definitions` у `game/systems/enemy_spawner.dart`: id/name/baseHp/baseDamage/attackSpeed/critChance/critDamage/rewardGold/rewardXp/rewardBooks/rewardBookChance/difficultyWeight та typed `EnemyAnimationContent`. Factory застосує незалежне HP/damage/Gold/Books/XP scaling; spawner обере definition через weighted random. Поточні Canvas вороги явно посилаються на `ProceduralEnemyTimelines.content`. Для PNG ворога додайте clips/frames/rigs у resources і задайте `SpriteEnemyAnimationContent(idleId: ..., attackId: ..., deathId: ...)`. Усі три ClipId перевіряються строго; відсутній ресурс спричиняє помилку. Hit reaction лишається overlay.
+Додайте числові base values/weights/rewards у `ProgressionBalance`, а `EnemyDefinition` у `EnemyCatalog.definitions` у `game/systems/enemy_spawner.dart`: id/name/baseHp/baseDamage/attackSpeed/critChance/critDamage/rewardGold/rewardBooks/rewardBookChance/difficultyWeight та typed `EnemyAnimationContent`. Factory застосує незалежне HP/damage/Gold/Books scaling; spawner обере definition через weighted random. Поточні Canvas вороги явно посилаються на `ProceduralEnemyTimelines.content`. Для PNG ворога додайте clips/frames/rigs у resources і задайте `SpriteEnemyAnimationContent(idleId: ..., attackId: ..., deathId: ...)`. Усі три ClipId перевіряються строго; відсутній ресурс спричиняє помилку. Hit reaction лишається overlay.
 
-### Character upgrade
+### Equipment
 
-Додайте `InfiniteUpgradeDefinition` у `UpgradeCatalog.character`: stable id, name, CharacterStat, baseCost, costGrowth, curve, valueGrowth/softCapRate/bonusPerLevel. Підтримувані статі вже обчислює `CharacterStats.calculate`. Новий тип stat потребує enum + формулу в CharacterStats і display mapping у UpgradeList; widgets не повинні обчислювати effect formulas.
-
-### Equipment upgrade
-
-Додайте `EquipmentDefinition` у `EquipmentCatalog.items`: stable id/name/stat/baseCost/costGrowth/curve. UI автоматично створить fixed слот і x1/x10/MAX controls. Список не створює inventory і не дозволяє замінювати предмети.
+Каталог має чотири stable IDs: weapon/armor/helmet/amulet. Definition містить name/stat/baseCost/costGrowth; effect належить `EquipmentCurveProfile` і `CharacterStats.calculate`. Команда приймає тільки зареєстрований ID. Зміна формул потребує нової версії профілю, контрольних тестів і baseline. Майбутні Books-таланти матимуть окремий domain contract.
 
 ### Animation / sprite sheet
 
@@ -363,7 +352,7 @@ renderer не виконує string lookup або власний playback. Comba
 
 ## Debug tools
 
-Доступні лише `kDebugMode`: Spawn enemy, Kill enemy, Kill hero, +100 Gold, +100 Books, +100 XP, idle Active/Level1/Level2/Level3/OS, x1/x5/x20, hitboxes, state/idle/animation labels, snapshot frame/graph/node/local time, last transition reason і playback generation. Override не зберігається; OS повертає native polling. Override керує відпочинком і поверненням до пригод, але activity statistics завжди класифікуються за реальною native activity. Debug tools не входять у release Quick Menu.
+Доступні лише `kDebugMode`: Spawn enemy, Kill enemy, Kill hero, +100 Gold, +100 Books, idle Active/Level1/Level2/Level3/OS, x1/x5/x20, hitboxes, state/idle/animation labels, snapshot frame/graph/node/local time, last transition reason і playback generation. Override не зберігається; OS повертає native polling. Override керує відпочинком і поверненням до пригод, але activity statistics завжди класифікуються за реальною native activity. Debug tools не входять у release Quick Menu.
 
 Settings має окремі sliders Background opacity, Road opacity та Overall opacity (0–100%). Загальна прозорість множить прозорість персонажів, ефектів, HUD, фону й дороги. Шкала HP, індикатор Stage/Wave та числа damage/rewards додатково успадковують Background opacity: при 0% фону вони приховані. Кнопка меню відкриває головну панель; Settings доступні з неї. Усі панелі меню залишаються непрозорими й інтерактивними за будь-якої прозорості гри, включно з 0%, щоб можна було повернути видимість. Прихований герой пропускає кліки на desktop також у native layer. Значення зберігаються після завершення перетягування; старі сейви використовують 100%, а Reset повертає всі три значення до 100%.
 
@@ -391,6 +380,8 @@ Sound preference зберігається, але audio playback поки не �
 
 [Checklist усіх 34 пунктів і pending platform matrix](docs/requirements_checklist.md).
 
-Tests покривають XP/level-up, upgrade cost/x10/MAX, crit/event timing, enemy/reward scaling, book drop chance, graph/variant eligibility і interruption, activity sessions/local midnight/suspend, save/load/backup/migration, відсутність офлайн-нарахувань, enormous number formatting і FPS-independent simulation outcomes.
+Актуальні результати перевірки етапу 2 наведено у [звіті](docs/phase_02_acceptance_report.md); старі build/runtime заміри вище є історичними.
+
+Tests покривають незмінність сили без покупок, відсутність лікування за перемоги, upgrade cost/x10/MAX, crit/event timing, enemy/reward scaling, book drop chance, graph/variant eligibility і interruption, activity sessions/local midnight/suspend, save/load/current backup/legacy reset/future preservation, відсутність офлайн-нарахувань, enormous number formatting і FPS-independent simulation outcomes.
 
 API references: [FlameGame](https://docs.flame-engine.org/latest/flame/game.html), [Flame image/animation API](https://docs.flame-engine.org/latest/flame/rendering/images.html), [Flutter macOS controller](https://api.flutter.dev/macos-embedder/interface_flutter_view_controller.html), [Apple idle timestamps](https://developer.apple.com/documentation/coregraphics/cgeventsource/secondssincelasteventtype(_:eventtype:)), [Win32 GetLastInputInfo](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getlastinputinfo).
