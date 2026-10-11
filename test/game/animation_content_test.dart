@@ -43,7 +43,7 @@ void main() {
     for (final entry in clips.entries) {
       final manifest =
           jsonDecode(
-                File('art/hero/${entry.key}/manifest.json').readAsStringSync(),
+                File('tool/sprite_assets/manifests/hero/${entry.key}.json').readAsStringSync(),
               )
               as Map;
       final clip = resources.clip(ClipId(entry.value));

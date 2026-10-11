@@ -1,0 +1,49 @@
+{
+  "source": "../../../../art/hero/sit_down_v1/source-sheet.png",
+  "size": 512,
+  "scale": 0.45,
+  "frames": [
+    {
+      "crop": [
+        0,
+        0,
+        660,
+        672
+      ],
+      "offset": [
+        100,
+        149
+      ]
+    },
+    {
+      "crop": [
+        660,
+        0,
+        594,
+        672
+      ],
+      "offset": [
+        127,
+        150
+      ]
+    },
+    {
+      "crop": [
+        0,
+        672,
+        638,
+        582
+      ],
+      "offset": [
+        108,
+        192
+      ]
+    },
+    {
+      "copy": "../../../../assets/characters/hero/seated.png"
+    }
+  ],
+  "output": "assets/characters/hero/sit_down.png",
+  "framesDirectory": "build/sprite_frames/hero/sit_down_v1",
+  "previewGroup": "build/animation_previews/hero/sit_down_v1"
+}

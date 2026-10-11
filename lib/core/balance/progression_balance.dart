@@ -9,7 +9,8 @@ abstract final class ProgressionBalance {
 
   static const hpGrowth = 1.08;
   static const damageGrowth = 1.065;
-  static const enemiesPerStage = 12;
+  static const enemiesPerStage = 5;
+  static const bossStatMultiplier = 1.10;
   static const enemyCritChance = .03;
   static const enemyCritDamage = 1.5;
   static const enemyWeight = 1.0;
@@ -25,7 +26,7 @@ abstract final class ProgressionBalance {
   static const levelStatGrowth = 1.015;
   static const upgradeGrowth = 1.05;
   // Small cost/power gap: stages slow down gradually over weeks of farming.
-  // A 30-day event simulation is available in tool/simulate_progression.dart.
+  // A 30-day event simulation is available in tool/balance/simulate_progression.dart.
   static const bookUpgradeCostGrowth = 1.1605;
   static const equipmentCostGrowth = 1.1405;
   static const critChanceCap = .8;

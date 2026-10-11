@@ -28,8 +28,8 @@ class StatisticsPanel extends StatelessWidget {
       children: [
         row('Stage', '${game.stage}'),
         row(
-          'Stage progress',
-          '${game.stageKills}/${ProgressionBalance.enemiesPerStage}',
+          'Wave',
+          '${game.wave}/${ProgressionBalance.enemiesPerStage}${game.isBossWave ? ' · Boss' : ''}',
         ),
         row('Character level', '${hero.level}'),
         Text(

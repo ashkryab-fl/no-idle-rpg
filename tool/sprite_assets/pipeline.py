@@ -11,7 +11,7 @@ import subprocess
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
-MANIFESTS = [f'art/hero/{name}/manifest.json' for name in (
+MANIFESTS = [f'tool/sprite_assets/manifests/hero/{name}.json' for name in (
     'seated_v1', 'sit_down_v1', 'sharpen_v1', 'walk_v2', 'attack_v1',
     'death_v1', 'stand_up_v1',
 )]
@@ -52,7 +52,7 @@ def load_manifest(path, root=ROOT):
     size = data['size']
     if type(size) is not int or size <= 0:
         raise ValueError('Invalid frame canvas')
-    data['_folder'] = str(folder)
+    data['_folder'] = data.get('previewGroup', str(folder))
     data['_frames'] = []
     output = rooted(root, data['output'])
     atlas = 'frames' in data
@@ -182,7 +182,7 @@ def preview_filters(size, rig, preview):
 
 @lru_cache(maxsize=1)
 def runtime_previews():
-    return json.loads(run(['dart', str(ROOT / 'tool/export_animation_previews.dart')]))
+    return json.loads(run(['dart', str(ROOT / 'tool/sprite_assets/export_animation_previews.dart')]))
 
 
 def preview_data(folder=None):

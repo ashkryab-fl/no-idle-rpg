@@ -1,0 +1,82 @@
+{
+  "source": "../../../../art/hero/stand_up_v1/source-corrected.png",
+  "size": 512,
+  "scale": 0.59,
+  "frames": [
+    {
+      "crop": [
+        0,
+        0,
+        512,
+        506
+      ],
+      "offset": [
+        73,
+        154
+      ]
+    },
+    {
+      "crop": [
+        512,
+        0,
+        512,
+        506
+      ],
+      "offset": [
+        73,
+        152
+      ]
+    },
+    {
+      "crop": [
+        1024,
+        0,
+        512,
+        506
+      ],
+      "offset": [
+        66,
+        151
+      ]
+    },
+    {
+      "crop": [
+        0,
+        506,
+        535,
+        518
+      ],
+      "offset": [
+        24,
+        157
+      ]
+    },
+    {
+      "crop": [
+        535,
+        506,
+        489,
+        518
+      ],
+      "offset": [
+        29,
+        157
+      ]
+    },
+    {
+      "crop": [
+        1024,
+        506,
+        512,
+        518
+      ],
+      "offset": [
+        15,
+        157
+      ]
+    }
+  ],
+  "output": "assets/characters/hero/stand_up.png",
+  "framesDirectory": "build/sprite_frames/hero/stand_up_v1",
+  "previewGroup": "build/animation_previews/hero/stand_up_v1"
+}

@@ -8,6 +8,54 @@ import 'package:idle_companion/game/systems/game_simulation.dart';
 import 'package:idle_companion/game/systems/game_state_machine.dart';
 
 void main() {
+  test('four normal waves and a stronger fifth-wave boss clear a stage', () {
+    final game = GameSimulation(random: Random(1))..stage = 7;
+    double? normalHp, normalDamage;
+    for (var wave = 1; wave <= 5; wave++) {
+      expect(game.wave, wave);
+      game.spawnEnemy();
+      final enemy = game.enemy!;
+      expect(enemy.isBoss, wave == 5);
+      normalHp ??= enemy.stats.maxHp.toDouble();
+      normalDamage ??= enemy.stats.damage.toDouble();
+      expect(enemy.hp.ratio(enemy.stats.maxHp), closeTo(1, 1e-10));
+      expect(
+        enemy.stats.maxHp.toDouble(),
+        closeTo(normalHp * (wave == 5 ? 1.1 : 1), 1e-8),
+      );
+      expect(
+        enemy.stats.damage.toDouble(),
+        closeTo(normalDamage * (wave == 5 ? 1.1 : 1), 1e-8),
+      );
+      game.killEnemy();
+      expect(
+        game.stage,
+        7,
+        reason: 'The wave completes after the death animation',
+      );
+      game.advance(2);
+      expect(game.stage, wave == 5 ? 8 : 7);
+      expect(game.phase, GamePhase.traveling);
+    }
+    expect(game.wave, 1);
+    game.spawnEnemy();
+    expect(game.enemy!.isBoss, false);
+  });
+
+  test('death on the boss restarts the previous stage at a normal wave', () {
+    final game = GameSimulation(random: Random(1))
+      ..stage = 10
+      ..stageKills = 4;
+    game.spawnEnemy();
+    expect(game.enemy!.isBoss, true);
+    game.killHero();
+    expect(game.stage, 9);
+    expect(game.wave, 1);
+    game.advance(3);
+    game.spawnEnemy();
+    expect(game.enemy!.isBoss, false);
+  });
+
   test('only completed victories unlock the next stage', () {
     final game = GameSimulation(random: Random(1))
       ..stage = 9
@@ -36,7 +84,7 @@ void main() {
     () {
       final game = GameSimulation(random: Random(1))
         ..stage = 10
-        ..stageKills = 8
+        ..stageKills = 4
         ..kills = 100;
       game.character
         ..level = 10
@@ -72,7 +120,8 @@ void main() {
             game.enemy!.stats.damage.toDouble(),
             closeTo(
               game.enemy!.definition.baseDamage *
-                  pow(ProgressionBalance.damageGrowth, 8),
+                  pow(ProgressionBalance.damageGrowth, 8) *
+                  (kill == 5 ? 1.1 : 1),
               1e-8,
             ),
           );

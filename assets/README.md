@@ -4,7 +4,7 @@ pubspec.yaml and hero.walk metadata is set in lib/core/assets/animation_catalog.
 Individual upscaled PNGs are in characters/hero/walk_frames/.
 The supplied sheet, first ten original cells, manifest and GIF preview are in
 art/hero/walk_v2/. The previous walk artwork is archived in art/hero/walk_v1/.
-Rebuild from the repository root: python3 tool/build_hero_walk.py
+Rebuild from the repository root: python3 tool/sprite_assets/build_hero_walk.py
 The script extracts the first two rows in reading order and upscales each full
 256x256 cell exactly 2x using ffmpeg Lanczos. It preserves the source placement
 and alpha rather than independently fitting each pose.
@@ -31,7 +31,7 @@ loop until user activity returns. The graph randomly selects an eligible
 continuation after sitting; only sharpening is currently registered.
 All use anchor (0.5, 0.875), scale 0.25. Canonical reference and future pose
 contract: art/hero/seated_v1/reference.png and docs/hero_rest.md.
-Rebuild/install: python3 tool/build_hero_rest.py
+Rebuild/install: python3 tool/sprite_assets/build_hero_rest.py
 
 Hero attack is characters/hero/attack.png: four horizontal 512x512 RGBA frames,
 0.15 seconds per frame, non-looping (0.6 seconds). Damage at 0.35 seconds lands
@@ -42,7 +42,7 @@ Both use anchor (0.58, 0.875) and scale 0.25 to match the walking hero's height.
 An incoming hit flashes over the swing; without a dedicated hit asset, the
 guard supplies the hit pose. Attack speed scales playback and damage together.
 Sources, separate frames and the GIF preview are in art/hero/attack_v1/.
-Rebuild/install: python3 tool/build_hero_attack.py
+Rebuild/install: python3 tool/sprite_assets/build_hero_attack.py
 
 Hero death is characters/hero/death.png: four horizontal 512x512 RGBA frames,
 non-looping, 0.4s per frame. The heroine plants the sword, bows her head, sinks
@@ -51,7 +51,7 @@ for exactly 1.0s: its normal 0.4s and 0.6s in RESPAWN. Total visible sequence
 is 2.2s, then full-HP revival. Attack speed does not accelerate this animation.
 Anchor (0.58, 0.875) and scale 0.25 match attack/guard. Source, separate frames,
 manifest and GIF are in art/hero/death_v1/.
-Rebuild/install: python3 tool/build_hero_death.py
+Rebuild/install: python3 tool/sprite_assets/build_hero_death.py
 
 Other animation IDs retain their procedural fallback. Future asset layout:
 Expected files: characters/hero/{walk,attack,hit,death}.png,

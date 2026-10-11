@@ -13,7 +13,7 @@ void main() {
       (j) => j['kills'] = -1,
       (j) => j['stage'] = 0,
       (j) => j['stageKills'] = -1,
-      (j) => j['stageKills'] = 12,
+      (j) => j['stageKills'] = 5,
       (j) => (j['character'] as Map)['level'] = 0,
       (j) => (j['character'] as Map)['upgrades'] = {'damage': -1},
       (j) => ((j['activity'] as Map)['today'] as Map)['idle'] = -5,
@@ -27,6 +27,44 @@ void main() {
       );
     }
   });
+
+  test('old twelve-fight saves preserve stage and scale completed waves', () {
+    for (var completed = 0; completed < 12; completed++) {
+      final game = GameSimulation()
+        ..stage = 10
+        ..kills = 118;
+      game.character.gold = Amount.fromNum(123);
+      final json = GameSave.capture(game, DateTime.now()).toJson()
+        ..['saveVersion'] = 5
+        ..['stageKills'] = completed;
+      final restored = GameSave.fromJson(json);
+      expect(restored.stage, 10);
+      expect(restored.stageKills, completed * 5 ~/ 12);
+      expect(restored.kills, 118);
+      expect(restored.character.gold.toDouble(), closeTo(123, 1e-8));
+    }
+  });
+
+  test(
+    'legacy kill counters still use twelve-fight stages before migration',
+    () {
+      for (final version in [1, 2, 3, 4]) {
+        final json =
+            GameSave.capture(
+                GameSimulation()..kills = 118,
+                DateTime.now(),
+              ).toJson()
+              ..['saveVersion'] = version
+              ..remove('stage')
+              ..remove('stageKills');
+        if (version == 3) json['enemyProgressKills'] = 118;
+        final restored = GameSave.fromJson(json);
+        expect(restored.stage, 10);
+        expect(restored.stageKills, 4);
+        expect(restored.kills, 118);
+      }
+    },
+  );
 
   setUp(() async {
     dir = await Directory.systemTemp.createTemp('idle-save-test-');

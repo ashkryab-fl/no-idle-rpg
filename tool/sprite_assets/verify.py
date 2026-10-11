@@ -81,7 +81,7 @@ def main():
     for path in selected_manifests(args.manifests):
         verify_manifest(path, output_root=args.output_root, previews=args.previews)
     if args.previews and not args.manifests:
-        verify_previews(preview_data('art/hero/rest_variants_v1'), output_root=args.output_root)
+        verify_previews(preview_data('build/animation_previews/hero/rest_variants_v1'), output_root=args.output_root)
 
 
 if __name__ == '__main__':

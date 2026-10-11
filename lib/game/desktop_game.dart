@@ -82,7 +82,7 @@ class DesktopGame extends FlameGame {
   void update(double dt) {
     simulation.advance(dt);
     for (final event in simulation.events) {
-      add(CombatEffect(event));
+      add(CombatEffect(event, settings: simulation.settings));
     }
     simulation.events.clear();
     super.update(dt);

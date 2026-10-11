@@ -131,7 +131,7 @@ BOOT → TRAVELING → ENEMY_APPROACH → COMBAT → ENEMY_DEATH → REWARD → 
 
 Переходи явно перевіряє `GameStateMachine`. Hero death також може бути викликаний debug tools під час travel/approach/reward. Enemy death animation завершується перед розрахунком reward. Смерть відкочує поточний етап на 1 (мінімум 1) та обнуляє stageKills; respawn відновлює full HP. `NoDeathPenalty` зберігає постійний character progress: level, XP, Gold, Books і придбані upgrades/equipment не втрачаються.
 
-Пул спавну містить лише ворогів із підключеними sprite assets; зараз це `gobli_low`. Під час `ENEMY_APPROACH` ворог стоїть у кадрі 0, а його screen position зміщується на ту саму дистанцію, що background і road. Швидкість камери — 32 units/s: від `enemySpawnX=386` до `enemyCombatX=254` підхід займає приблизно 4.125 s. Після досягнення бойової позиції камера й ворог зупиняються одночасно.
+Пул спавну містить лише ворогів із підключеними sprite assets; зараз це `gobli_low`. `EnemyDefinition.scale` задає візуальний масштаб типу ворога (типово 1.0); для гобліна він 0.8. Масштаб застосовується навколо точки контакту із землею до всіх поз. Бос додатково множить його на 1.30 (гоблін-бос: 1.04). ГГ має загальний візуальний множник 1.15 (`GameBalance.heroScale`). Під час `ENEMY_APPROACH` ворог стоїть у кадрі 0, а його screen position зміщується на ту саму дистанцію, що background і road. Швидкість камери — 32 units/s: від `enemySpawnX=386` до `enemyCombatX=254` підхід займає приблизно 4.125 s. Після досягнення бойової позиції камера й ворог зупиняються одночасно.
 
 **USER_IDLE** визначає бажання відпочивати незалежно від поточної combat phase. Якщо користувач став idle під час encounter, герой завершує approach, бій, death/reward або власний death/respawn, і лише після повернення до `TRAVELING` запускає відпочинок. Idle animation не перекриває бойові анімації. Якщо активність повернулась до завершення encounter, відпочинок не починається.
 
@@ -141,7 +141,7 @@ BOOT → TRAVELING → ENEMY_APPROACH → COMBAT → ENEMY_DEATH → REWARD → 
 
 Герой програє 4 кадри атаки по 0.15 s: бойова стійка → замах → удар зі слідом меча → завершення. Damage на 0.35 s припадає на третій кадр. Влучання у героя не перериває його swing: короткий світлий flash накладається поверх спрайта. Між атаками та під час stationary pauses `hero.idle` тримає перший кадр — бойову стійку з мечем напоготові. Якщо hit asset відсутній, реакція на влучання поза swing використовує цю стійку зі спалахом.
 
-Смерть героя: 4 кадри — встромляє меч у землю → опускає голову → осідає на коліна → знесилено тримається за меч. Перші три кадри по 0.4 s, остання поза рівно 1 s, загалом 2.2 s. `hero.death` не зациклюється: 0.4 s останнього кадру в HERO_DEATH і 0.6 s утримання в RESPAWN; потім герой відроджується з повним HP. Attack speed не змінює цей темп. Sprite і preview — у `art/hero/death_v1/`, runtime asset — `assets/characters/hero/death.png`.
+Смерть героя: 4 кадри — встромляє меч у землю → опускає голову → осідає на коліна → знесилено тримається за меч. Перші три кадри по 0.4 s, остання поза рівно 1 s, загалом 2.2 s. `hero.death` не зациклюється: 0.4 s останнього кадру в HERO_DEATH і 0.6 s утримання в RESPAWN; потім герой відроджується з повним HP. Attack speed не змінює цей темп. Оригінал — у `art/hero/death_v1/`, тимчасове preview — у `build/animation_previews/hero/death_v1/`, runtime asset — `assets/characters/hero/death.png`.
 
 Simulation використовує delta time accumulator із fixed step, а не frame counts. Traveling distance і background scroll залежать від часу. У approach фон, дорога й ворог зміщуються на однакову дистанцію та зупиняються на бойовій позиції. Після reward герой продовжує рух або відпочиває залежно від активності користувача. Великі suspend gaps (>5 s) не проганяють прихований combat catch-up.
 
@@ -170,11 +170,11 @@ batchCost(level, n) = cost(level) × (costGrowth^n - 1) / (costGrowth - 1)
 MAX = floor(log(1 + wallet / cost(level) × (costGrowth - 1)) / log(costGrowth))
 ```
 
-HUD показує `Stage N · kills/12`. Етап визначає складність ворогів і rewards; XP та character level визначають постійну силу героя (+1.5% HP і damage за рівень, із compound growth). Distance, час, lifetime kills і character level не підвищують етап. Після смерті на Stage 10 герой повертається на початок Stage 9 (0/12), знову вбиває 12 випадкових мобів цього етапу, отримуючи Gold/Books/XP, та повертається на Stage 10. Повторення циклу накопичує валюту й XP для постійних апгрейдів. Смерть на Stage 1 залишає Stage 1 та обнуляє тільки stageKills. Character level/XP, Gold/Books, upgrades/equipment та lifetime kills зберігаються. Формули, джерела та критерії оцінки балансу — [docs/stage_balance.md](docs/stage_balance.md).
+HUD показує `Stage N · Wave W/5`. Перші чотири хвилі — звичайні вороги; п’ята — бос із +30% до розміру та +10% до HP і damage. Наступний етап відкривається тільки після перемоги над босом. Етап визначає складність ворогів і rewards; XP та character level визначають постійну силу героя (+1.5% HP і damage за рівень, із compound growth). Distance, час, lifetime kills і character level не підвищують етап. Після смерті на Stage 10 герой повертається на початок Stage 9 (хвиля 1/5), знову проходить чотири звичайні бої та боса, отримуючи Gold/Books/XP, та повертається на Stage 10. Повторення циклу накопичує валюту й XP для постійних апгрейдів. Смерть на Stage 1 залишає Stage 1 та обнуляє тільки stageKills. Character level/XP, Gold/Books, upgrades/equipment та lifetime kills зберігаються. Формули, джерела та критерії оцінки балансу — [docs/stage_balance.md](docs/stage_balance.md).
 
 MAX працює без sequential level loops; після математичного розрахунку є rounding correction. Для costGrowth = 1 використовується flat-cost формула; для growth дуже близько до 1 — чисельно стабільні expm1/log1p series. Ці крайні випадки також покриті tests. x10 купує до 10 доступних рівнів, показуючи фактичну кількість і сумарну ціну.
 
-Прокачка поступово відстає від enemy HP: ціни Gold/Books ростуть на 14.05%/16.05% за upgrade, а HP/damage — на 5%. Результат 30-денної event simulation із 8 активними годинами на день і збалансованими покупками раз на годину: медіанний час етапу приблизно 2.0 хв на день 1, 2.9 хв на день 14 та 8.1 хв на день 30. Це довгостроковий тренд; випадкові вороги, crit, покупки та deaths змінюють час окремих етапів. Сценарії й обмеження — [docs/stage_balance.md](docs/stage_balance.md); відтворення: `dart run tool/simulate_progression.dart --hours-per-day 8 --seeds 3`.
+Прокачка поступово відстає від enemy HP: ціни Gold/Books ростуть на 14.05%/16.05% за upgrade, а HP/damage — на 5%. Результат 30-денної event simulation із 8 активними годинами на день і збалансованими покупками раз на годину: медіанний час етапу приблизно 1.39 хв на день 1, 3.02 хв на день 14 та 9.42 хв на день 30 для п’яти хвиль із босом. Це довгостроковий тренд; випадкові вороги, crit, покупки та deaths змінюють час окремих етапів. Сценарії й обмеження — [docs/stage_balance.md](docs/stage_balance.md); відтворення: `dart run tool/balance/simulate_progression.dart --hours-per-day 8 --seeds 3`.
 
 Books upgrades і equipment contributions додають рівні відповідного stat:
 
@@ -220,7 +220,7 @@ instance.lock         exclusive OS lock for process lifetime
 
 Main startup бере instance lock: одночасні процеси не повинні перезаписувати progression один одного. Writes serialized, JSON snapshot захоплюється до asynchronous I/O. На macOS rename atomic; на Windows replacement потребує delete + rename, тож backup захищає від crash між ними. Якщо primary пошкоджений, load пробує backup. Перевіряються не тільки JSON syntax, а й finite/nonnegative durations/distance, kill count, character та upgrade levels. Помилка запису backup не замовчується як помилка JSON. Якщо обидва пошкоджені або schema новіша — показується startup error із Retry/confirmed Reset, automatic overwrite немає.
 
-Save schema version 5. Зберігаються stage/stageKills, character Level/XP/Books/Gold/upgrades/equipment, distance, lifetime kills, activity aggregates, settings і UTC timestamp. `SaveMigrator` підтримує v1–v4: старий `enemyProgressKills` (або lifetime kills за його відсутності) перетворюється на stage/stageKills за колишнім кроком 12 перемог; character progression зберігається. Старий прихований counter видаляється.
+Save schema version 6. Зберігаються stage/stageKills, character Level/XP/Books/Gold/upgrades/equipment, distance, lifetime kills, activity aggregates, settings і UTC timestamp. `SaveMigrator` підтримує v1–v5: старий `enemyProgressKills` (або lifetime kills за його відсутності) перетворюється на stage/stageKills за колишнім кроком 12 перемог; character progression зберігається. Старий прихований counter видаляється. Для сейвів v1–v5 номер стейджа зберігається, а прогрес із 12 боїв перераховується як `floor(oldStageKills × 5 / 12)`: навіть після 11 старих перемог потрібно пройти боса.
 
 Save: раз на хвилину (60 s), після кожного успішного character/equipment upgrade та зміни settings, на lifecycle inactive/paused/detached та перед controlled exit. Exit призупиняє simulation, завершує activity session і чекає save; повторні натискання не запускають паралельний exit. Якщо save або native quit не вдалися, гра відновлюється й показує помилку. Startup error UI теж підтримує native Quit. Force-kill/power-loss може втратити останні ≤60 s. Reset вимагає Flutter confirmation і очищає primary, backup та live progression; instance lock зберігається до виходу.
 
@@ -242,13 +242,15 @@ Save: раз на хвилину (60 s), після кожного успішн�
 
 ### Animation / sprite sheet
 
-`assets/characters/hero/walk.png` уже містить **10 горизонтальних frames, 512×512, 8 FPS** і зареєстрований у pubspec. Окремі кадри збережено в `assets/characters/hero/walk_frames/`, оригінальний sheet, перші 10 кадрів і GIF preview — у `art/hero/walk_v2/`. Повторне складання (потрібні ffmpeg і ffprobe):
+У `art/` зберігаємо лише оригінальні згенеровані зображення та потрібні вихідні зображення/референси. Після створення анімації, перед коммітом, видаляємо звідти всі проміжні файли, вирізані кадри, прев’ю, колажі та дублікати готових спрайтів. Рецепти складання — у `tool/sprite_assets/manifests/hero/`, опис героїні — у [docs/hero_reference.md](docs/hero_reference.md), тимчасові результати — у `build/`.
+
+`assets/characters/hero/walk.png` уже містить **10 горизонтальних frames, 512×512, 8 FPS** і зареєстрований у pubspec. Окремі кадри збережено в `assets/characters/hero/walk_frames/`, оригінальний sheet — у `art/hero/walk_v2/`, тимчасові GIF preview — у `build/animation_previews/hero/walk_v2/`. Повторне складання (потрібні ffmpeg і ffprobe):
 
 ```sh
 cd /Users/artemshkryab/dev/proj/idle_companion
-python3 tool/build_hero_walk.py
-python3 tool/build_hero_attack.py
-python3 tool/build_hero_death.py
+python3 tool/sprite_assets/build_hero_walk.py
+python3 tool/sprite_assets/build_hero_attack.py
+python3 tool/sprite_assets/build_hero_death.py
 ```
 
 Walk-скрипт бере перші два ряди оригінального sheet зліва направо, збільшує кожну повну комірку вдвічі через Lanczos, зберігає позиції та alpha, створює sheet 5120×512 та GIF preview. Attack-скрипт збирає 4×512×512 зі source artwork у `art/hero/attack_v1/`, копіює sheet до `assets/characters/hero/attack.png`, а перший кадр — до `ready.png`. Scale атаки/стійки 0.25 узгоджує висоту героїні з walk (0.20). PNG зареєстровані так:
@@ -318,9 +320,9 @@ python3 tool/sprite_assets/verify.py --output-root /tmp/idle-companion-sprites
 python3 tool/sprite_assets/verify.py --previews
 ```
 
-Поточні PNG відтворюються байт у байт; shared seated кадр, первинні references,
-prompts і selected raw art збережені. [Manifest/CLI контракт](tool/sprite_assets/README.md).
-[Демо другої seated activity та вставання](art/hero/rest_variants_v1/README.md)
+Оригінальні зображення та первинні референси збережені; runtime PNG залишені без змін.
+Повне перескладання rest потребує відсутнього вихідного sharpening sheet та його рецепта. [Manifest/CLI контракт](tool/sprite_assets/README.md).
+[Демо другої seated activity та вставання](docs/rest_variants.md)
 використовує окремі описи над наявними PNG, з cleanup до exact seatedNeutral.
 Демо вмикається через resources/graph injection і не змінює default choices.
 
@@ -363,7 +365,7 @@ renderer не виконує string lookup або власний playback. Comba
 
 Доступні лише `kDebugMode`: Spawn enemy, Kill enemy, Kill hero, +100 Gold, +100 Books, +100 XP, idle Active/Level1/Level2/Level3/OS, x1/x5/x20, hitboxes, state/idle/animation labels, snapshot frame/graph/node/local time, last transition reason і playback generation. Override не зберігається; OS повертає native polling. Override керує відпочинком і поверненням до пригод, але activity statistics завжди класифікуються за реальною native activity. Debug tools не входять у release Quick Menu.
 
-Settings має окремі sliders Background opacity, Road opacity та Overall opacity (0–100%). Загальна прозорість множить прозорість персонажів, ефектів, HUD, фону й дороги. При 0% залишається кнопка-шестерня; відкрита панель Settings не згасає, щоб можна було повернути видимість. Прихований герой пропускає кліки на desktop також у native layer. Значення зберігаються після завершення перетягування; старі сейви використовують 100%, а Reset повертає всі три значення до 100%.
+Settings має окремі sliders Background opacity, Road opacity та Overall opacity (0–100%). Загальна прозорість множить прозорість персонажів, ефектів, HUD, фону й дороги. Шкала HP, індикатор Stage/Wave та числа damage/rewards додатково успадковують Background opacity: при 0% фону вони приховані. Кнопка меню відкриває головну панель; Settings доступні з неї. Усі панелі меню залишаються непрозорими й інтерактивними за будь-якої прозорості гри, включно з 0%, щоб можна було повернути видимість. Прихований герой пропускає кліки на desktop також у native layer. Значення зберігаються після завершення перетягування; старі сейви використовують 100%, а Reset повертає всі три значення до 100%.
 
 Ґрунтова доріжка `assets/environment/road_dirt_01.png` має прозорі краї та відображається вузькою смугою під персонажами поверх ландшафту. Її offset, як і offset фону, залежить від `GameSimulation.distance`, тому обидва рухаються та зупиняються разом.
 

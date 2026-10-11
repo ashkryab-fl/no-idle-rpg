@@ -99,7 +99,8 @@ class MainFlutterWindow: NSWindow {
     }
     let local = NSPoint(x: NSEvent.mouseLocation.x - frame.minX, y: frame.maxY - NSEvent.mouseLocation.y)
     let height = frame.height
-    let hero = NSRect(x: 68, y: height - 96, width: 72, height: 96)
+    let heroHeight: CGFloat = 96 * 1.15 // GameBalance.heroHitboxHeight
+    let hero = NSRect(x: 68, y: height - heroHeight, width: 72, height: heroHeight)
     let menu = NSRect(x: frame.width - 46, y: height - 182, width: 38, height: 38)
     let panel = NSRect(x: 8, y: 8, width: frame.width - 16, height: max(0, height - 202))
     let interactive = (heroVisible && hero.contains(local)) || menu.contains(local) || (expanded && panel.contains(local))

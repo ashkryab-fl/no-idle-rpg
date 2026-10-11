@@ -106,6 +106,8 @@ class GameSimulation {
       GameBalance.enemySpawnX - (distance - _enemySpawnDistance);
   CombatStats get stats => CharacterStats.calculate(character);
   GamePhase get phase => machine.phase;
+  int get wave => stageKills + 1;
+  bool get isBossWave => wave == ProgressionBalance.enemiesPerStage;
   int get enemyTier => stage - 1;
   bool get isResting => phase == GamePhase.traveling && idle.blocksAdventure;
   double get movementMultiplier =>
@@ -239,7 +241,7 @@ class GameSimulation {
 
   void spawnEnemy() {
     if (phase != GamePhase.traveling || isResting) return;
-    enemy = spawner.spawn(enemyTier);
+    enemy = spawner.spawn(enemyTier, isBoss: isBossWave);
     _enemySpawnDistance = distance;
     machine.transition(GamePhase.enemyApproach);
     _synchronizeAnimations();

@@ -15,7 +15,7 @@ class GameSave {
     this.stage = 1,
     this.stageKills = 0,
   });
-  static const currentVersion = 5;
+  static const currentVersion = 6;
   final CharacterProgress character;
   final ActivityStatisticsService activity;
   final GameSettings settings;
@@ -80,6 +80,8 @@ class GameSave {
 }
 
 abstract final class SaveMigrator {
+  // Save versions 1–5 used twelve victories per stage.
+  static const _legacyEnemiesPerStage = 12;
   static Map<String, dynamic> migrate(Map<String, dynamic> source) {
     final json = Map<String, dynamic>.from(source);
     var version = json['saveVersion'] as int? ?? 1;
@@ -101,11 +103,11 @@ abstract final class SaveMigrator {
           }
           json.putIfAbsent(
             'stage',
-            () => progress ~/ ProgressionBalance.enemiesPerStage + 1,
+            () => progress ~/ _legacyEnemiesPerStage + 1,
           );
           json.putIfAbsent(
             'stageKills',
-            () => progress % ProgressionBalance.enemiesPerStage,
+            () => progress % _legacyEnemiesPerStage,
           );
           json.remove('enemyProgressKills');
           version = 4;
@@ -114,15 +116,23 @@ abstract final class SaveMigrator {
           if (kills is! int || kills < 0) {
             throw const FormatException('Invalid legacy kill count');
           }
-          json.putIfAbsent(
-            'stage',
-            () => kills ~/ ProgressionBalance.enemiesPerStage + 1,
-          );
-          json.putIfAbsent(
-            'stageKills',
-            () => kills % ProgressionBalance.enemiesPerStage,
-          );
+          json.putIfAbsent('stage', () => kills ~/ _legacyEnemiesPerStage + 1);
+          json.putIfAbsent('stageKills', () => kills % _legacyEnemiesPerStage);
           version = 5;
+        case 5:
+          final progress = json['stageKills'] ?? 0;
+          if (progress is! int ||
+              progress < 0 ||
+              progress >= _legacyEnemiesPerStage) {
+            throw const FormatException('Invalid legacy stage progression');
+          }
+          // Preserve the stage and its approximate completion, leaving the boss
+          // undefeated even when migrating a nearly completed old stage.
+          json['stageKills'] =
+              progress *
+              ProgressionBalance.enemiesPerStage ~/
+              _legacyEnemiesPerStage;
+          version = 6;
         default:
           throw UnsupportedError('No migration for $version');
       }

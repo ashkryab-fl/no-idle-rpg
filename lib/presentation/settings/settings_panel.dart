@@ -37,7 +37,7 @@ class SettingsPanel extends StatelessWidget {
               controller.updateSettings(overallOpacity: value, persist: false),
         ),
         const Text(
-          'The settings button stays visible at 0%.',
+          'The menu stays visible at 0%.',
           style: TextStyle(color: Colors.white60, fontSize: 12),
         ),
         SwitchListTile(

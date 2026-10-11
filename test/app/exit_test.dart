@@ -66,7 +66,7 @@ void main() {
   );
   test('Native close during reset is cancelled and can be retried', () async {
     controller.simulation.stage = 10;
-    controller.simulation.stageKills = 5;
+    controller.simulation.stageKills = 4;
     controller.simulation.settings.backgroundOpacity = 0;
     controller.simulation.settings.roadOpacity = .5;
     controller.simulation.settings.overallOpacity = 0;

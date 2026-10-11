@@ -13,6 +13,7 @@ import '../settings/settings_panel.dart';
 import '../statistics/statistics_panel.dart';
 import '../upgrades/upgrade_list.dart';
 import 'debug_panel.dart';
+import 'hero_health_bar.dart';
 
 class CompanionOverlay extends ConsumerStatefulWidget {
   const CompanionOverlay({super.key});
@@ -87,41 +88,41 @@ class _CompanionOverlayState extends ConsumerState<CompanionOverlay>
               width: 38,
               height: 38,
               child: IconButton.filledTonal(
-                tooltip: 'Open settings',
+                tooltip: 'Open menu',
                 onPressed: () => controller.show(
-                  ui.panel == OverlayPanel.settings
-                      ? null
-                      : OverlayPanel.settings,
+                  ui.panel == null ? OverlayPanel.menu : null,
                 ),
-                icon: const Icon(Icons.settings),
+                icon: const Icon(Icons.menu),
               ),
             ),
             Positioned(
-              bottom: GameBalance.viewportHeight - 26,
+              bottom: GameBalance.viewportHeight - 30,
               left: 14,
               right: 56,
               child: IgnorePointer(
                 child: Opacity(
                   key: const ValueKey('hudOpacity'),
-                  opacity: game.settings.overallOpacity,
+                  opacity:
+                      game.settings.overallOpacity *
+                      game.settings.backgroundOpacity,
                   child: Row(
                     children: [
-                      Text(
-                        'Stage ${game.stage} · ${game.stageKills}/${ProgressionBalance.enemiesPerStage}',
-                        key: const ValueKey('stageProgress'),
-                        style: const TextStyle(
-                          fontSize: 10,
-                          color: Colors.white70,
-                          backgroundColor: Color(0x99101720),
-                        ),
+                      HeroHealthBar(
+                        current: game.heroHp,
+                        maximum: game.stats.maxHp,
                       ),
-                      const Spacer(),
-                      Text(
-                        '${NumberFormatter.amount(game.character.gold)} G · ${NumberFormatter.amount(game.character.books)} B',
-                        style: const TextStyle(
-                          fontSize: 10,
-                          color: Color(0xffffd58a),
-                          backgroundColor: Color(0x99101720),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Stage ${game.stage} · Wave ${game.wave}/${ProgressionBalance.enemiesPerStage}',
+                          key: const ValueKey('stageProgress'),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 10,
+                            color: Colors.white70,
+                            backgroundColor: Color(0x99101720),
+                          ),
                         ),
                       ),
                     ],
@@ -135,81 +136,67 @@ class _CompanionOverlayState extends ConsumerState<CompanionOverlay>
                 left: 8,
                 right: 8,
                 bottom: 194,
-                child: IgnorePointer(
-                  ignoring:
-                      ui.panel != OverlayPanel.settings &&
-                      game.settings.overallOpacity == 0,
-                  child: Opacity(
-                    opacity: ui.panel == OverlayPanel.settings
-                        ? 1
-                        : game.settings.overallOpacity,
-                    child: Material(
-                      color: const Color(0xee151c2b),
-                      borderRadius: BorderRadius.circular(16),
-                      clipBehavior: Clip.antiAlias,
-                      child: Column(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(16, 4, 4, 0),
-                            child: Row(
-                              children: [
-                                if (ui.panel != OverlayPanel.menu)
-                                  IconButton(
-                                    onPressed: () =>
-                                        controller.show(OverlayPanel.menu),
-                                    icon: const Icon(
-                                      Icons.arrow_back,
-                                      size: 18,
-                                    ),
-                                  ),
-                                Expanded(
-                                  child: Text(
-                                    _title(ui.panel!),
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                                IconButton(
-                                  onPressed: () => controller.show(null),
-                                  icon: const Icon(Icons.close, size: 18),
-                                ),
-                              ],
-                            ),
-                          ),
-                          if (ui.error != null)
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
+                child: Material(
+                  key: const ValueKey('menuPanel'),
+                  color: const Color(0xff151c2b),
+                  borderRadius: BorderRadius.circular(16),
+                  clipBehavior: Clip.antiAlias,
+                  child: Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 4, 4, 0),
+                        child: Row(
+                          children: [
+                            if (ui.panel != OverlayPanel.menu)
+                              IconButton(
+                                onPressed: () =>
+                                    controller.show(OverlayPanel.menu),
+                                icon: const Icon(Icons.arrow_back, size: 18),
                               ),
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      ui.error!,
-                                      style: const TextStyle(
-                                        fontSize: 11,
-                                        color: Colors.orangeAccent,
-                                      ),
-                                    ),
-                                  ),
-                                  IconButton(
-                                    onPressed: controller.dismissError,
-                                    icon: const Icon(Icons.close, size: 14),
-                                  ),
-                                ],
+                            Expanded(
+                              child: Text(
+                                _title(ui.panel!),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
-                          const Divider(height: 1),
-                          Expanded(
-                            child: SingleChildScrollView(
-                              padding: const EdgeInsets.all(16),
-                              child: _panel(ui.panel!, controller),
+                            IconButton(
+                              onPressed: () => controller.show(null),
+                              icon: const Icon(Icons.close, size: 18),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
+                      if (ui.error != null)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  ui.error!,
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.orangeAccent,
+                                  ),
+                                ),
+                              ),
+                              IconButton(
+                                onPressed: controller.dismissError,
+                                icon: const Icon(Icons.close, size: 14),
+                              ),
+                            ],
+                          ),
+                        ),
+                      const Divider(height: 1),
+                      Expanded(
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.all(16),
+                          child: _panel(ui.panel!, controller),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),

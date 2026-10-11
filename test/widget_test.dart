@@ -14,6 +14,7 @@ import 'package:idle_companion/game/components/hero/actor_component.dart';
 import 'package:idle_companion/game/components/environment/scrolling_environment.dart';
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 
 Future<void> preloadHeroSprites(DesktopGame game) async {
   game.images.prefix = '';
@@ -154,7 +155,7 @@ void main() {
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox.shrink());
   });
-  testWidgets('zero overall opacity keeps settings usable and restores game', (
+  testWidgets('menu opens at root and stays usable at zero game opacity', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(400, 620);
@@ -175,13 +176,59 @@ void main() {
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,
-        child: const CompanionApp(),
+        child: const RepaintBoundary(
+          key: ValueKey('overlayCapture'),
+          child: CompanionApp(),
+        ),
       ),
     );
     await tester.runAsync(() => controller.game.loaded);
     await tester.pump();
-    await tester.tap(find.byTooltip('Open settings'));
+    await tester.tap(find.byTooltip('Open menu'));
     await tester.pump();
+    expect(container.read(gameControllerProvider).panel, OverlayPanel.menu);
+    expect(find.text('A small adventure while you work.'), findsOneWidget);
+    Future<List<int>> captureMenu() async {
+      final bounds = tester.getRect(find.byKey(const ValueKey('menuPanel')));
+      final boundary = tester.renderObject<RenderRepaintBoundary>(
+        find.byKey(const ValueKey('overlayCapture')),
+      );
+      final pixels = <int>[];
+      await tester.runAsync(() async {
+        final image = await boundary.toImage();
+        final data = (await image.toByteData(
+          format: ui.ImageByteFormat.rawRgba,
+        ))!.buffer.asUint8List();
+        // Compare the interior of the menu; the game and toggle are outside it.
+        for (
+          var y = bounds.top.toInt() + 16;
+          y < bounds.bottom.toInt() - 16;
+          y++
+        ) {
+          final start = (y * image.width + bounds.left.toInt() + 16) * 4;
+          final end = (y * image.width + bounds.right.toInt() - 16) * 4;
+          pixels.addAll(data.sublist(start, end));
+        }
+        image.dispose();
+      });
+      return pixels;
+    }
+
+    final opaqueMenu = await captureMenu();
+    for (final opacity in [.35, 0.0]) {
+      await controller.updateSettings(overallOpacity: opacity, persist: false);
+      await tester.pump();
+      expect(
+        await captureMenu(),
+        orderedEquals(opaqueMenu),
+        reason: 'Changing game opacity must leave menu pixels unchanged',
+      );
+    }
+    await controller.updateSettings(overallOpacity: 1, persist: false);
+    await tester.pump();
+    await tester.tap(find.widgetWithText(ListTile, 'Settings'));
+    await tester.pump();
+    expect(container.read(gameControllerProvider).panel, OverlayPanel.settings);
     expect(find.text('Background opacity'), findsOneWidget);
     expect(find.text('Road opacity'), findsOneWidget);
     final slider = find.byKey(const ValueKey('Overall opacity'));
@@ -202,10 +249,29 @@ void main() {
     await tester.tap(find.byIcon(Icons.close));
     await tester.pump();
     expect(container.read(gameControllerProvider).panel, isNull);
-    expect(find.byTooltip('Open settings').hitTestable(), findsOneWidget);
-    await tester.tap(find.byTooltip('Open settings'));
+    expect(find.byTooltip('Open menu').hitTestable(), findsOneWidget);
+    await tester.tap(find.byTooltip('Open menu'));
     await tester.pump();
-    expect(container.read(gameControllerProvider).panel, OverlayPanel.settings);
+    expect(container.read(gameControllerProvider).panel, OverlayPanel.menu);
+    // Every destination and its back button remain reachable with the game hidden.
+    for (final (label, panel) in [
+      ('Statistics', OverlayPanel.statistics),
+      ('Character Upgrades', OverlayPanel.upgrades),
+      ('Equipment', OverlayPanel.equipment),
+      ('Settings', OverlayPanel.settings),
+      ('Debug Tools', OverlayPanel.debug),
+    ]) {
+      final destination = find.widgetWithText(ListTile, label);
+      await tester.ensureVisible(destination);
+      await tester.tap(destination);
+      await tester.pump();
+      expect(container.read(gameControllerProvider).panel, panel);
+      await tester.tap(find.byIcon(Icons.arrow_back));
+      await tester.pump();
+      expect(container.read(gameControllerProvider).panel, OverlayPanel.menu);
+    }
+    await tester.tap(find.widgetWithText(ListTile, 'Settings'));
+    await tester.pump();
     await tester.ensureVisible(slider);
     await tester.drag(slider, const Offset(400, 0));
     await tester.pump();

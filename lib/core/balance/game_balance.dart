@@ -3,6 +3,8 @@ class GameBalance {
   static const movementSpeed = 32.0;
   static const encounterMinDistance = 90.0;
   static const encounterMaxDistance = 160.0;
+  static const heroScale = 1.15;
+  static const bossScale = 1.30;
   static const enemySpawnX = 386.0;
   static const enemyCombatX = 254.0;
   static const enemyApproachDistance = enemySpawnX - enemyCombatX;
@@ -28,6 +30,6 @@ class GameBalance {
   static const actorGroundY = 179.0;
   static const roadTop = 166.0;
   static const roadHeight = 24.0;
-  static const heroHitboxHeight = 96.0;
+  static const heroHitboxHeight = 96.0 * heroScale;
   static const panelHeight = 620.0;
 }

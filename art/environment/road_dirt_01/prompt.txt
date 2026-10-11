@@ -1,9 +1,0 @@
-Generated using the built-in image_gen tool.
-
-Use case: stylized-concept
-Asset type: transparent PNG texture tile for a very narrow horizontal dirt walking path under a 2D game character.
-Primary request: one straight continuous horizontal earthy dirt path, warm muted tan brown, small restrained pebbles and subtle packed soil texture, slightly irregular soft natural edges, matching a charming softly hand-painted 2D countryside game.
-Composition: a wide 3:1 canvas, ideally 1536x512. The path runs completely horizontally from the extreme left to the extreme right, occupying only the middle 60 percent of the canvas height. The upper and lower 20 percent are fully transparent empty margin. Orthographic overhead flat view, constant width, NO perspective, no vanishing point, no curve. It will be displayed as a thin strip 400x28 underneath a character, so details should remain simple and small.
-CRITICAL: the left edge of this path must seamlessly tile with the right edge: identical dirt colors, path width, top and bottom outline height, texture scale, lighting and alpha at both borders. Design periodic matching edges, no lighting gradient. No vertical border shadow. No large rock, grass tuft or other object at a border.
-Materials: packed natural dry soil with faint horizontal walking wear; tiny flat pebbles sparsely placed. Soft clean hand-painted shading, not photorealistic, not pixel art, no strong outline, no raised curb.
-Constraints: actual transparent alpha background above and below the dirt strip; no surrounding landscape, no green grass background, no characters, road markings, paving stones, text, interface, watermark, frame, white backdrop or checkerboard baked into the image. A single finished dirt strip tile.

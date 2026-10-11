@@ -11,12 +11,20 @@ class ActorComponent extends Component {
   final GameSimulation simulation;
   final FlameSpriteFrameCache frameCache;
   final bool hero;
-  final _label = TextPainter(textDirection: TextDirection.ltr);
   @override
   void render(Canvas canvas) {
     if (!hero && simulation.enemy == null) return;
     final snapshot = hero ? simulation.heroPlayback : simulation.enemyPlayback!;
     final x = hero ? 104.0 : simulation.enemyX;
+    canvas.save();
+    final enemy = hero ? null : simulation.enemy!;
+    final scale = hero
+        ? GameBalance.heroScale
+        : enemy!.definition.scale * (enemy.isBoss ? GameBalance.bossScale : 1);
+    // Scale around the ground anchor so every size stays planted on the road.
+    canvas.translate(x, GameBalance.actorGroundY);
+    canvas.scale(scale);
+    canvas.translate(-x, -GameBalance.actorGroundY);
     final frame = snapshot.frame;
     if (frame != null && !frame.debugPlaceholder) {
       final rig = snapshot.rig!;
@@ -53,42 +61,7 @@ class ActorComponent extends Component {
     } else {
       _procedural(canvas, x, snapshot);
     }
-    final stats = hero ? simulation.stats : simulation.enemy!.stats;
-    final hp = hero ? simulation.heroHp : simulation.enemy!.hp;
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(x - 28, GameBalance.actorGroundY - 89, 56, 5),
-        const Radius.circular(3),
-      ),
-      Paint()..color = const Color(0x99111922),
-    );
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(
-          x - 28,
-          GameBalance.actorGroundY - 89,
-          56 * hp.ratio(stats.maxHp).clamp(0, 1),
-          5,
-        ),
-        const Radius.circular(3),
-      ),
-      Paint()..color = hero ? const Color(0xff79dca3) : const Color(0xffff8a83),
-    );
-    _label.text = TextSpan(
-      text: hero
-          ? snapshot.displayLabel.split('.').last
-          : simulation.enemy!.definition.name,
-      style: const TextStyle(
-        fontSize: 10,
-        color: Color(0xffdceae6),
-        backgroundColor: Color(0x99101720),
-      ),
-    );
-    _label.layout();
-    _label.paint(
-      canvas,
-      Offset(x - _label.width / 2, GameBalance.actorGroundY - 108),
-    );
+    canvas.restore();
     if (simulation.hitboxes) {
       canvas.drawRect(
         Rect.fromLTWH(

@@ -16,6 +16,7 @@ class EnemyDefinition {
     required this.rewardGold,
     required this.rewardXp,
     required this.animations,
+    this.scale = 1.0,
     this.critChance = ProgressionBalance.enemyCritChance,
     this.critDamage = ProgressionBalance.enemyCritDamage,
     this.rewardBookChance = ProgressionBalance.bookDropChance,
@@ -24,6 +25,7 @@ class EnemyDefinition {
   });
   final String id, name;
   final EnemyAnimationContent animations;
+  final double scale;
   final double baseHp,
       baseDamage,
       attackSpeed,
@@ -41,6 +43,7 @@ abstract final class EnemyCatalog {
     EnemyDefinition(
       id: 'gobli_low',
       name: 'Goblin',
+      scale: .8,
       // Start with the existing low-tier combat and reward baseline.
       baseHp: ProgressionBalance.slimeHp,
       baseDamage: ProgressionBalance.slimeDamage,
@@ -54,39 +57,48 @@ abstract final class EnemyCatalog {
 }
 
 class Enemy {
-  Enemy(this.definition, this.stats, this.gold, this.xp, {Amount? books})
-    : books = books ?? Amount.fromNum(ProgressionBalance.baseBookReward),
-      hp = stats.maxHp;
+  Enemy(
+    this.definition,
+    this.stats,
+    this.gold,
+    this.xp, {
+    Amount? books,
+    this.isBoss = false,
+  }) : books = books ?? Amount.fromNum(ProgressionBalance.baseBookReward),
+       hp = stats.maxHp;
   final EnemyDefinition definition;
+  final bool isBoss;
   final CombatStats stats;
   final Amount gold, xp, books;
   Amount hp;
 }
 
 class EnemyFactory {
-  Enemy create(EnemyDefinition definition, int tier) => Enemy(
-    definition,
-    CombatStats(
-      maxHp: Amount.fromNum(
-        definition.baseHp,
-      ).grow(ProgressionBalance.hpGrowth, tier),
-      damage: Amount.fromNum(
-        definition.baseDamage,
-      ).grow(ProgressionBalance.damageGrowth, tier),
-      attackSpeed: definition.attackSpeed,
-      critChance: definition.critChance,
-      critDamage: definition.critDamage,
-    ),
-    Amount.fromNum(
-      definition.rewardGold,
-    ).grow(ProgressionBalance.goldRewardGrowth, tier),
-    Amount.fromNum(
-      definition.rewardXp,
-    ).grow(ProgressionBalance.xpRewardGrowth, tier),
-    books: Amount.fromNum(
-      definition.rewardBooks,
-    ).grow(ProgressionBalance.bookRewardGrowth, tier),
-  );
+  Enemy create(EnemyDefinition definition, int tier, {bool isBoss = false}) =>
+      Enemy(
+        definition,
+        CombatStats(
+          maxHp: Amount.fromNum(definition.baseHp)
+              .grow(ProgressionBalance.hpGrowth, tier)
+              .scale(isBoss ? ProgressionBalance.bossStatMultiplier : 1),
+          damage: Amount.fromNum(definition.baseDamage)
+              .grow(ProgressionBalance.damageGrowth, tier)
+              .scale(isBoss ? ProgressionBalance.bossStatMultiplier : 1),
+          attackSpeed: definition.attackSpeed,
+          critChance: definition.critChance,
+          critDamage: definition.critDamage,
+        ),
+        Amount.fromNum(
+          definition.rewardGold,
+        ).grow(ProgressionBalance.goldRewardGrowth, tier),
+        Amount.fromNum(
+          definition.rewardXp,
+        ).grow(ProgressionBalance.xpRewardGrowth, tier),
+        isBoss: isBoss,
+        books: Amount.fromNum(
+          definition.rewardBooks,
+        ).grow(ProgressionBalance.bookRewardGrowth, tier),
+      );
 }
 
 class EnemySpawner {
@@ -99,7 +111,7 @@ class EnemySpawner {
       GameBalance.encounterMinDistance +
       random.nextDouble() *
           (GameBalance.encounterMaxDistance - GameBalance.encounterMinDistance);
-  Enemy spawn(int tier) {
+  Enemy spawn(int tier, {bool isBoss = false}) {
     var roll =
         random.nextDouble() *
         definitions.fold<double>(0, (sum, d) => sum + d.difficultyWeight);
@@ -111,6 +123,6 @@ class EnemySpawner {
         break;
       }
     }
-    return factory.create(selected, tier);
+    return factory.create(selected, tier, isBoss: isBoss);
   }
 }

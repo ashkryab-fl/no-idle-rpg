@@ -32,7 +32,7 @@ def run_cli(manifests=None):
             verify_manifest(path, output_root=output, rebuild=False, previews=not args.no_previews)
 
     if manifests is None and not args.manifests and not args.verify and not args.no_previews:
-        data = preview_data('art/hero/rest_variants_v1')
+        data = preview_data('build/animation_previews/hero/rest_variants_v1')
         build_previews(data, ROOT, output)
         verify_previews(data, output_root=output)
 
