@@ -1,0 +1,7 @@
+{
+  "source": "../../../../art/hero/ready_v1/source-ready.png",
+  "size": 512,
+  "scale": 0.3772,
+  "offset": [31, 3],
+  "output": "assets/characters/hero/ready.png"
+}
