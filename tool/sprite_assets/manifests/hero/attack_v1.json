@@ -1,57 +1,31 @@
 {
   "source": "../../../../art/hero/attack_v1/source-sheet.png",
   "size": 512,
-  "sourceCanvas": 800,
   "frames": [
     {
-      "source": "../../../../art/hero/attack_v1/source-ready.png",
-      "scale": 0.4082934609250399,
-      "offset": [
-        0,
-        -8
-      ]
+      "copy": "../../../../assets/characters/hero/ready.png"
     },
     {
-      "crop": [
-        650,
-        153,
-        420,
-        496
-      ],
-      "offset": [
-        181,
-        211
-      ]
+      "crop": [0, 0, 690, 724],
+      "scale": 0.65,
+      "widthScale": 0.9,
+      "offset": [51, 8]
     },
     {
-      "crop": [
-        99,
-        688,
-        565,
-        464
-      ],
-      "offset": [
-        204,
-        255
-      ]
+      "source": "../../../../art/hero/attack_v1/source-impact.png",
+      "scale": 0.3752,
+      "offset": [31, 36]
     },
     {
-      "crop": [
-        678,
-        772,
-        576,
-        424
-      ],
-      "offset": [
-        208,
-        335
-      ]
+      "source": "../../../../art/hero/attack_v1/source-follow.png",
+      "scale": 0.3772,
+      "offset": [31, 29]
+    },
+    {
+      "copy": "../../../../assets/characters/hero/ready.png"
     }
   ],
   "output": "assets/characters/hero/attack.png",
-  "exportFrames": {
-    "0": "assets/characters/hero/ready.png"
-  },
   "framesDirectory": "build/sprite_frames/hero/attack_v1",
   "previewGroup": "build/animation_previews/hero/attack_v1"
 }

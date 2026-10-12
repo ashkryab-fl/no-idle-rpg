@@ -26,6 +26,12 @@ void main() {
         enemyPlayback: AttackPlayback(ProceduralEnemyTimelines.attack),
       );
       final attack = catalog.clip(const ClipId('hero.attack'));
+      expect(attack.duration, closeTo(.66, .000001));
+      expect(
+        attack.frames[1].duration,
+        closeTo(attack.frames[0].duration * 2, .000001),
+      );
+      expect(attack.markers.single.time, .35);
       final stats = fighter(speed);
       final hitTime =
           attack.markers.single.time * min(1, 1 / speed / attack.duration);

@@ -29,25 +29,28 @@ void main() {
   final entry = resources.clip(HeroClips.phoneEnter);
   final wake = resources.clip(HeroClips.phoneWake);
 
-  test('phone boundaries reuse actual walk frames and their geometry', () {
-    final walk = resources.clip(const ClipId('hero.walk'));
-    expect(entry.frames.first.frameId, walk.frames.last.frameId);
-    expect(wake.frames.last.frameId, walk.frames.first.frameId);
-    expect(
-      identical(
-        resources.frame(entry.frames.first.frameId),
-        resources.frame(walk.frames.last.frameId),
-      ),
-      isTrue,
-    );
-    expect(
-      identical(
-        resources.frame(wake.frames.last.frameId),
-        resources.frame(walk.frames.first.frameId),
-      ),
-      isTrue,
-    );
-  });
+  test(
+    'phone entry reuses walk geometry and wake leaves walking its first frame',
+    () {
+      final walk = resources.clip(const ClipId('hero.walk'));
+      expect(entry.frames.first.frameId, walk.frames.last.frameId);
+      expect(
+        wake.frames.last.frameId,
+        const FrameId('hero.phoneFrames.frame.10'),
+      );
+      expect(
+        identical(
+          resources.frame(entry.frames.first.frameId),
+          resources.frame(walk.frames.last.frameId),
+        ),
+        isTrue,
+      );
+      expect(
+        wake.frames.map((frame) => frame.frameId),
+        isNot(contains(walk.frames.first.frameId)),
+      );
+    },
+  );
 
   test('root selects a complete subtree once and retains it during idle', () {
     final rolls = _Roll(.75);
@@ -110,17 +113,21 @@ void main() {
     expect(hero.advance(.5), 0);
     expect(rest.graphRunner, isNull);
     expect(hero.snapshot.frameId, const FrameId('hero.walk.frame.6'));
-    expect(hero.advance(.375), 0);
-    expect(hero.snapshot.frameId, const FrameId('hero.walk.frame.9'));
+    expect(hero.advance(.25), 0);
+    expect(hero.snapshot.frameId, const FrameId('hero.walk.frame.8'));
     hero.advance(.01);
     expect(rest.graphRunner!.snapshot.nodeId, HeroPhoneRestGraph.enter);
-    expect(hero.snapshot.frameId, const FrameId('hero.walk.frame.9'));
+    expect(hero.snapshot.frameId, const FrameId('hero.walk.frame.8'));
     hero.advance(entry.duration);
     rest.setIdleSeconds(0);
-    hero.advance(wake.duration);
+    hero.advance(wake.duration - .001);
+    expect(hero.snapshot.frameId, const FrameId('hero.phoneFrames.frame.10'));
+    hero.advance(.001);
     expect(hero.blocksAdventure, isFalse);
     expect(hero.snapshot.frameId, const FrameId('hero.walk.frame.0'));
     expect(hero.restReturnRevision, 1);
+    hero.advance(.125);
+    expect(hero.snapshot.frameId, const FrameId('hero.walk.frame.1'));
   });
 
   test('wake cues take sword while phone remains in its flight frames', () {
@@ -129,7 +136,7 @@ void main() {
     expect(release.time, lessThan(grab.time));
     expect(
       wake.frames[wake.frameIndex(grab.time)].frameId,
-      const FrameId('hero.phoneFrames.frame.10'),
+      const FrameId('hero.phoneFrames.frame.9'),
     );
   });
 

@@ -74,11 +74,9 @@ void main() {
   final sit = [
     for (var i = 0; i < 4; i++) step('sitDown', i, i == 3 ? .8 : .3),
   ];
-  // Longer combat/death holds make individual poses easier to review.
+  // Attack uses runtime timing; death retains longer review holds.
   preview('walk_v2', 'walk', walk);
-  preview('attack_v1', 'attack', [
-    for (var i = 0; i < 4; i++) step('attack', i, [.4, .15, .1, .15][i]),
-  ]);
+  preview('attack_v1', 'attack', clip('attack'));
   preview('death_v1', 'death', [
     for (var i = 0; i < 4; i++) step('death', i, i == 3 ? 1 : .4),
   ]);

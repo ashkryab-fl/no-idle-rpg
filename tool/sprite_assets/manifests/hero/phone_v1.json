@@ -32,13 +32,6 @@
       ]
     },
     {
-      "source": "../../../../art/hero/phone_v1/scroll_swipe.png",
-      "offset": [
-        70,
-        46
-      ]
-    },
-    {
       "source": "../../../../art/hero/phone_v1/scroll_smile.png",
       "offset": [
         70,
@@ -76,14 +69,14 @@
     {
       "source": "../../../../art/hero/phone_v1/wake_grab.png",
       "offset": [
-        18,
+        48,
         38
       ]
     },
     {
       "source": "../../../../art/hero/phone_v1/wake_stride.png",
       "offset": [
-        18,
+        48,
         38
       ]
     }

@@ -5,7 +5,7 @@ void _addHeroWalk(_HeroClipBuilder builder) {
     spriteSheetResources(
       id: ClipId('hero.walk'),
       asset: '${_heroAssetRoot}walk.png',
-      frames: 10,
+      frames: 9,
       frameWidth: 512,
       frameHeight: 512,
       stepTime: .125,

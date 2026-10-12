@@ -16,7 +16,7 @@ abstract final class HeroPoses {
     ),
     SpritePoseDefinition(
       id: walkLast,
-      frameId: FrameId('hero.walk.frame.9'),
+      frameId: FrameId('hero.walk.frame.8'),
       family: PoseFamilyId.walkingRight,
     ),
     SpritePoseDefinition(

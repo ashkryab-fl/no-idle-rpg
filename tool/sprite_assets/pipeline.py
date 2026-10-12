@@ -12,7 +12,7 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
 MANIFESTS = [f'tool/sprite_assets/manifests/hero/{name}.json' for name in (
-    'seated_v1', 'sit_down_v1', 'sharpen_v1', 'walk_v2', 'attack_v1',
+    'seated_v1', 'sit_down_v1', 'sharpen_v1', 'walk_v2', 'ready_v1', 'attack_v1',
     'death_v1', 'stand_up_v1', 'read_v1', 'phone_v1',
 )]
 
@@ -90,9 +90,14 @@ def load_manifest(path, root=ROOT):
                 raise ValueError('Invalid source canvas')
             frame['sourceCanvas'] = canvas
             frame['scale'] = entry.get('scale', size / canvas if canvas else data.get('scale', 1))
+            frame['widthScale'] = entry.get('widthScale', 1)
             frame['offset'] = entry.get('offset', [0, 0])
             if not math.isfinite(frame['scale']) or frame['scale'] <= 0:
                 raise ValueError('Invalid source scale')
+            if not math.isfinite(frame['widthScale']) or frame['widthScale'] <= 0:
+                raise ValueError('Invalid horizontal calibration')
+            if canvas and frame['widthScale'] != 1:
+                raise ValueError('Horizontal calibration requires a direct frame transform')
             if len(frame['offset']) != 2 or any(type(v) is not int for v in frame['offset']):
                 raise ValueError('Invalid whole-frame translation')
             frame_filter(data, frame)
@@ -117,7 +122,7 @@ def frame_filter(data, frame):
         if min(left, top) < 0 or left+w > canvas or top+h > canvas:
             raise ValueError('Translation exceeds common source canvas')
         return crop + f'pad={canvas}:{canvas}:{left}:{top}:color=black@0,scale={size}:{size}:flags=lanczos,format=rgba'
-    sw, sh = round(w*factor), round(h*factor)
+    sw, sh = round(w*factor*frame.get('widthScale', 1)), round(h*factor)
     if min(left, top) >= 0:
         if min(sw, sh) <= 0 or left+sw > size or top+sh > size:
             raise ValueError('Translation exceeds output canvas')

@@ -17,6 +17,7 @@ class GameBalance {
   static const respawnDuration =
       heroDeathLastFrameDuration - heroDeathFrameTime;
   static const attackDuration = .6;
+  static const heroAttackDuration = attackDuration + .06;
   static const damageTiming = .35;
   static const hitDuration = .18;
   static const idleThresholds = [30.0, 120.0, 300.0];

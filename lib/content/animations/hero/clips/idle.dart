@@ -8,9 +8,9 @@ void _addHeroIdle(_HeroClipBuilder builder) {
       frameWidth: 512,
       frameHeight: 512,
       loop: true,
-      anchorX: .58,
+      anchorX: .62,
       anchorY: .875,
-      scale: .25,
+      scale: .20,
     ),
   );
 }

@@ -1,87 +1,32 @@
 {
-  "source": "../../../../art/hero/walk_v2/reference.png",
+  "source": "../../../../art/hero/walk_v2/1.png",
   "size": 512,
-  "scale": 2,
+  "scale": 0.5,
   "frames": [
+    {},
     {
-      "crop": [
-        0,
-        0,
-        256,
-        256
-      ]
+      "source": "../../../../art/hero/walk_v2/2.png"
     },
     {
-      "crop": [
-        256,
-        0,
-        256,
-        256
-      ]
+      "source": "../../../../art/hero/walk_v2/3.png"
     },
     {
-      "crop": [
-        512,
-        0,
-        256,
-        256
-      ]
+      "source": "../../../../art/hero/walk_v2/4.png"
     },
     {
-      "crop": [
-        768,
-        0,
-        256,
-        256
-      ]
+      "source": "../../../../art/hero/walk_v2/5.png"
     },
     {
-      "crop": [
-        1024,
-        0,
-        256,
-        256
-      ]
+      "source": "../../../../art/hero/walk_v2/6.png"
     },
     {
-      "crop": [
-        0,
-        256,
-        256,
-        256
-      ]
+      "source": "../../../../art/hero/walk_v2/7.png"
     },
     {
-      "crop": [
-        256,
-        256,
-        256,
-        256
-      ]
+      "source": "../../../../art/hero/walk_v2/8.png"
     },
     {
-      "crop": [
-        512,
-        256,
-        256,
-        256
-      ]
-    },
-    {
-      "crop": [
-        768,
-        256,
-        256,
-        256
-      ]
-    },
-    {
-      "crop": [
-        1024,
-        256,
-        256,
-        256
-      ]
+      "source": "../../../../art/hero/walk_v2/9.png"
     }
   ],
   "output": "assets/characters/hero/walk.png",

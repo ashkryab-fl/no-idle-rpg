@@ -1,18 +1,29 @@
 part of '../clips.dart';
 
 void _addHeroAttack(_HeroClipBuilder builder) {
+  const id = ClipId('hero.attack');
+  const step = GameBalance.heroAttackDuration / 6;
   builder.add(
     spriteSheetResources(
-      id: ClipId('hero.attack'),
+      id: id,
       asset: '${_heroAssetRoot}attack.png',
-      frames: 4,
+      frames: 5,
       frameWidth: 512,
       frameHeight: 512,
-      stepTime: GameBalance.attackDuration / 4,
-      anchorX: .58,
+      stepTime: step,
+      anchorX: .62,
       anchorY: .875,
-      scale: .25,
+      scale: .20,
       damageEventTime: GameBalance.damageTiming,
     ),
+  );
+  final clip = builder.clips[id]!;
+  builder.clips[id] = AnimationClipDefinition(
+    id: id,
+    frames: [
+      for (var i = 0; i < clip.frames.length; i++)
+        ClipFrameDefinition(clip.frames[i].frameId, i == 1 ? step * 2 : step),
+    ],
+    markers: clip.markers,
   );
 }

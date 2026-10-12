@@ -26,13 +26,16 @@ A manifest is just a packing recipe. For example:
 - `source` resolves beside the manifest. Frame order is array order.
 - `crop` is `[x, y, width, height]`; omit it to use the whole image.
 - `scale` uniformly resizes the source cell; default is 1.
+- `widthScale` calibrates a direct frame's horizontal proportions after `scale`;
+  default is 1. Height and ground contact remain unchanged.
 - `offset` is `[x, y]` placement on the output canvas; default is `[0, 0]`.
 - `sourceCanvas` instead places cropped poses on a larger square before resizing
   to `size`. Attack/death use this to preserve their existing artwork.
 - A frame can use another `source`/`scale`, or `copy` an existing shared pose.
 - `output` resolves from the repository root. Individual frames are saved
   in the recipe's `framesDirectory` (hero intermediates use `build/sprite_frames/`). `copies` preserves requested copies;
-  `exportFrames` copies selected frames to standalone PNGs (attack's ready pose).
+  `exportFrames` copies selected frames to standalone PNGs. The idle ready pose
+  has its own `ready_v1.json` recipe and uses the walk rig's scale and anchor.
 - `previewGroup` selects the matching group exported by Dart; hero previews use
   `build/animation_previews/hero/`.
 - Without `frames`, the recipe produces a single PNG.
