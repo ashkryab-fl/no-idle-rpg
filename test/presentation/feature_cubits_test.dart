@@ -28,7 +28,11 @@ void completeRestReturn(SessionCubit session) {
   final game = session.simulation;
   final previous = game.heroAnimations.restReturnRevision;
   game.idle.setIdleSeconds(31);
-  game.heroAnimations.advance(.1);
+  // Entry follows the last walk frame; return only after a graph has started.
+  for (var i = 0; i < 20 && game.idle.graphRunner?.isRunning != true; i++) {
+    game.heroAnimations.advance(.1);
+  }
+  expect(game.idle.graphRunner?.isRunning, isTrue);
   game.idle.setIdleSeconds(0);
   for (var i = 0; i < 1000 && game.idle.blocksAdventure; i++) {
     game.heroAnimations.advance(.1);

@@ -1,45 +1,45 @@
-# Загальний висновок рефакторингу балансу
+# Balance Refactoring Summary
 
-11.10.2026. Технічна реалізація етапів 1–6 є, але фінальне приймання балансу ще не завершене. Поточний v3 — кандидат із перевіреними механіками та відомими відхиленнями. Етап 7, реальна desktop-перевірка, ще не виконаний.
+2026-10-11. Technical implementation of phases 1–6 is complete, but final balance acceptance is still pending. The current v3 is a candidate with verified mechanics and known deviations. Phase 7, real desktop validation, has not been performed.
 
-## Що зроблено
+## What Was Implemented
 
-- Прибрано рівні героя, XP та лікування від level-up. Сила залежить від спорядження й обраних талантів.
-- Розведено валюти: Gold купує чотири характеристики через спорядження, Books — спеціалізацію.
-- Запроваджено diminishing returns. Зменшення приросту crit chance починається з **25%**.
-- Реалізовано шість талантів у трьох взаємовиключних парах. Покупки й перемикання під час етапу застосовуються до наступної спроби.
-- Уніфіковано x1/x10/MAX, ціни та preview. Нульовий числовий ефект блокує покупку; частковий пакет оплачується за фактичну кількість.
-- Перероблено збереження: HP, спеціалізація, незавершена спроба та отримані нагороди зберігаються. Поточна схема — **v10**, старі дорелізні сейви скидаються.
-- Налаштовано босів, економіку й пізній ріст ворогів. Перевірено захист від повторної оплати first-clear/milestone після смерті та перезапуску.
-- Проведено симуляції з різною активністю, частотою покупок, реінвестиціями, стінами, смертністю й джерелами доходу.
+- Removed hero levels, XP, and level-up healing. Power now depends on equipment and selected talents.
+- Separated currencies: Gold buys four stats through equipment; Books buy specialization.
+- Added diminishing returns. Crit chance gains begin to decline at **25%**.
+- Implemented six talents in three mutually exclusive pairs. Purchases and selection changes made during a stage take effect on the next attempt.
+- Unified x1/x10/MAX, prices, and previews. A zero numeric effect blocks a purchase; a partial batch is charged for its actual count.
+- Reworked saves: HP, specialization, an unfinished attempt, and earned rewards are preserved. The current schema is **v10**; old pre-release saves are reset.
+- Tuned bosses, the economy, and late enemy growth. Verified protection against paying first-clear/milestone rewards again after death and restart.
+- Ran simulations with different activity levels, purchase frequencies, reinvestment, progression walls, mortality, and income sources.
 
-На момент завершення рефакторингу analyzer був чистий, **238 тестів пройшли**, два попередні падіння залишилися через відсутні manifest-файли спрайтів. Це історичний результат до скорочення набору тестів і видалення проміжних матеріалів.
+At the end of the refactoring, the analyzer was clean and **238 tests passed**. Two earlier failures remained because sprite manifest files were missing. This is a historical result from before the test suite was reduced and intermediate materials were removed.
 
-## Що вдалося в балансі
+## Balance Findings
 
-У перевірених сценаріях повний фокус на одному предметі програє змішаному розвитку. Ігнорування Helmet або Amulet теж помітно погіршує пізній прогрес. Економічні таланти мають вигідні контексти, але не перемагають на всіх горизонтах. Повторний фарм боса не показав систематичної переваги над просуванням.
+In the tested scenarios, focusing entirely on one item performs worse than mixed development. Ignoring Helmet or Amulet also noticeably harms late progression. Economy talents are useful in specific contexts, but do not win across every time horizon. Repeated boss farming showed no systematic advantage over progression.
 
-Змішана contextual-стратегія близька до найкращих **перевірених** стратегій: її медіанне відставання в основній матриці не перевищило 9,52%. Це не доказ глобальної оптимальності.
+The mixed contextual strategy is close to the best **tested** strategies: its median gap in the main matrix did not exceed 9.52%. This does not prove global optimality.
 
-## Проблеми й ідеї для вирішення
+## Problems and Questions to Investigate
 
-| Проблема | Що показали перевірки | Що варто перевірити |
+| Problem | What the checks showed | What to investigate |
 | --- | --- | --- |
-| **Довгі стіни** | При 25–75% активності — приблизно **59–63 продуктивні хвилини** замість цільових 10–45. У відкритому часі очікування ще довше. | Відокремити нестачу виживання від недостатнього доходу. Локально перевірити доступність Armor та пізній ріст enemy damage. Загальне здешевлення всіх покупок уже давало надто швидкий прогрес. |
-| **Короткі бої з босами** | На день 30 при низькій активності боси займають **7–9 секунд**, нижче цілі 10–60. | Перевіряти boss HP разом із damage та винагородою. Підняття лише HP може додатково подовжити стіни. |
-| **Слабка загальна конкурентність Crit protection** | Recovery частіше вигідніший. Захист знизив ризик смерті приблизно на 7% лише у спеціально вибраних критичних ситуаціях. | Перевірити, наскільки часто такі ситуації трапляються у звичайній грі. Розглянути виразні етапи підвищеного критичного ризику та зрозумілу підказку для вибору захисту. Подальше посилення критів усіх ворогів потребує окремого обґрунтування. |
-| **Невизначена пізня окупність Gold-талантів** | First-clear Gold прискорює ранній Stage 20, але на пізніх checkpoint поступається Boss damage й не гарантує окупності за шість годин. | Визначити його роль: рання спеціалізація чи життєздатна пізня альтернатива. Для другого варіанта окремо перевірити ціни й користь пізніх рангів. |
-| **Недоступність альтернатив через витрачені Books** | У 47 із 180 контрольних бюджетів не вистачило Books на потрібний пакет. Резервування коштів дозволило провести порівняння. | Дослідити стратегії накопичення й вартість переходу між гілками. Це також наслідок політики витрат, тому автоматично збільшувати Books-нагороди зарано. |
-| **Слабкі евристики покупок** | Adaptive і stageAware досягли frontier 197 проти 266 у balanced. | Оцінювати покупки за виживанням у всьому етапі, кількістю ударів і часом до наступного clear. Нинішні евристики не можуть бути достатнім доказом відсутності кращої стратегії. |
+| **Long progression walls** | At 25–75% activity, walls take about **59–63 active minutes** instead of the 10–45 minute target. Elapsed waiting time is even longer. | Separate insufficient survivability from insufficient income. Check Armor availability and late enemy damage growth locally. Making all purchases cheaper already caused progression to become too fast. |
+| **Short boss fights** | On day 30 at low activity, bosses take **7–9 seconds**, below the 10–60 second target. | Check boss HP together with damage and rewards. Raising HP alone may make progression walls longer. |
+| **Weak overall competitiveness of Crit protection** | Recovery is more often beneficial. Protection reduced death risk by about 7% only in specially selected critical situations. | Check how often these situations occur in normal play. Consider clear stages with elevated critical risk and a useful hint for choosing protection. Further increasing crits for all enemies needs separate justification. |
+| **Uncertain late payoff for Gold talents** | First-clear Gold speeds up early Stage 20, but falls behind Boss damage at later checkpoints and is not guaranteed to pay off within six hours. | Define its role: early specialization or a viable late alternative. For the latter, separately check prices and the value of later ranks. |
+| **Alternatives unavailable after spending Books** | In 47 of 180 control budgets, there were not enough Books for the required package. Reserving currency enabled the comparison. | Explore saving strategies and the cost of switching branches. This also depends on spending policy, so automatically increasing Books rewards would be premature. |
+| **Weak purchase heuristics** | Adaptive and stageAware reached a frontier of 197, versus 266 for balanced. | Evaluate purchases by survivability across the whole stage, number of hits, and time to the next clear. Current heuristics cannot prove that no better strategy exists. |
 
-Окремо лишається різниця між **числово позитивною** і **відчутною** покупкою. Захист від нульової дельти реалізований, але надзвичайно малий приріст може не змінювати рішення гравця. Тут потрібен замір часу до покупки, яка реально покращує бій або виживання.
+There is also a difference between a **numerically positive** purchase and one the player can **feel**. Protection against zero delta is implemented, but a very small gain may not change a player's decisions. Measure how long it takes to reach a purchase that meaningfully improves combat or survivability.
 
-## Що залишилось і в якому порядку
+## Remaining Work, in Order
 
-1. **Провести desktop-перевірку:** реальний input/rest, ручні покупки, читабельність вибору, save/quit/restart. Прогнози отримано з моделі умовних вікон активності; фактичні затримки ще невідомі.
-2. **Уточнити причини довгих стін**, потім провести невелику цільову сітку змін і повторити порівняння стратегій.
-3. **Перевірити природну частоту корисних контекстів талантів**, особливо protection та пізнього First-clear Gold.
-4. **Розширити горизонт 60–90 днів.** Проведений screening має лише три seed; він показує доступність rank 10, але не доводить стабільний довгий баланс.
-5. **Закрити два asset-тести** та окремо перевірити Windows runtime, якщо він входить у цільове приймання.
+1. **Perform desktop validation:** real input/rest, manual purchases, choice readability, and save/quit/restart. Predictions use a model of assumed activity windows; actual delays are unknown.
+2. **Clarify the causes of long progression walls**, then run a small targeted grid of changes and compare strategies again.
+3. **Check how often useful talent contexts occur naturally**, especially for protection and late First-clear Gold.
+4. **Extend the horizon to 60–90 days.** The screening used only three seeds; it shows that rank 10 is reachable but does not prove stable long-term balance.
+5. **Close the two asset-test gaps** and separately check Windows runtime if it is part of acceptance.
 
-Пріоритет — спочатку виміряти реальний desktop-темп, а потім коригувати стіни й альтернативи талантів. Це дасть основу для налаштувань, які відповідають фактичній грі.
+The priority is to measure the real desktop pace first, then adjust progression walls and talent alternatives. That gives tuning a basis in actual gameplay.

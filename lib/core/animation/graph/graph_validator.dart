@@ -24,9 +24,17 @@ final class AnimationGraphValidator {
             throw ArgumentError('Invalid repetitions: ${node.id}');
           }
         case LoopClip():
-          if (resources.clip(node.clipId).loopRange == null ||
+          final clip = resources.clip(node.clipId);
+          if (clip.loopRange == null ||
               node.interruption == InterruptionPolicy.afterClip) {
             throw ArgumentError('Invalid indefinite loop: ${node.id}');
+          }
+          if (node.interruptibleFrames.isNotEmpty &&
+              (node.interruption != InterruptionPolicy.afterCycle ||
+                  node.interruptibleFrames.any(
+                    (index) => index < 0 || index >= clip.loopRange!.end,
+                  ))) {
+            throw ArgumentError('Invalid interruption frames: ${node.id}');
           }
         case HoldPose():
           resources.pose(node.poseId);

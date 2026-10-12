@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 import '../../../../app/session/session_updates_service.dart';
 import 'debug_state.dart';
+import '../../../../content/animations/hero/debug_previews.dart';
 export 'debug_state.dart';
 
 @injectable
@@ -25,6 +26,7 @@ class DebugCubit extends Cubit<DebugState> {
   void runAction(String action) {
     if (!kDebugMode || !session.canMutate || isClosed) return;
     final simulation = session.simulation;
+    simulation.heroAnimations.stopPreview();
     switch (action) {
       case 'spawn':
         simulation.spawnEnemy();
@@ -47,10 +49,32 @@ class DebugCubit extends Cubit<DebugState> {
 
   void setDebugIdle(double? seconds) {
     if (kDebugMode && session.canMutate && !isClosed) {
+      session.simulation.heroAnimations.stopPreview();
       session.activityOverride = seconds;
       refresh();
       unawaited(session.pollActivity());
     }
+  }
+
+  void playAnimation(HeroAnimationPreview animation) {
+    if (!kDebugMode || !session.canMutate || isClosed) return;
+    session.simulation.heroAnimations.startPreview(animation);
+    session.refresh();
+    refresh();
+  }
+
+  void wakeAnimation() {
+    if (!kDebugMode || !session.canMutate || isClosed) return;
+    session.simulation.heroAnimations.wakePreview();
+    session.refresh();
+    refresh();
+  }
+
+  void stopAnimation() {
+    if (!kDebugMode || !session.canMutate || isClosed) return;
+    session.simulation.heroAnimations.stopPreview();
+    session.refresh();
+    refresh();
   }
 
   void setSpeed(double speed) {

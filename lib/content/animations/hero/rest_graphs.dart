@@ -4,9 +4,12 @@ import 'clips.dart';
 import '../../../core/animation/graph/graph_definition.dart';
 import '../../../core/animation/graph/graph_validator.dart';
 import '../../../core/animation/graph/node.dart';
+import '../../../core/animation/graph/selection_policy.dart';
 import '../../../core/animation/graph/transition.dart';
 import '../../../core/animation/ids.dart';
 import 'variants.dart';
+import 'phone_graph.dart';
+import 'poses.dart';
 
 abstract final class HeroRestGraphs {
   static const sit = NodeId('rest.sit');
@@ -14,12 +17,56 @@ abstract final class HeroRestGraphs {
   static const activitySelect = NodeId('rest.activitySelect');
   static const activityWait = NodeId('rest.activityWait');
   static const sharpen = NodeId('rest.sharpen');
+  static const read = NodeId('rest.read');
+  static const readCleanup = NodeId('rest.readCleanup');
   static const exitHold = NodeId('rest.exitHold');
   static const standSelect = NodeId('rest.standSelect');
   static const standWait = NodeId('rest.standWait');
   static const stand = NodeId('rest.stand');
   static const done = NodeId('rest.done');
   static const selectionChanged = GraphSignalId('rest.selectionChanged');
+
+  /// Choose one complete rest subtree once per inactivity session.
+  static AnimationGraphDefinition rest({AnimationResources? resources}) {
+    final content = resources ?? HeroClips.resources();
+    final seated = seatedRest(resources: content);
+    final phone = HeroPhoneRestGraph.definition(resources: content);
+    const choose = NodeId('rest.select');
+    const wait = NodeId('rest.wait');
+    final graph = AnimationGraphDefinition(
+      id: const GraphId('hero.rest'),
+      entryNode: choose,
+      nodes: [
+        Select(
+          id: choose,
+          fallback: wait,
+          choices: [
+            GraphChoice(
+              id: const VariantId('hero.rest.seated'),
+              target: sit,
+              completionNode: done,
+            ),
+            GraphChoice(
+              id: const VariantId('hero.rest.phone'),
+              target: HeroPhoneRestGraph.enter,
+              completionNode: HeroPhoneRestGraph.done,
+            ),
+          ],
+        ),
+        HoldPose(
+          id: wait,
+          poseId: HeroPoses.walkLast,
+          transitions: [
+            AnimationTransition(const Signal(selectionChanged), choose),
+          ],
+        ),
+        ...seated.nodes.values,
+        ...phone.nodes.values,
+      ],
+    );
+    AnimationGraphValidator(content).validate(graph);
+    return graph;
+  }
 
   /// Складає граф саме сидячого відпочинку:
   /// sit -> sitHold (0.5 с) -> activitySelect -> вибрана активність.
@@ -45,8 +92,8 @@ abstract final class HeroRestGraphs {
   ///
   /// Графи відпочинку без сідання слід складати окремо з власними входом,
   /// активностями та виходом і передавати через GameSimulation.restGraph.
-  /// Зараз координатор запускає один переданий граф; вибір між кількома графами
-  /// відпочинку ще не реалізований. Валідатор нижче перевіряє ресурси та
+  /// За замовчуванням rest() вибирає між цим та телефонним піддеревом.
+  /// Валідатор нижче перевіряє ресурси та
   /// сумісність поз на переходах зібраного графа.
   static AnimationGraphDefinition seatedRest({
     AnimationResources? resources,
@@ -130,10 +177,4 @@ abstract final class HeroRestGraphs {
     AnimationGraphValidator(content).validate(graph);
     return graph;
   }
-
-  static AnimationGraphDefinition authoringDemo() => seatedRest(
-    resources: HeroClips.resources(includeDemoClips: true),
-    activities: HeroRestVariants.demoActivities,
-    standUps: HeroRestVariants.demoStandUps,
-  );
 }

@@ -5,12 +5,8 @@ import 'hero/clips.dart';
 /// Installed sprite content only. Procedural enemies have a separate timeline.
 AnimationResources defaultAnimationResources() => _resources();
 
-/// Opt-in authoring demo: additional timelines over the installed PNGs.
-AnimationResources demoAnimationResources() =>
-    _resources(includeDemoClips: true);
-
-AnimationResources _resources({bool includeDemoClips = false}) {
-  final hero = HeroClips.resources(includeDemoClips: includeDemoClips);
+AnimationResources _resources() {
+  final hero = HeroClips.resources();
   final goblin = GoblinClips.resources();
   return AnimationResources(
     rigs: [...hero.rigs.values, ...goblin.rigs.values],

@@ -8,12 +8,14 @@ import '../cubit/hero_return_speech_cubit.dart';
 class HeroReturnSpeech extends StatelessWidget {
   const HeroReturnSpeech({super.key});
   @override
-  Widget build(BuildContext context) => BlocProvider(
-    create: (context) => context.read<GetIt>()<HeroReturnSpeechCubit>(
-      param1: AppLocalizations.of(context)!.heroReturnLines.length,
-    ),
-    child: const _HeroReturnSpeechView(),
-  );
+  Widget build(BuildContext context) {
+    final lineCount = AppLocalizations.of(context)!.heroReturnLines.length;
+    return BlocProvider(
+      create: (context) =>
+          context.read<GetIt>()<HeroReturnSpeechCubit>(param1: lineCount),
+      child: const _HeroReturnSpeechView(),
+    );
+  }
 }
 
 class _HeroReturnSpeechView extends StatelessWidget {

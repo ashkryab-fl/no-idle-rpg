@@ -19,8 +19,10 @@ final class HeroRestVariant {
     this.interruption = InterruptionPolicy.immediate,
     this.cleanupClip,
     this.cleanupNode,
+    List<int> interruptibleFrames = const [],
     List<GraphCondition> conditions = const [],
-  }) : conditions = List.unmodifiable(conditions);
+  }) : interruptibleFrames = List.unmodifiable(interruptibleFrames),
+       conditions = List.unmodifiable(conditions);
 
   final VariantId id;
   final NodeId nodeId;
@@ -31,6 +33,7 @@ final class HeroRestVariant {
   final InterruptionPolicy interruption;
   final ClipId? cleanupClip;
   final NodeId? cleanupNode;
+  final List<int> interruptibleFrames;
   final List<GraphCondition> conditions;
 
   GraphChoice get choice => GraphChoice(
@@ -73,6 +76,7 @@ final class HeroRestVariant {
       id: nodeId,
       clipId: clipId,
       interruption: interruption,
+      interruptibleFrames: interruptibleFrames,
       transitions: [
         AnimationTransition(const ActivityReturned(), cleanupNode ?? exit),
       ],
@@ -94,7 +98,6 @@ final class HeroRestVariant {
 
 abstract final class HeroRestVariants {
   static const allowedFacts = [GraphFactId('rest.idleLevel')];
-  static const idleLevel = GraphFactId('rest.idleLevel');
   static const seated = AnimationPoseContract.pose(PoseId.seatedNeutral);
   static const seatedFamily = AnimationPoseContract.family(PoseFamilyId.seated);
   static const standing = AnimationPoseContract.family(
@@ -109,6 +112,18 @@ abstract final class HeroRestVariants {
       entryPose: seated,
       exitPose: seatedFamily,
     ),
+    HeroRestVariant(
+      id: const VariantId('hero.read.seated'),
+      nodeId: const NodeId('rest.read'),
+      clipId: HeroClips.read,
+      entryPose: seated,
+      exitPose: seatedFamily,
+      cleanupClip: HeroClips.readCleanup,
+      cleanupNode: const NodeId('rest.readCleanup'),
+      // Interrupt the reading hold immediately; finish any ongoing page turn.
+      interruption: InterruptionPolicy.afterCycle,
+      interruptibleFrames: const [3],
+    ),
   ]);
   static final standUps = List<HeroRestVariant>.unmodifiable([
     HeroRestVariant(
@@ -117,40 +132,6 @@ abstract final class HeroRestVariants {
       clipId: const ClipId('hero.standUp'),
       entryPose: seatedFamily,
       exitPose: standing,
-    ),
-  ]);
-
-  // Opt-in descriptions use authored frames at a different cadence; they are
-  // not new artwork. Cleanup visibly returns the sharpening tool to neutral.
-  static final demoActivities = List<HeroRestVariant>.unmodifiable([
-    ...activities,
-    HeroRestVariant(
-      id: const VariantId('hero.sharpen.slow'),
-      nodeId: const NodeId('rest.sharpenSlow'),
-      clipId: HeroClips.sharpenSlow,
-      entryPose: seated,
-      exitPose: seatedFamily,
-      cleanupClip: HeroClips.sharpenCleanup,
-      cleanupNode: const NodeId('rest.sharpenCleanup'),
-      weight: 2,
-      conditions: const [GraphCondition(idleLevel, minimum: 2)],
-      cooldown: const VariantCooldown(
-        CooldownKey('rest.slowSharpen'),
-        12,
-        start: CooldownStart.completed,
-      ),
-      interruption: InterruptionPolicy.afterCycle,
-    ),
-  ]);
-  static final demoStandUps = List<HeroRestVariant>.unmodifiable([
-    ...standUps,
-    HeroRestVariant(
-      id: const VariantId('hero.standUp.careful'),
-      nodeId: const NodeId('rest.standCareful'),
-      clipId: HeroClips.standCareful,
-      entryPose: seatedFamily,
-      exitPose: standing,
-      cooldown: const VariantCooldown(CooldownKey('rest.carefulStand'), 8),
     ),
   ]);
 }

@@ -19,7 +19,7 @@ class RestCoordinator {
     this.thresholds = GameBalance.idleThresholds,
     AnimationGraphDefinition? graph,
   }) : policy = RestPolicy(random, thresholds: thresholds),
-       graph = graph ?? HeroRestGraphs.seatedRest(resources: resources) {
+       graph = graph ?? HeroRestGraphs.rest(resources: resources) {
     AnimationGraphValidator(resources).validate(this.graph);
   }
   final AnimationResources resources;

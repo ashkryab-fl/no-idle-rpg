@@ -198,10 +198,10 @@ transitions within large forms. Details are distinct, without a pixel grid,
    carry the T-pose into every result or redesign the character for a new action.
 4. **For animation, add the relevant frames as supplementary motion references.**
    Materials in `walk_v2/`, `attack_v1/`, `sit_down_v1/`, `sharpen_v1/`,
-   `death_v1/`, and `seated_v1/` can define poses, transitions, scale, and ground
+   `death_v1/`, `read_v1/`, `phone_v1/`, and `seated_v1/` can define poses, transitions, scale, and ground
    contact. The heroine's primary design is defined by `reference/`.
    When extending seated animations, also read the
-   [rest animation contract](hero_rest.md).
+   [reading animation contract](hero_reading.md).
 5. **Maintain consistency between frames.** Do not change head or body size,
    hair length, armor shape, colors, belt count, or accessories. The hair and
    cape may sway, but must retain their attachment points, volume, and

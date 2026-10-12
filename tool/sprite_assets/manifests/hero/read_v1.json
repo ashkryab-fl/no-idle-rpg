@@ -1,0 +1,18 @@
+{
+  "source": "../../../../art/hero/read_v1/source-ready.png",
+  "size": 512,
+  "scale": 0.56,
+  "frames": [
+    {"crop": [0, 0, 452, 444], "offset": [113, 200]},
+    {"crop": [452, 0, 436, 444], "offset": [129, 200]},
+    {"crop": [888, 0, 442, 444], "offset": [126, 200]},
+    {"crop": [1330, 0, 444, 444], "offset": [125, 200]},
+    {"crop": [0, 444, 462, 443], "offset": [110, 205]},
+    {"crop": [462, 444, 426, 443], "offset": [129, 205]},
+    {"crop": [888, 444, 442, 443], "offset": [124, 205]},
+    {"crop": [1330, 444, 444, 443], "offset": [126, 205]}
+  ],
+  "output": "assets/characters/hero/read.png",
+  "framesDirectory": "build/sprite_frames/hero/read_v1",
+  "previewGroup": "build/animation_previews/hero/read_v1"
+}

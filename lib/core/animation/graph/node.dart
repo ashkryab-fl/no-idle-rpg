@@ -28,10 +28,15 @@ final class LoopClip extends AnimationGraphNode {
     required NodeId id,
     required this.clipId,
     this.interruption = InterruptionPolicy.immediate,
+    List<int> interruptibleFrames = const [],
     List<AnimationTransition> transitions = const [],
-  }) : super(id, transitions);
+  }) : interruptibleFrames = List.unmodifiable(interruptibleFrames),
+       super(id, transitions);
   final ClipId clipId;
   final InterruptionPolicy interruption;
+
+  /// With afterCycle, these frames also allow an immediate signal transition.
+  final List<int> interruptibleFrames;
 }
 
 final class HoldPose extends AnimationGraphNode {

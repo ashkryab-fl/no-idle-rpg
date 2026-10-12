@@ -307,10 +307,25 @@ final class AnimationGraphRunner {
     return cycle - remainder;
   }
 
+  double _cycleInterruptionDelta() {
+    var delta = _cycleDelta();
+    final node = _node;
+    if (node is! LoopClip || node.interruptibleFrames.isEmpty) return delta;
+    final clip = _player!.clip;
+    final elapsed = _player!.elapsed;
+    if (node.interruptibleFrames.contains(clip.frameIndex(elapsed))) return 0;
+    final time = clip.timelineElapsed(elapsed);
+    for (final index in node.interruptibleFrames) {
+      final start = clip.frameStart(index);
+      if (start > time + _epsilon) delta = min(delta, start - time);
+    }
+    return delta;
+  }
+
   bool get _canInterrupt => switch (_interruption) {
     InterruptionPolicy.immediate => true,
     InterruptionPolicy.afterClip => _nodeCompleted,
-    InterruptionPolicy.afterCycle => _cycleDelta() == 0,
+    InterruptionPolicy.afterCycle => _cycleInterruptionDelta() == 0,
   };
 
   AnimationTransition? _matchingTransition() {
@@ -339,7 +354,7 @@ final class AnimationGraphRunner {
         final interruptDelta = switch (_interruption) {
           InterruptionPolicy.immediate => 0.0,
           InterruptionPolicy.afterClip => _duration - _nodeElapsed,
-          InterruptionPolicy.afterCycle => _cycleDelta(),
+          InterruptionPolicy.afterCycle => _cycleInterruptionDelta(),
         };
         delta = min(delta, interruptDelta);
       }

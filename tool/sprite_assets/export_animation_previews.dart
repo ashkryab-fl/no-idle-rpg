@@ -5,7 +5,7 @@ import 'package:idle_companion/content/animations/animation_resources.dart';
 import 'package:idle_companion/core/animation/ids.dart';
 
 void main() {
-  final resources = demoAnimationResources();
+  final resources = defaultAnimationResources();
   Map<String, Object> step(String id, int index, [double? hold]) {
     final clipFrame = resources.clip(ClipId('hero.$id')).frames[index];
     final frame = resources.frame(clipFrame.frameId);
@@ -61,6 +61,16 @@ void main() {
   final walk = clip('walk');
   final stand = clip('standUp');
   final neutral = step('seated', 0, .3);
+  preview('phone_v1', 'entry', clip('phoneEnter'));
+  preview('phone_v1', 'scroll', clip('phoneScroll', loopOnly: true));
+  preview('phone_v1', 'wake', clip('phoneWake'));
+  preview('phone_v1', 'walk-phone-walk', [
+    ...walk,
+    ...clip('phoneEnter'),
+    ...clip('phoneScroll'),
+    ...clip('phoneWake'),
+    ...walk,
+  ]);
   final sit = [
     for (var i = 0; i < 4; i++) step('sitDown', i, i == 3 ? .8 : .3),
   ];
@@ -86,28 +96,20 @@ void main() {
     ...clip('sharpen', loopOnly: true),
   ]);
   preview('stand_up_v1', 'stand-up', stand);
+  preview('read_v1', 'read', clip('read', loopOnly: true), contact: true);
+  preview('read_v1', 'rest-reading', [
+    ...sit,
+    ...clip('read'),
+    ...clip('read', loopOnly: true),
+    ...clip('readCleanup'),
+    neutral,
+    ...stand,
+    walk.first,
+  ], contact: true);
   preview('stand_up_v1', 'wake-to-walk', [
     step('sharpen', 7),
     neutral,
     ...stand,
-    ...walk,
-  ], contact: true);
-  final slow = [
-    ...clip('sharpenSlow'),
-    ...clip('sharpenSlow', loopOnly: true),
-    ...clip('sharpenCleanup'),
-    neutral,
-  ];
-  final careful = clip('standCareful');
-  preview('rest_variants_v1', 'slow-sharpen', slow, contact: true);
-  preview('rest_variants_v1', 'careful-stand', [
-    neutral,
-    ...careful,
-    walk.first,
-  ], contact: true);
-  preview('rest_variants_v1', 'transition', [
-    ...slow,
-    ...careful,
     ...walk,
   ], contact: true);
   stdout.write(jsonEncode(previews));

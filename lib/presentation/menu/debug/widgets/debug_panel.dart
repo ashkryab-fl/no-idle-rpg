@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import '../cubit/debug_cubit.dart';
+import '../../../../content/animations/hero/debug_previews.dart';
 
 class DebugPanel extends StatelessWidget {
   const DebugPanel({super.key});
@@ -65,6 +66,50 @@ class DebugPanel extends StatelessWidget {
                     onSelected: (_) => cubit.setSpeed(speed),
                   ),
               ],
+            ),
+            const SizedBox(height: 12),
+            const Text('Rest animations'),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                for (final animation in HeroAnimationPreview.values.where(
+                  (a) => a.isRest,
+                ))
+                  OutlinedButton(
+                    onPressed: () => cubit.playAnimation(animation),
+                    child: Text(animation.label),
+                  ),
+                OutlinedButton(
+                  onPressed: state.canWakeAnimation
+                      ? cubit.wakeAnimation
+                      : null,
+                  child: const Text('Wake up'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            const Text('Individual animations'),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                for (final animation in HeroAnimationPreview.values.where(
+                  (a) => !a.isRest,
+                ))
+                  OutlinedButton(
+                    onPressed: () => cubit.playAnimation(animation),
+                    child: Text(animation.label),
+                  ),
+              ],
+            ),
+            if (state.animation != null) ...[
+              const SizedBox(height: 6),
+              Text('Playing: ${state.animation!.label} · simulation paused'),
+            ],
+            OutlinedButton(
+              onPressed: state.animation != null ? cubit.stopAnimation : null,
+              child: const Text('Normal playback'),
             ),
           ],
         );

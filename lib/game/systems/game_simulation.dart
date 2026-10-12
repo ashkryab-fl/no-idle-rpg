@@ -167,6 +167,10 @@ class GameSimulation {
   }
 
   void _tick(double dt) {
+    if (heroAnimations.isPreviewing) {
+      heroAnimations.advance(dt);
+      return;
+    }
     _synchronizeAnimations();
     final travelTime = heroAnimations.advance(dt);
     enemyAnimations.advance(dt);
@@ -430,7 +434,9 @@ class GameSimulation {
   }
 
   PlaybackSnapshot get heroPlayback {
-    return heroAnimations.snapshot.withDamageFlash(heroHitRemaining > 0);
+    return heroAnimations.snapshot.withDamageFlash(
+      heroHitRemaining > 0 && !heroAnimations.isPreviewing,
+    );
   }
 
   PlaybackSnapshot? get enemyPlayback {

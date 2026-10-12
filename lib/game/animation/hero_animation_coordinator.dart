@@ -5,6 +5,10 @@ import '../../core/animation/ids.dart';
 import '../../core/animation/playback_snapshot.dart';
 import '../../domain/activity/idle_level.dart';
 import '../../domain/activity/rest_coordinator.dart';
+import '../../content/animations/hero/clips.dart';
+import '../../core/animation/graph/node.dart';
+import '../../content/animations/hero/debug_previews.dart';
+import 'hero_animation_preview.dart';
 
 enum HeroAnimationRequest { travel, approach, combat, idle, death, respawn }
 
@@ -20,6 +24,24 @@ final class HeroAnimationCoordinator {
   final RestCoordinator rest;
   final AttackPlayback combatPlayback;
   final AnimationPlayer _player;
+  HeroAnimationPreviewPlayback? _preview;
+  HeroAnimationPreview? get preview => _preview?.selection;
+  bool get isPreviewing => _preview != null;
+  bool get canWakePreview => _preview?.canWake ?? false;
+
+  void startPreview(HeroAnimationPreview selection) {
+    final playback = HeroAnimationPreviewPlayback(selection, resources);
+    _preview = playback;
+    _generation++;
+  }
+
+  void stopPreview() {
+    if (_preview == null) return;
+    _preview = null;
+    _generation++;
+  }
+
+  void wakePreview() => _preview?.wake();
   HeroAnimationRequest _request = HeroAnimationRequest.travel;
   bool _restWasBlocking = false;
   int _generation = 0;
@@ -29,6 +51,9 @@ final class HeroAnimationCoordinator {
   int get restReturnRevision => _restReturnRevision;
   double _clock = 0;
   double combatPeriod = 1;
+  late final bool _restUsesWalkSeam = rest.graph.nodes.values.any(
+    (node) => node is PlayClip && node.clipId == HeroClips.phoneEnter,
+  );
   bool get blocksAdventure => rest.blocksAdventure;
   bool get deathCompleted => _player.completed;
 
@@ -66,12 +91,37 @@ final class HeroAnimationCoordinator {
     if (!dt.isFinite || dt < 0 || !(_clock + dt).isFinite) {
       throw ArgumentError.value(dt, 'dt');
     }
+    if (_preview != null) {
+      _preview!.advance(dt);
+      return 0;
+    }
     final start = _clock;
     _clock += dt;
     if (_request == HeroAnimationRequest.travel) {
       final wasBlocking = rest.blocksAdventure || _restWasBlocking;
       if (!_restWasBlocking && rest.blocksAdventure) _generation++;
-      var remaining = rest.advance(dt, startTime: start);
+      var restTime = dt;
+      var restStart = start;
+      if (_restUsesWalkSeam &&
+          rest.blocksAdventure &&
+          rest.level != IdleLevel.active &&
+          rest.graphRunner?.isRunning != true) {
+        final walk = _player.clip;
+        final lastStart = walk.frameStart(walk.frames.length - 1);
+        final untilLast = lastStart - _player.snapshot.timelineElapsed;
+        if (untilLast > walk.tolerance) {
+          final settling = restTime < untilLast ? restTime : untilLast;
+          _player.advance(settling);
+          rest.advance(settling, canRest: false, startTime: restStart);
+          restTime -= settling;
+          restStart += settling;
+          if (restTime == 0) {
+            _restWasBlocking = true;
+            return 0;
+          }
+        }
+      }
+      var remaining = rest.advance(restTime, startTime: restStart);
       // Finish standing up before new inactivity starts another entry.
       if (remaining > 0 &&
           rest.level != IdleLevel.active &&
@@ -97,6 +147,7 @@ final class HeroAnimationCoordinator {
   }
 
   PlaybackSnapshot get snapshot {
+    if (_preview != null) return _preview!.snapshot(_generation);
     if (_request == HeroAnimationRequest.travel && rest.blocksAdventure) {
       final graph = rest.graphRunner;
       if (graph != null && graph.isRunning) {
@@ -105,6 +156,15 @@ final class HeroAnimationCoordinator {
           resources,
           generation: _generation,
           displayLabel: graph.snapshot.graphId.value,
+        );
+      }
+      if (_restUsesWalkSeam) {
+        return PlaybackSnapshot.clip(
+          _player.snapshot,
+          resources,
+          generation: _generation,
+          displayLabel: _player.clip.id.value,
+          pose: ProceduralPose.moving,
         );
       }
       // Inactivity may be sampled before the first simulation tick. Resolve
@@ -148,6 +208,7 @@ final class HeroAnimationCoordinator {
   }
 
   void reset() {
+    stopPreview();
     rest.cancelPlayback();
     combatPlayback.reset();
     _generation++;

@@ -1,0 +1,94 @@
+{
+  "source": "../../../../art/hero/phone_v1/scroll_neutral.png",
+  "size": 512,
+  "scale": 0.33,
+  "frames": [
+    {
+      "source": "../../../../art/hero/phone_v1/enter_stop.png",
+      "offset": [
+        70,
+        46
+      ]
+    },
+    {
+      "source": "../../../../art/hero/phone_v1/enter_pocket.png",
+      "offset": [
+        70,
+        46
+      ]
+    },
+    {
+      "source": "../../../../art/hero/phone_v1/enter_phone.png",
+      "offset": [
+        70,
+        46
+      ]
+    },
+    {
+      "source": "../../../../art/hero/phone_v1/scroll_neutral.png",
+      "offset": [
+        70,
+        46
+      ]
+    },
+    {
+      "source": "../../../../art/hero/phone_v1/scroll_swipe.png",
+      "offset": [
+        70,
+        46
+      ]
+    },
+    {
+      "source": "../../../../art/hero/phone_v1/scroll_smile.png",
+      "offset": [
+        70,
+        46
+      ]
+    },
+    {
+      "source": "../../../../art/hero/phone_v1/scroll_laugh.png",
+      "offset": [
+        70,
+        46
+      ]
+    },
+    {
+      "source": "../../../../art/hero/phone_v1/wake_startled.png",
+      "offset": [
+        70,
+        46
+      ]
+    },
+    {
+      "source": "../../../../art/hero/phone_v1/wake_backswing.png",
+      "offset": [
+        70,
+        46
+      ]
+    },
+    {
+      "source": "../../../../art/hero/phone_v1/wake_release.png",
+      "offset": [
+        70,
+        46
+      ]
+    },
+    {
+      "source": "../../../../art/hero/phone_v1/wake_grab.png",
+      "offset": [
+        18,
+        38
+      ]
+    },
+    {
+      "source": "../../../../art/hero/phone_v1/wake_stride.png",
+      "offset": [
+        18,
+        38
+      ]
+    }
+  ],
+  "output": "assets/characters/hero/phone.png",
+  "framesDirectory": "build/sprite_frames/hero/phone_v1",
+  "previewGroup": "build/animation_previews/hero/phone_v1"
+}
