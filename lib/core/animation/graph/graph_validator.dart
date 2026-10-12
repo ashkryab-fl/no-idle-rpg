@@ -45,6 +45,14 @@ final class AnimationGraphValidator {
                   node.interruption == InterruptionPolicy.afterClip)) {
             throw ArgumentError('Invalid hold: ${node.id}');
           }
+        case FadePose():
+          resources.pose(node.poseId);
+          if (node.fromPoseId != null) resources.pose(node.fromPoseId!);
+          if (!node.duration.isFinite ||
+              node.duration <= 0 ||
+              (node.id == graph.entryNode && node.fromPoseId == null)) {
+            throw ArgumentError('Invalid fade: ${node.id}');
+          }
         case Select():
           final fallback = graph.node(node.fallback);
           if (fallback is! HoldPose || fallback.duration != null) {
@@ -92,6 +100,7 @@ final class AnimationGraphValidator {
         switch (edge.trigger) {
           case Completed():
             if (node is! PlayClip &&
+                node is! FadePose &&
                 !(node is HoldPose && node.duration != null)) {
               throw ArgumentError('Node cannot complete: ${node.id}');
             }
@@ -188,6 +197,10 @@ final class AnimationGraphValidator {
     PlayClip() => resources.clip(node.clipId).entryPose,
     LoopClip() => resources.clip(node.clipId).entryPose,
     HoldPose() => AnimationPoseContract.pose(node.poseId),
+    FadePose() =>
+      node.fromPoseId == null
+          ? null
+          : AnimationPoseContract.pose(node.fromPoseId!),
     Finish() => node.entryPose,
     Select() => null,
   };
@@ -195,6 +208,7 @@ final class AnimationGraphValidator {
     PlayClip() => resources.clip(node.clipId).exitPose,
     LoopClip() => resources.clip(node.clipId).exitPose,
     HoldPose() => AnimationPoseContract.pose(node.poseId),
+    FadePose() => AnimationPoseContract.pose(node.poseId),
     _ => null,
   };
   void _validateContract(AnimationPoseContract? contract) {

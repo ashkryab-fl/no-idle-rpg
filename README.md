@@ -71,6 +71,7 @@ flutter build windows --release
 | [Development tools](tool/README.md) | Sprite tooling entry point |
 | [Sprite pipeline](tool/sprite_assets/README.md) | Packing, verification, and source requirements |
 | [Hero reference](docs/hero_reference.md) | Character identity and artwork guidance |
+| [Sleeping rest](docs/hero_sleep.md) | Four-frame sleep loop and reusable crossfades |
 
 ## Contributing
 

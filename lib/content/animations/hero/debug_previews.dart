@@ -4,6 +4,7 @@ import '../../../core/animation/ids.dart';
 import 'clips.dart';
 import 'phone_graph.dart';
 import 'rest_graphs.dart';
+import 'sleep_graph.dart';
 import 'variants.dart';
 
 /// Explicit debug choices: a button always starts the same clip or subtree.
@@ -11,6 +12,8 @@ enum HeroAnimationPreview {
   sharpenRest('Sharpen rest'),
   readRest('Reading rest'),
   phoneRest('Phone rest'),
+  sleepRest('Sleep rest'),
+  sleep('Sleep / turn', HeroClips.sleep),
   walk('Walk', ClipId('hero.walk')),
   attack('Attack', ClipId('hero.attack')),
   idle('Standing', ClipId('hero.idle')),
@@ -33,6 +36,7 @@ enum HeroAnimationPreview {
   AnimationGraphDefinition graph(AnimationResources resources) =>
       switch (this) {
         phoneRest => HeroPhoneRestGraph.definition(resources: resources),
+        sleepRest => HeroSleepRestGraph.definition(resources: resources),
         sharpenRest || readRest => HeroRestGraphs.seatedRest(
           resources: resources,
           activities: [

@@ -9,6 +9,7 @@ import '../../../core/animation/graph/transition.dart';
 import '../../../core/animation/ids.dart';
 import 'variants.dart';
 import 'phone_graph.dart';
+import 'sleep_graph.dart';
 import 'poses.dart';
 
 abstract final class HeroRestGraphs {
@@ -31,6 +32,7 @@ abstract final class HeroRestGraphs {
     final content = resources ?? HeroClips.resources();
     final seated = seatedRest(resources: content);
     final phone = HeroPhoneRestGraph.definition(resources: content);
+    final sleep = HeroSleepRestGraph.definition(resources: content);
     const choose = NodeId('rest.select');
     const wait = NodeId('rest.wait');
     final graph = AnimationGraphDefinition(
@@ -51,6 +53,11 @@ abstract final class HeroRestGraphs {
               target: HeroPhoneRestGraph.enter,
               completionNode: HeroPhoneRestGraph.done,
             ),
+            GraphChoice(
+              id: const VariantId('hero.rest.sleep'),
+              target: HeroSleepRestGraph.standing,
+              completionNode: HeroSleepRestGraph.done,
+            ),
           ],
         ),
         HoldPose(
@@ -62,6 +69,7 @@ abstract final class HeroRestGraphs {
         ),
         ...seated.nodes.values,
         ...phone.nodes.values,
+        ...sleep.nodes.values,
       ],
     );
     AnimationGraphValidator(content).validate(graph);
@@ -92,7 +100,7 @@ abstract final class HeroRestGraphs {
   ///
   /// Графи відпочинку без сідання слід складати окремо з власними входом,
   /// активностями та виходом і передавати через GameSimulation.restGraph.
-  /// За замовчуванням rest() вибирає між цим та телефонним піддеревом.
+  /// За замовчуванням rest() вибирає сидяче, телефонне піддерево або сон.
   /// Валідатор нижче перевіряє ресурси та
   /// сумісність поз на переходах зібраного графа.
   static AnimationGraphDefinition seatedRest({

@@ -13,7 +13,7 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[2]
 MANIFESTS = [f'tool/sprite_assets/manifests/hero/{name}.json' for name in (
     'seated_v1', 'sit_down_v1', 'sharpen_v1', 'walk_v2', 'ready_v1', 'attack_v1',
-    'death_v1', 'stand_up_v1', 'read_v1', 'phone_v1',
+    'death_v1', 'stand_up_v1', 'read_v1', 'phone_v1', 'sleep_v1',
 )]
 
 

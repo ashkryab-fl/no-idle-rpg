@@ -1,17 +1,6 @@
 {
-  "source": "../../../../art/hero/sharpen_v1/source-sheet.png",
+  "source": "../../../../art/hero/seated_v1/source-pose.png",
   "size": 512,
-  "scale": 0.49,
-  "crop": [
-    0,
-    0,
-    627,
-    627
-  ],
-  "offset": [
-    85,
-    156
-  ],
   "output": "assets/characters/hero/seated.png",
   "previewGroup": "build/animation_previews/hero/seated_v1"
 }

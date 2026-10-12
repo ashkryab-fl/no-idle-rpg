@@ -59,6 +59,8 @@ final class GraphPlaybackSnapshot {
     required this.clipElapsed,
     required this.loopCount,
     required this.lastTransition,
+    this.fadeFromFrameId,
+    this.fadeProgress = 1,
   });
   final GraphId graphId;
   final NodeId nodeId;
@@ -70,6 +72,8 @@ final class GraphPlaybackSnapshot {
   final int loopCount;
   final double nodeElapsed, clipElapsed;
   final GraphTransitionEvent? lastTransition;
+  final FrameId? fadeFromFrameId;
+  final double fadeProgress;
 }
 
 final class GraphAdvanceResult {
@@ -129,7 +133,11 @@ final class AnimationGraphRunner {
 
   GraphPlaybackSnapshot get snapshot {
     final player = _player?.snapshot;
-    final pose = _node is HoldPose ? (_node as HoldPose).poseId : null;
+    final pose = switch (_node) {
+      HoldPose(:final poseId) || FadePose(:final poseId) => poseId,
+      _ => null,
+    };
+    final fade = _node is FadePose ? _node as FadePose : null;
     final finishedPlay = _node is PlayClip && _nodeCompleted;
     final lastIndex = finishedPlay
         ? (_player!.clip.loopRange?.end ?? _player!.clip.frames.length) - 1
@@ -151,6 +159,14 @@ final class AnimationGraphRunner {
       clipElapsed: player?.elapsed ?? 0,
       loopCount: player?.loopCount ?? 0,
       lastTransition: _lastTransition,
+      fadeFromFrameId: fade == null
+          ? null
+          : fade.fromPoseId == null
+          ? _lastVisual?.frameId
+          : resources.pose(fade.fromPoseId!).frameId,
+      fadeProgress: fade == null
+          ? 1
+          : (_nodeElapsed / fade.duration).clamp(0, 1),
     );
   }
 
@@ -262,6 +278,11 @@ final class AnimationGraphRunner {
 
   void _enter(NodeId id) {
     _node = graph.node(id);
+    if (_node is FadePose &&
+        (_node as FadePose).fromPoseId == null &&
+        _lastVisual?.frameId == null) {
+      throw StateError('Fade needs a resolved source frame: $id');
+    }
     _nodeElapsed = 0;
     _pass = 1;
     final clip = switch (_node) {
@@ -279,20 +300,19 @@ final class AnimationGraphRunner {
           : _player!.clip.firstPassDuration +
                 _player!.clip.loopDuration * (repetitions - 1),
     HoldPose(:final duration) => duration ?? double.infinity,
+    FadePose(:final duration) => duration,
     _ => double.infinity,
   };
   double get _epsilon =>
       _player?.clip.tolerance ??
-      min(
-        1e-10,
-        (_node is HoldPose ? (_node as HoldPose).duration ?? 1 : 1) * 1e-8,
-      );
+      min(1e-10, (_duration.isFinite ? _duration : 1) * 1e-8);
   bool get _nodeCompleted =>
       _duration.isFinite && _nodeElapsed >= _duration - _epsilon;
   InterruptionPolicy get _interruption => switch (_node) {
     PlayClip(:final interruption) ||
     LoopClip(:final interruption) ||
     HoldPose(:final interruption) => interruption,
+    FadePose() => InterruptionPolicy.afterClip,
     _ => InterruptionPolicy.immediate,
   };
 

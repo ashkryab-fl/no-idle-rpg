@@ -19,6 +19,8 @@ part 'clips/stand_up.dart';
 part 'clips/read.dart';
 part 'clips/read_cleanup.dart';
 part 'clips/phone.dart';
+part 'clips/sleep.dart';
+part 'clips/sleep_standing.dart';
 
 /// Hero clip timelines and their shared sprite resources.
 abstract final class HeroClips {
@@ -27,6 +29,8 @@ abstract final class HeroClips {
   static const phoneEnter = ClipId('hero.phoneEnter');
   static const phoneScroll = ClipId('hero.phoneScroll');
   static const phoneWake = ClipId('hero.phoneWake');
+  static const sleep = ClipId('hero.sleep');
+  static const sleepStanding = ClipId('hero.sleepStanding');
 
   static AnimationResources resources() {
     final builder = _HeroClipBuilder();
@@ -41,6 +45,8 @@ abstract final class HeroClips {
     _addHeroRead(builder);
     _addHeroReadCleanup(builder);
     _addHeroPhone(builder);
+    _addHeroSleep(builder);
+    _addHeroSleepStanding(builder);
 
     return builder.build();
   }

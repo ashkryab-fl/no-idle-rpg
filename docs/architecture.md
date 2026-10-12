@@ -296,6 +296,9 @@ inactivity. The current encounter finishes before rest begins. `RestCoordinator`
 manages policy; the graph runner manages nodes and timing. Movement resumes after
 receiving `readyToTravel`. Animation markers determine when combat hits occur.
 The renderer consumes the current snapshot without calculating a separate combat timeline.
+Rest selection includes seated, phone, and sleeping subtrees. `FadePose` blends
+resolved poses with their own rigs; the sleeping graph fades between standing
+and bed and reverses four frames with four-second holds on both sides.
 
 **Balance and numbers.** `ProgressionBalance` contains shared combat and progression
 coefficients. `EquipmentCurveProfile`, `EconomyProfile`, and `TalentProfile` define

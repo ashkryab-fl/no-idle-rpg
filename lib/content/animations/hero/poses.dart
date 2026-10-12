@@ -8,7 +8,26 @@ abstract final class HeroPoses {
   static const walkLast = PoseId('hero.walkLast');
   static const phoneNeutral = PoseId('hero.phoneNeutral');
   static const phoneFamily = PoseFamilyId('hero.phoneRight');
+  static const standing = PoseId('hero.standing');
+  static const sleepFacing = PoseId('hero.sleepFacing');
+  static const sleepAway = PoseId('hero.sleepAway');
+  static const sleepFamily = PoseFamilyId('hero.sleeping');
   static const definitions = [
+    SpritePoseDefinition(
+      id: standing,
+      frameId: FrameId('hero.idle.frame.0'),
+      family: PoseFamilyId.standingRight,
+    ),
+    SpritePoseDefinition(
+      id: sleepFacing,
+      frameId: FrameId('hero.sleepFrames.frame.0'),
+      family: sleepFamily,
+    ),
+    SpritePoseDefinition(
+      id: sleepAway,
+      frameId: FrameId('hero.sleepFrames.frame.3'),
+      family: sleepFamily,
+    ),
     SpritePoseDefinition(
       id: walkFirst,
       frameId: FrameId('hero.walk.frame.0'),

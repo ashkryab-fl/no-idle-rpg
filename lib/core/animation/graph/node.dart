@@ -54,6 +54,21 @@ final class HoldPose extends AnimationGraphNode {
   final InterruptionPolicy interruption;
 }
 
+/// Crossfades the previous resolved frame (or an explicit pose) to a new pose.
+/// Both images stay still; the node owns the blend clock and blocks early exit.
+final class FadePose extends AnimationGraphNode {
+  FadePose({
+    required NodeId id,
+    required this.poseId,
+    required this.duration,
+    this.fromPoseId,
+    List<AnimationTransition> transitions = const [],
+  }) : super(id, transitions);
+  final PoseId poseId;
+  final PoseId? fromPoseId;
+  final double duration;
+}
+
 final class Select extends AnimationGraphNode {
   Select({
     required NodeId id,

@@ -27,10 +27,16 @@ final class PlaybackSnapshot {
     this.lastTransition,
     this.proceduralPose = ProceduralPose.standing,
     this.damageFlash = false,
+    this.fadeFromFrame,
+    this.fadeFromRig,
+    this.fadeProgress = 1,
   });
   final ClipId? clipId;
   final SpriteFrameDefinition? frame;
   final SpriteRigDefinition? rig;
+  final SpriteFrameDefinition? fadeFromFrame;
+  final SpriteRigDefinition? fadeFromRig;
+  final double fadeProgress;
   FrameId? get frameId => frame?.id;
   final int? frameIndex;
   final GraphId? graphId;
@@ -101,10 +107,16 @@ final class PlaybackSnapshot {
     final frame = state.frameId == null
         ? null
         : resources.frame(state.frameId!);
+    final from = state.fadeFromFrameId == null
+        ? null
+        : resources.frame(state.fadeFromFrameId!);
     return PlaybackSnapshot(
       clipId: state.clipId,
       frame: frame,
       rig: frame == null ? null : resources.rig(frame.rigId),
+      fadeFromFrame: from,
+      fadeFromRig: from == null ? null : resources.rig(from.rigId),
+      fadeProgress: state.fadeProgress,
       frameIndex: state.frameIndex,
       graphId: state.graphId,
       nodeId: state.nodeId,
@@ -138,5 +150,8 @@ final class PlaybackSnapshot {
     generation: generation,
     proceduralPose: proceduralPose,
     damageFlash: flash,
+    fadeFromFrame: fadeFromFrame,
+    fadeFromRig: fadeFromRig,
+    fadeProgress: fadeProgress,
   );
 }

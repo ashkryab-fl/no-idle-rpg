@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:idle_companion/content/animations/hero/debug_previews.dart';
 import 'package:idle_companion/content/animations/hero/phone_graph.dart';
 import 'package:idle_companion/content/animations/hero/rest_graphs.dart';
+import 'package:idle_companion/content/animations/hero/sleep_graph.dart';
 import 'package:idle_companion/core/animation/ids.dart';
 import 'package:idle_companion/game/systems/game_simulation.dart';
 import 'package:idle_companion/game/systems/game_state_machine.dart';
@@ -15,6 +16,7 @@ void main() {
         (HeroAnimationPreview.sharpenRest, HeroRestGraphs.sharpen),
         (HeroAnimationPreview.readRest, HeroRestGraphs.read),
         (HeroAnimationPreview.phoneRest, HeroPhoneRestGraph.scroll),
+        (HeroAnimationPreview.sleepRest, HeroSleepRestGraph.sleep),
       ]) {
         for (var repeat = 0; repeat < 3; repeat++) {
           game.heroAnimations.startPreview(preview);
@@ -43,26 +45,26 @@ void main() {
     }
   });
 
-  test(
-    'wake plays selected phone exit then holds walk seam until normal playback',
-    () {
-      final game = GameSimulation();
-      game.heroAnimations.startPreview(HeroAnimationPreview.phoneRest);
-      game.advance(2);
-      expect(game.heroAnimations.canWakePreview, isTrue);
-      game.heroAnimations.wakePreview();
-      expect(game.heroPlayback.nodeId, HeroPhoneRestGraph.wake);
-      expect(game.heroAnimations.canWakePreview, isFalse);
-      game.advance(1);
-      expect(game.heroPlayback.completed, isTrue);
-      expect(game.heroPlayback.frameId, const FrameId('hero.walk.frame.0'));
-      expect(game.distance, 0);
-      expect(game.heroAnimations.restReturnRevision, 0);
-      game.heroAnimations.stopPreview();
-      game.advance(.1);
-      expect(game.distance, greaterThan(0));
-    },
-  );
+  test('wake holds the selected phone exit frame until normal playback', () {
+    final game = GameSimulation();
+    game.heroAnimations.startPreview(HeroAnimationPreview.phoneRest);
+    game.advance(2);
+    expect(game.heroAnimations.canWakePreview, isTrue);
+    game.heroAnimations.wakePreview();
+    expect(game.heroPlayback.nodeId, HeroPhoneRestGraph.wake);
+    expect(game.heroAnimations.canWakePreview, isFalse);
+    game.advance(1);
+    expect(game.heroPlayback.completed, isTrue);
+    expect(
+      game.heroPlayback.frameId,
+      const FrameId('hero.phoneFrames.frame.10'),
+    );
+    expect(game.distance, 0);
+    expect(game.heroAnimations.restReturnRevision, 0);
+    game.heroAnimations.stopPreview();
+    game.advance(.1);
+    expect(game.distance, greaterThan(0));
+  });
 
   test(
     'preview pauses combat, rewards and encounter clocks without changing phase',

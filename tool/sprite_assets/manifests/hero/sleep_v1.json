@@ -1,0 +1,14 @@
+{
+  "source": "../../../../art/hero/sleep_v1/source-sheet.png",
+  "size": 512,
+  "scale": 0.7,
+  "frames": [
+    {"crop": [0, 0, 627, 627], "offset": [36, 55]},
+    {"crop": [627, 0, 627, 627], "offset": [36, 55]},
+    {"crop": [0, 627, 627, 627], "offset": [36, 57]},
+    {"crop": [627, 627, 627, 627], "offset": [36, 57]}
+  ],
+  "output": "assets/characters/hero/sleep.png",
+  "framesDirectory": "build/sprite_frames/hero/sleep_v1",
+  "previewGroup": "build/animation_previews/hero/sleep_v1"
+}

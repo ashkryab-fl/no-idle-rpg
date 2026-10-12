@@ -5,7 +5,7 @@ void _addHeroStandUp(_HeroClipBuilder builder) {
     spriteSheetResources(
       id: ClipId('hero.standUp'),
       asset: '${_heroAssetRoot}stand_up.png',
-      frames: 6,
+      frames: 5,
       frameWidth: 512,
       frameHeight: 512,
       stepTime: .25,

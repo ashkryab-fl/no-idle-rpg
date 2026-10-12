@@ -78,6 +78,6 @@ clips own timing and damage markers. The pipeline produces content, never a
 second player or a runtime string lookup adapter. `spriteSheetResources` requires
 an asset; test/debug placeholders are explicit frame declarations.
 
-The checkout currently lacks the original sharpening sheet and its packing recipe;
-full rest regeneration requires those sources. Installed seated/sharpening assets
-remain available. Walk, attack, death and stand-up recipes retain their source inputs.
+The seated recipe uses a preserved, calibrated pose source. The checkout still
+lacks the original sharpening sheet and its packing recipe; sharpening regeneration
+requires those sources. Walk, attack, death and stand-up recipes retain their source inputs.

@@ -52,7 +52,9 @@ final class HeroAnimationCoordinator {
   double _clock = 0;
   double combatPeriod = 1;
   late final bool _restUsesWalkSeam = rest.graph.nodes.values.any(
-    (node) => node is PlayClip && node.clipId == HeroClips.phoneEnter,
+    (node) =>
+        (node is PlayClip && node.clipId == HeroClips.phoneEnter) ||
+        node is FadePose,
   );
   bool get blocksAdventure => rest.blocksAdventure;
   bool get deathCompleted => _player.completed;

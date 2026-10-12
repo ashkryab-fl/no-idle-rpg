@@ -1,5 +1,5 @@
 {
-  "source": "../../../../art/hero/stand_up_v1/source-corrected.png",
+  "source": "../../../../art/hero/stand_up_v1/source-palette.png",
   "size": 512,
   "scale": 0.59,
   "frames": [
@@ -52,26 +52,9 @@
       ]
     },
     {
-      "crop": [
-        535,
-        506,
-        489,
-        518
-      ],
+      "source": "../../../../art/hero/stand_up_v1/exit-ready.png",
       "offset": [
         29,
-        157
-      ]
-    },
-    {
-      "crop": [
-        1024,
-        506,
-        512,
-        518
-      ],
-      "offset": [
-        15,
         157
       ]
     }
