@@ -12,7 +12,14 @@ abstract final class HeroPoses {
   static const sleepFacing = PoseId('hero.sleepFacing');
   static const sleepAway = PoseId('hero.sleepAway');
   static const sleepFamily = PoseFamilyId('hero.sleeping');
+  static const feedBirds = PoseId('hero.feedBirds');
+  static const feedBirdsFamily = PoseFamilyId('hero.benchFeeding');
   static const definitions = [
+    SpritePoseDefinition(
+      id: feedBirds,
+      frameId: FrameId('hero.feedBirdsFrames.frame.0'),
+      family: feedBirdsFamily,
+    ),
     SpritePoseDefinition(
       id: standing,
       frameId: FrameId('hero.idle.frame.0'),

@@ -77,6 +77,7 @@ flutter:
     - assets/characters/hero/read.png
     - assets/characters/hero/phone.png
     - assets/characters/hero/sleep.png
+    - assets/characters/hero/feed_birds.png
     - assets/characters/hero/stand_up.png
     - assets/enemies/gobli_low/attack.png
     - assets/environment/background_meadow_01.png

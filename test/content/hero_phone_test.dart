@@ -53,7 +53,7 @@ void main() {
   );
 
   test('root selects a complete subtree once and retains it during idle', () {
-    final rolls = _Roll(.5);
+    final rolls = _Roll(.375);
     final rest = RestCoordinator(rolls, resources);
     rest.setIdleSeconds(1000);
     rest.advance(entry.duration);
@@ -63,11 +63,11 @@ void main() {
     expect(rolls.calls, 1);
     final root = HeroRestGraphs.rest(resources: resources);
     final selection = root.node(root.entryNode) as Select;
-    expect(selection.choices.map((c) => c.weight), [1, 1, 1]);
+    expect(selection.choices.map((c) => c.weight), [1, 1, 1, 1]);
   });
 
   test('seated subtree remains available beside phone subtree', () {
-    final rest = RestCoordinator(_Roll(.25), resources);
+    final rest = RestCoordinator(_Roll(.125), resources);
     rest.setIdleSeconds(1000);
     rest.advance(1.7);
     expect(rest.graphRunner!.snapshot.nodeId, HeroRestGraphs.sharpen);
@@ -77,7 +77,7 @@ void main() {
     test(
       'return from scroll frame $index starts startled wake immediately',
       () {
-        final rest = RestCoordinator(_Roll(.5), resources);
+        final rest = RestCoordinator(_Roll(.375), resources);
         rest.setIdleSeconds(1000);
         final scroll = resources.clip(HeroClips.phoneScroll);
         rest.advance(entry.duration + scroll.frameStart(index) + .01);
@@ -95,7 +95,7 @@ void main() {
   }
 
   test('early return finishes drawing phone then wakes without scrolling', () {
-    final rest = RestCoordinator(_Roll(.5), resources);
+    final rest = RestCoordinator(_Roll(.375), resources);
     rest.setIdleSeconds(1000);
     rest.advance(.1);
     rest.setIdleSeconds(0);
@@ -106,7 +106,7 @@ void main() {
   });
 
   test('walk reaches last frame before entry and rest blocks adventure', () {
-    final rest = RestCoordinator(_Roll(.5), resources);
+    final rest = RestCoordinator(_Roll(.375), resources);
     final hero = HeroAnimationCoordinator(resources, rest: rest);
     hero.advance(.25);
     rest.setIdleSeconds(1000);
@@ -143,7 +143,7 @@ void main() {
   test(
     'return before the walk step finishes cancels entry without a rest event',
     () {
-      final rest = RestCoordinator(_Roll(.5), resources);
+      final rest = RestCoordinator(_Roll(.375), resources);
       final hero = HeroAnimationCoordinator(resources, rest: rest);
       rest.setIdleSeconds(1000);
       hero.advance(.1);

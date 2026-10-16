@@ -1,0 +1,18 @@
+{
+  "source": "../../../../art/hero/feed_birds_v1/source-sheet.png",
+  "size": 512,
+  "scale": 0.95,
+  "frames": [
+    {"crop": [0, 0, 444, 444], "offset": [45, 36]},
+    {"crop": [444, 0, 443, 444], "offset": [45, 36]},
+    {"crop": [887, 0, 443, 444], "offset": [45, 36]},
+    {"crop": [1330, 0, 444, 444], "offset": [45, 36]},
+    {"crop": [0, 444, 444, 443], "offset": [45, 36]},
+    {"crop": [444, 444, 443, 443], "offset": [45, 36]},
+    {"crop": [887, 444, 443, 443], "offset": [45, 36]},
+    {"crop": [1330, 444, 444, 443], "offset": [45, 36]}
+  ],
+  "output": "assets/characters/hero/feed_birds.png",
+  "framesDirectory": "build/sprite_frames/hero/feed_birds_v1",
+  "previewGroup": "build/animation_previews/hero/feed_birds_v1"
+}

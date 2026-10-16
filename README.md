@@ -72,6 +72,7 @@ flutter build windows --release
 | [Sprite pipeline](tool/sprite_assets/README.md) | Packing, verification, and source requirements |
 | [Hero reference](docs/hero_reference.md) | Character identity and artwork guidance |
 | [Sleeping rest](docs/hero_sleep.md) | Four-frame sleep loop and reusable crossfades |
+| [Bird-feeding rest](docs/hero_feed_birds.md) | Bench rest, pecking birds, seed toss, and crossfades |
 
 ## Contributing
 

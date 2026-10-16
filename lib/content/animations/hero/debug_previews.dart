@@ -5,6 +5,7 @@ import 'clips.dart';
 import 'phone_graph.dart';
 import 'rest_graphs.dart';
 import 'sleep_graph.dart';
+import 'feed_birds_graph.dart';
 import 'variants.dart';
 
 /// Explicit debug choices: a button always starts the same clip or subtree.
@@ -13,6 +14,8 @@ enum HeroAnimationPreview {
   readRest('Reading rest'),
   phoneRest('Phone rest'),
   sleepRest('Sleep rest'),
+  feedBirdsRest('Feed birds rest'),
+  feedBirds('Feed birds', HeroClips.feedBirds),
   sleep('Sleep / turn', HeroClips.sleep),
   walk('Walk', ClipId('hero.walk')),
   attack('Attack', ClipId('hero.attack')),
@@ -37,6 +40,9 @@ enum HeroAnimationPreview {
       switch (this) {
         phoneRest => HeroPhoneRestGraph.definition(resources: resources),
         sleepRest => HeroSleepRestGraph.definition(resources: resources),
+        feedBirdsRest => HeroFeedBirdsRestGraph.definition(
+          resources: resources,
+        ),
         sharpenRest || readRest => HeroRestGraphs.seatedRest(
           resources: resources,
           activities: [

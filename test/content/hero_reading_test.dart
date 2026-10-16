@@ -177,11 +177,16 @@ void main() {
 
       final whole = readingRest();
       final partitioned = readingRest();
-      const duration = .74 + .3 + 1.5;
+      final duration =
+          resources.clip(HeroClips.readCleanup).duration +
+          .3 +
+          resources.clip(const ClipId('hero.standUp')).duration;
       expect(whole.advance(duration + 1), closeTo(1, 1e-10));
-      for (var i = 0; i < 254; i++) {
+      final steps = (duration / .01).floor();
+      for (var i = 0; i < steps; i++) {
         partitioned.advance(.01);
       }
+      partitioned.advance(duration - steps * .01);
       expect(partitioned.advance(1), closeTo(1, 1e-10));
       expect(
         whole.graphRunner!.snapshot.nodeId,

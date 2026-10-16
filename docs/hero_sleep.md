@@ -1,6 +1,6 @@
 # Sleeping rest
 
-`HeroRestGraphs.rest()` chooses seated, phone, or sleeping rest once per idle
+`HeroRestGraphs.rest()` chooses seated, phone, sleeping, or bird-feeding rest once per idle
 session with equal weights. `HeroSleepRestGraph.definition()` can also be passed
 as an explicit `GameSimulation.restGraph`. Debug animation controls include
 `Sleep rest` for the complete graph and `Sleep / turn` for the loop alone.
