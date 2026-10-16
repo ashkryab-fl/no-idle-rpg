@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../l10n/hero_return_lines.dart';
+import '../../../../l10n/hero_break_lines.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import '../cubit/hero_return_speech_cubit.dart';
@@ -25,6 +26,11 @@ class _HeroReturnSpeechView extends StatelessWidget {
       BlocBuilder<HeroReturnSpeechCubit, HeroReturnSpeechState>(
         builder: (context, state) {
           if (state.lineIndex == null) return const SizedBox.shrink();
+          final l10n = AppLocalizations.of(context)!;
+          final lines = switch (state.kind) {
+            HeroSpeechKind.restReturn => l10n.heroReturnLines,
+            HeroSpeechKind.breakReminder => l10n.heroBreakLines,
+          };
           return IgnorePointer(
             child: Align(
               alignment: Alignment.centerLeft,
@@ -34,9 +40,7 @@ class _HeroReturnSpeechView extends StatelessWidget {
                   key: const ValueKey('heroReturnSpeech'),
                   padding: const EdgeInsets.fromLTRB(28, 8, 10, 20),
                   child: Text(
-                    AppLocalizations.of(
-                      context,
-                    )!.heroReturnLines[state.lineIndex!],
+                    lines[state.lineIndex!],
                     style: const TextStyle(
                       color: Color(0xffeeeadd),
                       fontSize: 11,

@@ -333,6 +333,306 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Same screen. Different suffering.'**
   String get heroReturnLine40;
+
+  /// A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure.
+  ///
+  /// In en, this message translates to:
+  /// **'My boots just filed a request for a sit-down.'**
+  String get heroBreakLine01;
+
+  /// A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure.
+  ///
+  /// In en, this message translates to:
+  /// **'Side quest: drink water. Yes, actual water.'**
+  String get heroBreakLine02;
+
+  /// A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure.
+  ///
+  /// In en, this message translates to:
+  /// **'We\'ve earned a break. I checked with my knees.'**
+  String get heroBreakLine03;
+
+  /// A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure.
+  ///
+  /// In en, this message translates to:
+  /// **'Even goblins have lunch breaks. Allegedly.'**
+  String get heroBreakLine04;
+
+  /// A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure.
+  ///
+  /// In en, this message translates to:
+  /// **'Your chair called. It wants some time apart.'**
+  String get heroBreakLine05;
+
+  /// A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure.
+  ///
+  /// In en, this message translates to:
+  /// **'Let\'s stretch before we become ancient artifacts.'**
+  String get heroBreakLine06;
+
+  /// A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure.
+  ///
+  /// In en, this message translates to:
+  /// **'I\'m a heroine, not an overtime subscription.'**
+  String get heroBreakLine07;
+
+  /// A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure.
+  ///
+  /// In en, this message translates to:
+  /// **'Save the kingdom after a sip of water?'**
+  String get heroBreakLine08;
+
+  /// A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure.
+  ///
+  /// In en, this message translates to:
+  /// **'My sword has better work-life balance. It gets sheathed.'**
+  String get heroBreakLine09;
+
+  /// A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure.
+  ///
+  /// In en, this message translates to:
+  /// **'Your shoulders are trying to become earrings. Relax them.'**
+  String get heroBreakLine10;
+
+  /// A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure.
+  ///
+  /// In en, this message translates to:
+  /// **'Permission to bravely sit on that rock?'**
+  String get heroBreakLine11;
+
+  /// A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure.
+  ///
+  /// In en, this message translates to:
+  /// **'Overwork isn\'t a talent. I checked the skill tree.'**
+  String get heroBreakLine12;
+
+  /// A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure.
+  ///
+  /// In en, this message translates to:
+  /// **'Look away from the screen. I\'ll admire this dirt.'**
+  String get heroBreakLine13;
+
+  /// A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure.
+  ///
+  /// In en, this message translates to:
+  /// **'Hydration check! Coffee is not a personality trait.'**
+  String get heroBreakLine14;
+
+  /// A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure.
+  ///
+  /// In en, this message translates to:
+  /// **'My feet have started negotiating independently.'**
+  String get heroBreakLine15;
+
+  /// A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure.
+  ///
+  /// In en, this message translates to:
+  /// **'Let\'s take five before five takes us.'**
+  String get heroBreakLine16;
+
+  /// A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure.
+  ///
+  /// In en, this message translates to:
+  /// **'You stretch your legs. I\'ll stop questioning mine.'**
+  String get heroBreakLine17;
+
+  /// A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure.
+  ///
+  /// In en, this message translates to:
+  /// **'The loot can wait. Your neck has a quest for you.'**
+  String get heroBreakLine18;
+
+  /// A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure.
+  ///
+  /// In en, this message translates to:
+  /// **'I could use a rest. You could use a refill.'**
+  String get heroBreakLine19;
+
+  /// A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure.
+  ///
+  /// In en, this message translates to:
+  /// **'Blink twice if you need a break. Then take one.'**
+  String get heroBreakLine20;
+
+  /// A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure.
+  ///
+  /// In en, this message translates to:
+  /// **'Even legendary weapons need downtime. So do wrists.'**
+  String get heroBreakLine21;
+
+  /// A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure.
+  ///
+  /// In en, this message translates to:
+  /// **'A short walk for you. A short sit for me. Deal?'**
+  String get heroBreakLine22;
+
+  /// A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure.
+  ///
+  /// In en, this message translates to:
+  /// **'That water bottle isn\'t decorative loot.'**
+  String get heroBreakLine23;
+
+  /// A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure.
+  ///
+  /// In en, this message translates to:
+  /// **'My stamina bar would like to speak to management.'**
+  String get heroBreakLine24;
+
+  /// A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure.
+  ///
+  /// In en, this message translates to:
+  /// **'The final boss is apparently our schedule.'**
+  String get heroBreakLine25;
+
+  /// A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure.
+  ///
+  /// In en, this message translates to:
+  /// **'Unclench your jaw. We\'re not chewing the quest.'**
+  String get heroBreakLine26;
+
+  /// A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure.
+  ///
+  /// In en, this message translates to:
+  /// **'I vote for a snack break. My stomach seconds it.'**
+  String get heroBreakLine27;
+
+  /// A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure.
+  ///
+  /// In en, this message translates to:
+  /// **'Rest is a buff. Why are we refusing free buffs?'**
+  String get heroBreakLine28;
+
+  /// A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure.
+  ///
+  /// In en, this message translates to:
+  /// **'Some fresh air? This road is mostly recycled pixels.'**
+  String get heroBreakLine29;
+
+  /// A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure.
+  ///
+  /// In en, this message translates to:
+  /// **'My cape is carrying this team\'s work-life balance.'**
+  String get heroBreakLine30;
+
+  /// A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure.
+  ///
+  /// In en, this message translates to:
+  /// **'Roll your shoulders. I\'ll roll my eyes at overtime.'**
+  String get heroBreakLine31;
+
+  /// A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure.
+  ///
+  /// In en, this message translates to:
+  /// **'We can be productive after being horizontal. Briefly.'**
+  String get heroBreakLine32;
+
+  /// A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure.
+  ///
+  /// In en, this message translates to:
+  /// **'Drink some water before you unlock raisin mode.'**
+  String get heroBreakLine33;
+
+  /// A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure.
+  ///
+  /// In en, this message translates to:
+  /// **'This quest has no deadline. Your bladder might.'**
+  String get heroBreakLine34;
+
+  /// A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure.
+  ///
+  /// In en, this message translates to:
+  /// **'I\'d rescue a princess, but first I\'d rescue our lunch.'**
+  String get heroBreakLine35;
+
+  /// A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure.
+  ///
+  /// In en, this message translates to:
+  /// **'Stand up slowly. Give your chair a dramatic farewell.'**
+  String get heroBreakLine36;
+
+  /// A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure.
+  ///
+  /// In en, this message translates to:
+  /// **'Burnout is a terrible campfire. Let\'s not build one.'**
+  String get heroBreakLine37;
+
+  /// A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure.
+  ///
+  /// In en, this message translates to:
+  /// **'My break request has become a main quest.'**
+  String get heroBreakLine38;
+
+  /// A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure.
+  ///
+  /// In en, this message translates to:
+  /// **'Go look at something far away. Not another tab.'**
+  String get heroBreakLine39;
+
+  /// A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure.
+  ///
+  /// In en, this message translates to:
+  /// **'We\'ve walked enough to qualify for a bench.'**
+  String get heroBreakLine40;
+
+  /// A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure.
+  ///
+  /// In en, this message translates to:
+  /// **'Refill your glass. I\'ll refill my will to adventure.'**
+  String get heroBreakLine41;
+
+  /// A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure.
+  ///
+  /// In en, this message translates to:
+  /// **'Stretch your fingers. They aren\'t permanent claws.'**
+  String get heroBreakLine42;
+
+  /// A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure.
+  ///
+  /// In en, this message translates to:
+  /// **'No achievement is worth becoming desk furniture.'**
+  String get heroBreakLine43;
+
+  /// A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure.
+  ///
+  /// In en, this message translates to:
+  /// **'A tiny break now beats a dramatic collapse later.'**
+  String get heroBreakLine44;
+
+  /// A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure.
+  ///
+  /// In en, this message translates to:
+  /// **'I\'d like my next encounter to be with a cushion.'**
+  String get heroBreakLine45;
+
+  /// A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure.
+  ///
+  /// In en, this message translates to:
+  /// **'Check your posture. Mine comes with an animator.'**
+  String get heroBreakLine46;
+
+  /// A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure.
+  ///
+  /// In en, this message translates to:
+  /// **'Time to pause the grind and uncrunch the spine.'**
+  String get heroBreakLine47;
+
+  /// A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure.
+  ///
+  /// In en, this message translates to:
+  /// **'The goblins won\'t miss us. That\'s a feature.'**
+  String get heroBreakLine48;
+
+  /// A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure.
+  ///
+  /// In en, this message translates to:
+  /// **'Your next upgrade: water, a stretch, and a breather.'**
+  String get heroBreakLine49;
+
+  /// A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure.
+  ///
+  /// In en, this message translates to:
+  /// **'Let\'s rest. We can be suspiciously heroic afterward.'**
+  String get heroBreakLine50;
 }
 
 class _AppLocalizationsDelegate

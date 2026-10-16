@@ -127,4 +127,191 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get heroReturnLine40 => 'Same screen. Different suffering.';
+
+  @override
+  String get heroBreakLine01 => 'My boots just filed a request for a sit-down.';
+
+  @override
+  String get heroBreakLine02 => 'Side quest: drink water. Yes, actual water.';
+
+  @override
+  String get heroBreakLine03 =>
+      'We\'ve earned a break. I checked with my knees.';
+
+  @override
+  String get heroBreakLine04 => 'Even goblins have lunch breaks. Allegedly.';
+
+  @override
+  String get heroBreakLine05 => 'Your chair called. It wants some time apart.';
+
+  @override
+  String get heroBreakLine06 =>
+      'Let\'s stretch before we become ancient artifacts.';
+
+  @override
+  String get heroBreakLine07 => 'I\'m a heroine, not an overtime subscription.';
+
+  @override
+  String get heroBreakLine08 => 'Save the kingdom after a sip of water?';
+
+  @override
+  String get heroBreakLine09 =>
+      'My sword has better work-life balance. It gets sheathed.';
+
+  @override
+  String get heroBreakLine10 =>
+      'Your shoulders are trying to become earrings. Relax them.';
+
+  @override
+  String get heroBreakLine11 => 'Permission to bravely sit on that rock?';
+
+  @override
+  String get heroBreakLine12 =>
+      'Overwork isn\'t a talent. I checked the skill tree.';
+
+  @override
+  String get heroBreakLine13 =>
+      'Look away from the screen. I\'ll admire this dirt.';
+
+  @override
+  String get heroBreakLine14 =>
+      'Hydration check! Coffee is not a personality trait.';
+
+  @override
+  String get heroBreakLine15 =>
+      'My feet have started negotiating independently.';
+
+  @override
+  String get heroBreakLine16 => 'Let\'s take five before five takes us.';
+
+  @override
+  String get heroBreakLine17 =>
+      'You stretch your legs. I\'ll stop questioning mine.';
+
+  @override
+  String get heroBreakLine18 =>
+      'The loot can wait. Your neck has a quest for you.';
+
+  @override
+  String get heroBreakLine19 => 'I could use a rest. You could use a refill.';
+
+  @override
+  String get heroBreakLine20 =>
+      'Blink twice if you need a break. Then take one.';
+
+  @override
+  String get heroBreakLine21 =>
+      'Even legendary weapons need downtime. So do wrists.';
+
+  @override
+  String get heroBreakLine22 =>
+      'A short walk for you. A short sit for me. Deal?';
+
+  @override
+  String get heroBreakLine23 => 'That water bottle isn\'t decorative loot.';
+
+  @override
+  String get heroBreakLine24 =>
+      'My stamina bar would like to speak to management.';
+
+  @override
+  String get heroBreakLine25 => 'The final boss is apparently our schedule.';
+
+  @override
+  String get heroBreakLine26 =>
+      'Unclench your jaw. We\'re not chewing the quest.';
+
+  @override
+  String get heroBreakLine27 =>
+      'I vote for a snack break. My stomach seconds it.';
+
+  @override
+  String get heroBreakLine28 =>
+      'Rest is a buff. Why are we refusing free buffs?';
+
+  @override
+  String get heroBreakLine29 =>
+      'Some fresh air? This road is mostly recycled pixels.';
+
+  @override
+  String get heroBreakLine30 =>
+      'My cape is carrying this team\'s work-life balance.';
+
+  @override
+  String get heroBreakLine31 =>
+      'Roll your shoulders. I\'ll roll my eyes at overtime.';
+
+  @override
+  String get heroBreakLine32 =>
+      'We can be productive after being horizontal. Briefly.';
+
+  @override
+  String get heroBreakLine33 =>
+      'Drink some water before you unlock raisin mode.';
+
+  @override
+  String get heroBreakLine34 =>
+      'This quest has no deadline. Your bladder might.';
+
+  @override
+  String get heroBreakLine35 =>
+      'I\'d rescue a princess, but first I\'d rescue our lunch.';
+
+  @override
+  String get heroBreakLine36 =>
+      'Stand up slowly. Give your chair a dramatic farewell.';
+
+  @override
+  String get heroBreakLine37 =>
+      'Burnout is a terrible campfire. Let\'s not build one.';
+
+  @override
+  String get heroBreakLine38 => 'My break request has become a main quest.';
+
+  @override
+  String get heroBreakLine39 =>
+      'Go look at something far away. Not another tab.';
+
+  @override
+  String get heroBreakLine40 => 'We\'ve walked enough to qualify for a bench.';
+
+  @override
+  String get heroBreakLine41 =>
+      'Refill your glass. I\'ll refill my will to adventure.';
+
+  @override
+  String get heroBreakLine42 =>
+      'Stretch your fingers. They aren\'t permanent claws.';
+
+  @override
+  String get heroBreakLine43 =>
+      'No achievement is worth becoming desk furniture.';
+
+  @override
+  String get heroBreakLine44 =>
+      'A tiny break now beats a dramatic collapse later.';
+
+  @override
+  String get heroBreakLine45 =>
+      'I\'d like my next encounter to be with a cushion.';
+
+  @override
+  String get heroBreakLine46 =>
+      'Check your posture. Mine comes with an animator.';
+
+  @override
+  String get heroBreakLine47 =>
+      'Time to pause the grind and uncrunch the spine.';
+
+  @override
+  String get heroBreakLine48 =>
+      'The goblins won\'t miss us. That\'s a feature.';
+
+  @override
+  String get heroBreakLine49 =>
+      'Your next upgrade: water, a stretch, and a breather.';
+
+  @override
+  String get heroBreakLine50 =>
+      'Let\'s rest. We can be suspiciously heroic afterward.';
 }

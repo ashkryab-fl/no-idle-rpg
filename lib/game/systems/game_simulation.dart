@@ -10,6 +10,7 @@ import '../../core/balance/progression_balance.dart';
 import '../../core/balance/economy_profile.dart';
 import '../../core/numbers/amount.dart';
 import '../../domain/activity/activity_statistics.dart';
+import '../../domain/activity/adventure_break_reminder.dart';
 import '../../domain/activity/rest_coordinator.dart';
 import '../../domain/character/character.dart';
 import '../../domain/economy/reward.dart';
@@ -93,6 +94,7 @@ class GameSimulation {
   final AnimationResources resources;
   final CharacterProgress character;
   final ActivityStatisticsService activity;
+  final breakReminder = AdventureBreakReminder();
   final GameSettings settings;
   final DeathPolicy deathPolicy;
   final machine = GameStateMachine();
@@ -152,9 +154,8 @@ class GameSimulation {
       : 0;
   void advance(double seconds) {
     // Discard suspend gaps: rewards only come from running simulation ticks.
-    if (!seconds.isFinite ||
-        seconds > GameBalance.maxCatchupSeconds ||
-        seconds < 0) {
+    if (!seconds.isFinite || seconds < 0) return;
+    if (seconds > GameBalance.maxCatchupSeconds) {
       return;
     }
     _accumulator += seconds * speed;
@@ -172,7 +173,14 @@ class GameSimulation {
       return;
     }
     _synchronizeAnimations();
+    final wasResting = isResting;
     final travelTime = heroAnimations.advance(dt);
+    if (wasResting || isResting) {
+      breakReminder.reset();
+    } else {
+      // Debug speed changes gameplay time, never the player's break schedule.
+      breakReminder.advance(dt / speed);
+    }
     enemyAnimations.advance(dt);
     heroHitRemaining = max(0, heroHitRemaining - dt);
     enemyHitRemaining = max(0, enemyHitRemaining - dt);

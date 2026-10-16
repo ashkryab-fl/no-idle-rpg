@@ -159,5 +159,205 @@
   "heroReturnLine40": "Same screen. Different suffering.",
   "@heroReturnLine40": {
     "description": "Fourth wall: a short quip spoken by the heroine when she finishes resting and returns to work."
+  },
+  "heroBreakLine01": "My boots just filed a request for a sit-down.",
+  "@heroBreakLine01": {
+    "description": "A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure."
+  },
+  "heroBreakLine02": "Side quest: drink water. Yes, actual water.",
+  "@heroBreakLine02": {
+    "description": "A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure."
+  },
+  "heroBreakLine03": "We've earned a break. I checked with my knees.",
+  "@heroBreakLine03": {
+    "description": "A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure."
+  },
+  "heroBreakLine04": "Even goblins have lunch breaks. Allegedly.",
+  "@heroBreakLine04": {
+    "description": "A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure."
+  },
+  "heroBreakLine05": "Your chair called. It wants some time apart.",
+  "@heroBreakLine05": {
+    "description": "A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure."
+  },
+  "heroBreakLine06": "Let's stretch before we become ancient artifacts.",
+  "@heroBreakLine06": {
+    "description": "A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure."
+  },
+  "heroBreakLine07": "I'm a heroine, not an overtime subscription.",
+  "@heroBreakLine07": {
+    "description": "A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure."
+  },
+  "heroBreakLine08": "Save the kingdom after a sip of water?",
+  "@heroBreakLine08": {
+    "description": "A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure."
+  },
+  "heroBreakLine09": "My sword has better work-life balance. It gets sheathed.",
+  "@heroBreakLine09": {
+    "description": "A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure."
+  },
+  "heroBreakLine10": "Your shoulders are trying to become earrings. Relax them.",
+  "@heroBreakLine10": {
+    "description": "A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure."
+  },
+  "heroBreakLine11": "Permission to bravely sit on that rock?",
+  "@heroBreakLine11": {
+    "description": "A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure."
+  },
+  "heroBreakLine12": "Overwork isn't a talent. I checked the skill tree.",
+  "@heroBreakLine12": {
+    "description": "A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure."
+  },
+  "heroBreakLine13": "Look away from the screen. I'll admire this dirt.",
+  "@heroBreakLine13": {
+    "description": "A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure."
+  },
+  "heroBreakLine14": "Hydration check! Coffee is not a personality trait.",
+  "@heroBreakLine14": {
+    "description": "A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure."
+  },
+  "heroBreakLine15": "My feet have started negotiating independently.",
+  "@heroBreakLine15": {
+    "description": "A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure."
+  },
+  "heroBreakLine16": "Let's take five before five takes us.",
+  "@heroBreakLine16": {
+    "description": "A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure."
+  },
+  "heroBreakLine17": "You stretch your legs. I'll stop questioning mine.",
+  "@heroBreakLine17": {
+    "description": "A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure."
+  },
+  "heroBreakLine18": "The loot can wait. Your neck has a quest for you.",
+  "@heroBreakLine18": {
+    "description": "A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure."
+  },
+  "heroBreakLine19": "I could use a rest. You could use a refill.",
+  "@heroBreakLine19": {
+    "description": "A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure."
+  },
+  "heroBreakLine20": "Blink twice if you need a break. Then take one.",
+  "@heroBreakLine20": {
+    "description": "A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure."
+  },
+  "heroBreakLine21": "Even legendary weapons need downtime. So do wrists.",
+  "@heroBreakLine21": {
+    "description": "A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure."
+  },
+  "heroBreakLine22": "A short walk for you. A short sit for me. Deal?",
+  "@heroBreakLine22": {
+    "description": "A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure."
+  },
+  "heroBreakLine23": "That water bottle isn't decorative loot.",
+  "@heroBreakLine23": {
+    "description": "A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure."
+  },
+  "heroBreakLine24": "My stamina bar would like to speak to management.",
+  "@heroBreakLine24": {
+    "description": "A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure."
+  },
+  "heroBreakLine25": "The final boss is apparently our schedule.",
+  "@heroBreakLine25": {
+    "description": "A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure."
+  },
+  "heroBreakLine26": "Unclench your jaw. We're not chewing the quest.",
+  "@heroBreakLine26": {
+    "description": "A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure."
+  },
+  "heroBreakLine27": "I vote for a snack break. My stomach seconds it.",
+  "@heroBreakLine27": {
+    "description": "A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure."
+  },
+  "heroBreakLine28": "Rest is a buff. Why are we refusing free buffs?",
+  "@heroBreakLine28": {
+    "description": "A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure."
+  },
+  "heroBreakLine29": "Some fresh air? This road is mostly recycled pixels.",
+  "@heroBreakLine29": {
+    "description": "A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure."
+  },
+  "heroBreakLine30": "My cape is carrying this team's work-life balance.",
+  "@heroBreakLine30": {
+    "description": "A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure."
+  },
+  "heroBreakLine31": "Roll your shoulders. I'll roll my eyes at overtime.",
+  "@heroBreakLine31": {
+    "description": "A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure."
+  },
+  "heroBreakLine32": "We can be productive after being horizontal. Briefly.",
+  "@heroBreakLine32": {
+    "description": "A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure."
+  },
+  "heroBreakLine33": "Drink some water before you unlock raisin mode.",
+  "@heroBreakLine33": {
+    "description": "A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure."
+  },
+  "heroBreakLine34": "This quest has no deadline. Your bladder might.",
+  "@heroBreakLine34": {
+    "description": "A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure."
+  },
+  "heroBreakLine35": "I'd rescue a princess, but first I'd rescue our lunch.",
+  "@heroBreakLine35": {
+    "description": "A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure."
+  },
+  "heroBreakLine36": "Stand up slowly. Give your chair a dramatic farewell.",
+  "@heroBreakLine36": {
+    "description": "A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure."
+  },
+  "heroBreakLine37": "Burnout is a terrible campfire. Let's not build one.",
+  "@heroBreakLine37": {
+    "description": "A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure."
+  },
+  "heroBreakLine38": "My break request has become a main quest.",
+  "@heroBreakLine38": {
+    "description": "A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure."
+  },
+  "heroBreakLine39": "Go look at something far away. Not another tab.",
+  "@heroBreakLine39": {
+    "description": "A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure."
+  },
+  "heroBreakLine40": "We've walked enough to qualify for a bench.",
+  "@heroBreakLine40": {
+    "description": "A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure."
+  },
+  "heroBreakLine41": "Refill your glass. I'll refill my will to adventure.",
+  "@heroBreakLine41": {
+    "description": "A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure."
+  },
+  "heroBreakLine42": "Stretch your fingers. They aren't permanent claws.",
+  "@heroBreakLine42": {
+    "description": "A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure."
+  },
+  "heroBreakLine43": "No achievement is worth becoming desk furniture.",
+  "@heroBreakLine43": {
+    "description": "A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure."
+  },
+  "heroBreakLine44": "A tiny break now beats a dramatic collapse later.",
+  "@heroBreakLine44": {
+    "description": "A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure."
+  },
+  "heroBreakLine45": "I'd like my next encounter to be with a cushion.",
+  "@heroBreakLine45": {
+    "description": "A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure."
+  },
+  "heroBreakLine46": "Check your posture. Mine comes with an animator.",
+  "@heroBreakLine46": {
+    "description": "A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure."
+  },
+  "heroBreakLine47": "Time to pause the grind and uncrunch the spine.",
+  "@heroBreakLine47": {
+    "description": "A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure."
+  },
+  "heroBreakLine48": "The goblins won't miss us. That's a feature.",
+  "@heroBreakLine48": {
+    "description": "A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure."
+  },
+  "heroBreakLine49": "Your next upgrade: water, a stretch, and a breather.",
+  "@heroBreakLine49": {
+    "description": "A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure."
+  },
+  "heroBreakLine50": "Let's rest. We can be suspiciously heroic afterward.",
+  "@heroBreakLine50": {
+    "description": "A playful break, hydration, or stretching reminder after forty minutes of uninterrupted adventure."
   }
 }
