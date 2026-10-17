@@ -11,6 +11,7 @@ import 'variants.dart';
 import 'phone_graph.dart';
 import 'sleep_graph.dart';
 import 'feed_birds_graph.dart';
+import 'coffee_graph.dart';
 import 'poses.dart';
 
 abstract final class HeroRestGraphs {
@@ -35,6 +36,7 @@ abstract final class HeroRestGraphs {
     final phone = HeroPhoneRestGraph.definition(resources: content);
     final sleep = HeroSleepRestGraph.definition(resources: content);
     final feedBirds = HeroFeedBirdsRestGraph.definition(resources: content);
+    final coffee = HeroCoffeeRestGraph.definition(resources: content);
     const choose = NodeId('rest.select');
     const wait = NodeId('rest.wait');
     final graph = AnimationGraphDefinition(
@@ -65,6 +67,11 @@ abstract final class HeroRestGraphs {
               target: HeroFeedBirdsRestGraph.standing,
               completionNode: HeroFeedBirdsRestGraph.done,
             ),
+            GraphChoice(
+              id: const VariantId('hero.rest.coffee'),
+              target: HeroCoffeeRestGraph.enter,
+              completionNode: HeroCoffeeRestGraph.done,
+            ),
           ],
         ),
         HoldPose(
@@ -78,6 +85,7 @@ abstract final class HeroRestGraphs {
         ...phone.nodes.values,
         ...sleep.nodes.values,
         ...feedBirds.nodes.values,
+        ...coffee.nodes.values,
       ],
     );
     AnimationGraphValidator(content).validate(graph);
@@ -108,7 +116,7 @@ abstract final class HeroRestGraphs {
   ///
   /// Графи відпочинку без сідання слід складати окремо з власними входом,
   /// активностями та виходом і передавати через GameSimulation.restGraph.
-  /// За замовчуванням rest() вибирає сидіння, телефон, сон або годування птахів.
+  /// За замовчуванням rest() вибирає сидіння, телефон, сон, годування птахів або каву.
   /// Валідатор нижче перевіряє ресурси та
   /// сумісність поз на переходах зібраного графа.
   static AnimationGraphDefinition seatedRest({

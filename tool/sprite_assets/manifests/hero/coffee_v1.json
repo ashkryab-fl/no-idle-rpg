@@ -1,0 +1,16 @@
+{
+  "source": "../../../../art/hero/coffee_v1/source-sheet.png",
+  "size": 512,
+  "scale": 0.7625,
+  "frames": [
+    {"crop": [0, 0, 512, 512], "offset": [75, 53]},
+    {"crop": [512, 0, 512, 512], "offset": [75, 54]},
+    {"crop": [1024, 0, 512, 512], "offset": [75, 53]},
+    {"crop": [0, 512, 512, 512], "offset": [75, 53]},
+    {"crop": [512, 512, 512, 512], "offset": [75, 53]},
+    {"crop": [1024, 512, 512, 512], "offset": [75, 53]}
+  ],
+  "output": "assets/characters/hero/coffee.png",
+  "framesDirectory": "build/sprite_frames/hero/coffee_v1",
+  "previewGroup": "build/animation_previews/hero/coffee_v1"
+}

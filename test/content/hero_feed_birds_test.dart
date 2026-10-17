@@ -119,7 +119,7 @@ void main() {
   test(
     'random rest selection blocks travel until bench and standing fade out',
     () {
-      final rest = RestCoordinator(ConstantRandom(.95), resources);
+      final rest = RestCoordinator(ConstantRandom(.70), resources);
       final hero = HeroAnimationCoordinator(resources, rest: rest);
       rest.setIdleSeconds(1000);
       hero.advance(1);

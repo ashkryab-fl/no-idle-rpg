@@ -134,7 +134,7 @@ void main() {
   );
 
   test('sleep selected once blocks travel through standing and both fades', () {
-    final rest = RestCoordinator(ConstantRandom(.70), resources);
+    final rest = RestCoordinator(ConstantRandom(.50), resources);
     final hero = HeroAnimationCoordinator(resources, rest: rest);
     rest.setIdleSeconds(1000);
     hero.advance(1);

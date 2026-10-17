@@ -96,6 +96,7 @@ void main() {
   preview('stand_up_v1', 'stand-up', stand);
   preview('read_v1', 'read', clip('read', loopOnly: true), contact: true);
   preview('feed_birds_v1', 'feed-birds', clip('feedBirds'), contact: true);
+  preview('coffee_v1', 'coffee', clip('coffee'), contact: true);
   preview('read_v1', 'rest-reading', [
     ...sit,
     ...clip('read'),

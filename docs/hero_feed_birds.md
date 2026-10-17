@@ -30,7 +30,7 @@ finishes with `readyToTravel`. Adventure remains blocked throughout entry/exit.
 Return during the initial standing hold skips the bench; return during entry
 fade finishes that fade before exiting.
 
-`HeroRestGraphs.rest()` selects seated, phone, sleeping or feeding rest with
+`HeroRestGraphs.rest()` selects seated, phone, sleeping, feeding or coffee rest with
 equal weights once per idle session. Debug controls include `Feed birds rest`
 for the complete graph and `Feed birds` for the loop alone.
 

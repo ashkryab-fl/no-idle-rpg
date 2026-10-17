@@ -4,6 +4,7 @@ import 'package:idle_companion/content/animations/hero/phone_graph.dart';
 import 'package:idle_companion/content/animations/hero/rest_graphs.dart';
 import 'package:idle_companion/content/animations/hero/sleep_graph.dart';
 import 'package:idle_companion/content/animations/hero/feed_birds_graph.dart';
+import 'package:idle_companion/content/animations/hero/coffee_graph.dart';
 import 'package:idle_companion/core/animation/ids.dart';
 import 'package:idle_companion/game/systems/game_simulation.dart';
 import 'package:idle_companion/game/systems/game_state_machine.dart';
@@ -19,6 +20,7 @@ void main() {
         (HeroAnimationPreview.phoneRest, HeroPhoneRestGraph.scroll),
         (HeroAnimationPreview.sleepRest, HeroSleepRestGraph.sleep),
         (HeroAnimationPreview.feedBirdsRest, HeroFeedBirdsRestGraph.feed),
+        (HeroAnimationPreview.coffeeRest, HeroCoffeeRestGraph.drink),
       ]) {
         for (var repeat = 0; repeat < 3; repeat++) {
           game.heroAnimations.startPreview(preview);

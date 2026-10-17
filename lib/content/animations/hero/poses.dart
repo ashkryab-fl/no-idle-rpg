@@ -14,7 +14,20 @@ abstract final class HeroPoses {
   static const sleepFamily = PoseFamilyId('hero.sleeping');
   static const feedBirds = PoseId('hero.feedBirds');
   static const feedBirdsFamily = PoseFamilyId('hero.benchFeeding');
+  static const coffeeNeutral = PoseId('hero.coffeeNeutral');
+  static const coffeeFamily = PoseFamilyId('hero.coffeeRight');
+  static const phonePocket = PoseId('hero.phonePocket');
   static const definitions = [
+    SpritePoseDefinition(
+      id: coffeeNeutral,
+      frameId: FrameId('hero.coffeeFrames.frame.0'),
+      family: coffeeFamily,
+    ),
+    SpritePoseDefinition(
+      id: phonePocket,
+      frameId: FrameId('hero.phoneFrames.frame.1'),
+      family: phoneFamily,
+    ),
     SpritePoseDefinition(
       id: feedBirds,
       frameId: FrameId('hero.feedBirdsFrames.frame.0'),

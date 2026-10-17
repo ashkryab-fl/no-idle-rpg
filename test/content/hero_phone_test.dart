@@ -63,7 +63,7 @@ void main() {
     expect(rolls.calls, 1);
     final root = HeroRestGraphs.rest(resources: resources);
     final selection = root.node(root.entryNode) as Select;
-    expect(selection.choices.map((c) => c.weight), [1, 1, 1, 1]);
+    expect(selection.choices.map((c) => c.weight), [1, 1, 1, 1, 1]);
   });
 
   test('seated subtree remains available beside phone subtree', () {
