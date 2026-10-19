@@ -28,6 +28,7 @@ class SettingsCubit extends Cubit<SettingsState> {
     double? backgroundOpacity,
     double? roadOpacity,
     double? overallOpacity,
+    double? windowSize,
     bool persist = true,
   }) async {
     if (!session.canMutate || isClosed) return;
@@ -44,11 +45,16 @@ class SettingsCubit extends Cubit<SettingsState> {
     if (overallOpacity != null && overallOpacity.isFinite) {
       simulation.settings.overallOpacity = overallOpacity.clamp(0.0, 1.0);
     }
+    final resize = windowSize != null && windowSize.isFinite;
+    if (resize) {
+      simulation.settings.windowSize = windowSize.clamp(0.0, 1.0);
+    }
     if (fps != null && [15, 30, 60].contains(fps)) {
       simulation.settings.fps = fps;
       session.game.setFps(fps);
     }
     if (topmost != null ||
+        resize ||
         heroWasVisible != (simulation.settings.overallOpacity > 0)) {
       await overlay.configureWindow();
     } else {

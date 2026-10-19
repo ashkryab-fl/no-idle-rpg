@@ -29,21 +29,28 @@ class _SettingsView extends StatelessWidget {
             onChanged: (v) => cubit.update(topmost: v),
           ),
           const SizedBox(height: 12),
-          _opacitySlider(
+          _percentageSlider(
+            context: context,
+            label: 'Window size',
+            value: settings.windowSize,
+            onChanged: (value) =>
+                cubit.update(windowSize: value, persist: false),
+          ),
+          _percentageSlider(
             context: context,
             label: 'Background opacity',
             value: settings.backgroundOpacity,
             onChanged: (value) =>
                 cubit.update(backgroundOpacity: value, persist: false),
           ),
-          _opacitySlider(
+          _percentageSlider(
             context: context,
             label: 'Road opacity',
             value: settings.roadOpacity,
             onChanged: (value) =>
                 cubit.update(roadOpacity: value, persist: false),
           ),
-          _opacitySlider(
+          _percentageSlider(
             context: context,
             label: 'Overall opacity',
             value: settings.overallOpacity,
@@ -124,7 +131,7 @@ class _SettingsView extends StatelessWidget {
     },
   );
 
-  Widget _opacitySlider({
+  Widget _percentageSlider({
     required BuildContext context,
     required String label,
     required double value,

@@ -33,15 +33,18 @@ class FakeWindow implements DesktopWindowService {
   bool failQuit = false;
   bool heroVisible = true;
   bool expanded = false;
+  double scale = 1;
   Future<void> Function()? closeHandler;
   @override
   Future<void> configure({
     required bool alwaysOnTop,
     required bool expanded,
     bool heroVisible = true,
+    double scale = 1,
   }) async {
     this.heroVisible = heroVisible;
     this.expanded = expanded;
+    this.scale = scale;
   }
 
   @override

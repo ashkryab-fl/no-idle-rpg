@@ -37,6 +37,7 @@ Future<void> bootstrap() async {
       alwaysOnTop: simulation.settings.alwaysOnTop,
       expanded: repository.lastLoadStatus.notice != null,
       heroVisible: simulation.settings.overallOpacity > 0,
+      scale: simulation.settings.windowScale,
     );
     runApp(
       CompanionApp(

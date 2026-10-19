@@ -24,6 +24,8 @@ final class HeroAnimationCoordinator {
   final RestCoordinator rest;
   final AttackPlayback combatPlayback;
   final AnimationPlayer _player;
+  AnimationPlayer? _attackRecovery;
+  double _attackRecoveryRate = 1;
   HeroAnimationPreviewPlayback? _preview;
   HeroAnimationPreview? get preview => _preview?.selection;
   bool get isPreviewing => _preview != null;
@@ -62,6 +64,21 @@ final class HeroAnimationCoordinator {
   void synchronize(HeroAnimationRequest request) {
     if (request == _request) return;
     final previous = _request;
+    if (previous == HeroAnimationRequest.combat &&
+        request == HeroAnimationRequest.idle &&
+        combatPlayback.attacking(combatPeriod)) {
+      // Finish the visible swing without advancing combat or emitting damage.
+      _attackRecovery = AnimationPlayer(combatPlayback.clip)
+        ..advance(combatPlayback.clipElapsed(combatPeriod));
+      _attackRecoveryRate = combatPeriod < combatPlayback.clip.duration
+          ? combatPlayback.clip.duration / combatPeriod
+          : 1;
+    }
+    if (request == HeroAnimationRequest.death ||
+        request == HeroAnimationRequest.respawn ||
+        request == HeroAnimationRequest.combat) {
+      _attackRecovery = null;
+    }
     _request = request;
     _generation++;
     switch (request) {
@@ -97,8 +114,19 @@ final class HeroAnimationCoordinator {
       _preview!.advance(dt);
       return 0;
     }
-    final start = _clock;
+    var start = _clock;
     _clock += dt;
+    final recovery = _attackRecovery;
+    if (recovery != null) {
+      final result = recovery.advance(dt * _attackRecoveryRate);
+      final consumed = result.consumed / _attackRecoveryRate;
+      rest.advance(consumed, canRest: false, startTime: start);
+      if (!recovery.completed) return 0;
+      _attackRecovery = null;
+      _generation++;
+      dt = result.remaining / _attackRecoveryRate;
+      start += consumed;
+    }
     if (_request == HeroAnimationRequest.travel) {
       final wasBlocking = rest.blocksAdventure || _restWasBlocking;
       if (!_restWasBlocking && rest.blocksAdventure) _generation++;
@@ -150,6 +178,16 @@ final class HeroAnimationCoordinator {
 
   PlaybackSnapshot get snapshot {
     if (_preview != null) return _preview!.snapshot(_generation);
+    final recovery = _attackRecovery;
+    if (recovery != null) {
+      return PlaybackSnapshot.clip(
+        recovery.snapshot,
+        resources,
+        generation: _generation,
+        displayLabel: recovery.clip.id.value,
+        pose: ProceduralPose.striking,
+      );
+    }
     if (_request == HeroAnimationRequest.travel && rest.blocksAdventure) {
       final graph = rest.graphRunner;
       if (graph != null && graph.isRunning) {
@@ -213,6 +251,7 @@ final class HeroAnimationCoordinator {
     stopPreview();
     rest.cancelPlayback();
     combatPlayback.reset();
+    _attackRecovery = null;
     _generation++;
     _clock = 0;
     _restWasBlocking = false;

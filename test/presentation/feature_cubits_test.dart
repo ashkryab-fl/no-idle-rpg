@@ -125,9 +125,12 @@ void main() {
         addTearDown(settings.close);
         await overlay.show(OverlayPanel.settings);
         final before = settings.state;
+        expect(before.windowSize, .2);
+        expect(window.scale, 1);
         await settings.update(
           overallOpacity: 0,
           backgroundOpacity: .5,
+          windowSize: 0,
           persist: false,
         );
         await flushSessionEvents();
@@ -136,13 +139,31 @@ void main() {
         expect(window.expanded, isTrue);
         expect(overlay.state.overallOpacity, 0);
         expect(settings.state.backgroundOpacity, .5);
+        expect(settings.state.windowSize, 0);
+        expect(window.scale, .5);
+        expect(overlay.state.windowScale, .5);
         expect(before.overallOpacity, 1);
         await settings.save();
         expect(repository.writes, 1);
-        await settings.update(overallOpacity: 2, fps: 60);
+        expect((repository.snapshot!['settings'] as Map)['windowSize'], 0);
+        await settings.update(overallOpacity: 2, fps: 60, windowSize: 1);
         expect(settings.state.overallOpacity, 1);
         expect(settings.state.fps, 60);
         expect(window.heroVisible, isTrue);
+        expect(window.scale, 3);
+        await flushSessionEvents();
+        expect(overlay.state.windowScale, 3);
+        await overlay.show(OverlayPanel.menu);
+        await overlay.show(OverlayPanel.settings);
+        expect(window.scale, 3);
+        await overlay.show(null);
+        expect(window.scale, 3);
+        expect(window.expanded, isFalse);
+        await overlay.show(OverlayPanel.settings);
+        await settings.update(windowSize: 0, persist: false);
+        expect(window.scale, .5);
+        await overlay.show(null);
+        expect(window.scale, .5);
       },
     );
 
@@ -162,6 +183,7 @@ void main() {
         debug.setSpeed(20);
         equipment.purchase('weapon');
         await flushSessionEvents();
+        await settings.update(windowSize: 0, persist: false);
         repository.resetGate = Completer<void>();
         final reset = settings.reset();
         expect(settings.state.busy, isTrue);
@@ -175,6 +197,8 @@ void main() {
         await flushSessionEvents();
         expect(settings.state.busy, isFalse);
         expect(settings.state.sound, isFalse);
+        expect(settings.state.windowSize, .2);
+        expect(window.scale, 1);
         expect(equipment.state.gold.isZero, isTrue);
         expect(equipment.state.items.first.level, 0);
         expect(talents.state.books.isZero, isTrue);

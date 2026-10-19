@@ -8,8 +8,10 @@ class SettingsState {
       backgroundOpacity = session.simulation.settings.backgroundOpacity,
       roadOpacity = session.simulation.settings.roadOpacity,
       overallOpacity = session.simulation.settings.overallOpacity,
+      windowSize = session.simulation.settings.windowSize,
       busy = !session.canMutate;
   final bool alwaysOnTop, sound, busy;
   final int fps;
   final double backgroundOpacity, roadOpacity, overallOpacity;
+  final double windowSize;
 }

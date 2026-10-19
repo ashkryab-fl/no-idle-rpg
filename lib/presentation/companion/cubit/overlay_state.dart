@@ -25,6 +25,7 @@ class CompanionOverlayState {
       notice = session.state.notice,
       overallOpacity = session.simulation.settings.overallOpacity,
       backgroundOpacity = session.simulation.settings.backgroundOpacity,
+      windowScale = session.simulation.settings.windowScale,
       heroHp = session.simulation.heroHp,
       maxHp = session.simulation.stats.maxHp,
       stage = session.simulation.stage,
@@ -32,6 +33,7 @@ class CompanionOverlayState {
   final OverlayPanel? panel;
   final String? error, notice;
   final double overallOpacity, backgroundOpacity;
+  final double windowScale;
   final Amount heroHp, maxHp;
   final int stage, wave;
 }

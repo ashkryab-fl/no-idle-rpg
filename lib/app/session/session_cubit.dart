@@ -7,6 +7,7 @@ import '../../core/balance/game_balance.dart';
 import '../../core/numbers/amount.dart';
 import '../../core/persistence/game_save.dart';
 import '../../domain/activity/idle_level.dart';
+import '../../domain/settings.dart';
 import '../../game/desktop_game.dart';
 import '../../game/systems/game_simulation.dart';
 import 'session_state.dart';
@@ -208,6 +209,7 @@ class SessionCubit extends Cubit<SessionState> with WidgetsBindingObserver {
       simulation.settings.backgroundOpacity = 1;
       simulation.settings.roadOpacity = 1;
       simulation.settings.overallOpacity = 1;
+      simulation.settings.windowSize = GameSettings.defaultWindowSize;
       game.setFps(30);
       await configureWindow(expanded: true);
       if (_disposed) return;
@@ -252,6 +254,7 @@ class SessionCubit extends Cubit<SessionState> with WidgetsBindingObserver {
         alwaysOnTop: simulation.settings.alwaysOnTop,
         expanded: expanded,
         heroVisible: simulation.settings.overallOpacity > 0,
+        scale: simulation.settings.windowScale,
       );
     } catch (error) {
       reportError('Window configuration failed: $error');

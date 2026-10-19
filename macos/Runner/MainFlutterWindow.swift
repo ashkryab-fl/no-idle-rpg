@@ -8,7 +8,7 @@ class MainFlutterWindow: NSWindow {
   private var pointerTimer: Timer?
   private var expanded = false
   private var topmost = true
-  private var heroVisible = true
+  private var windowScale: CGFloat = 1
   private var screenIndex = 0
   private var closePending = false
   private var lastVisibleFrame: NSRect?
@@ -54,7 +54,8 @@ class MainFlutterWindow: NSWindow {
         let arguments = call.arguments as? [String: Any] ?? [:]
         self.expanded = arguments["expanded"] as? Bool ?? false
         self.topmost = arguments["alwaysOnTop"] as? Bool ?? true
-        self.heroVisible = arguments["heroVisible"] as? Bool ?? true
+        let scale = arguments["scale"] as? Double ?? 1
+        self.windowScale = scale.isFinite ? CGFloat(min(3, max(0.5, scale))) : 1
         self.level = self.topmost ? .floating : .normal
         self.positionOverlay()
         self.updateClickThrough()
@@ -88,8 +89,13 @@ class MainFlutterWindow: NSWindow {
     screenIndex = min(screenIndex, NSScreen.screens.count - 1)
     let visible = NSScreen.screens[screenIndex].visibleFrame
     lastVisibleFrame = visible
-    let width = min(400.0, visible.width - 24)
-    let height = min(expanded ? 620.0 : 190.0, visible.height - 24)
+    let availableWidth = visible.width - 24
+    let availableHeight = visible.height - 24
+    let scale = min(windowScale, availableWidth / 400, availableHeight / 190)
+    // The popup overlays the scene; it never reserves scene space.
+    let width = expanded ? availableWidth : max(400, 400 * scale)
+    // Keep room for speech at its default text and container size.
+    let height = expanded ? availableHeight : min(availableHeight, max(190, 190 * scale))
     setFrame(NSRect(x: visible.maxX - width - 12, y: visible.minY + 12, width: width, height: height), display: true)
   }
   private func updateClickThrough() {
@@ -98,12 +104,12 @@ class MainFlutterWindow: NSWindow {
       positionOverlay()
     }
     let local = NSPoint(x: NSEvent.mouseLocation.x - frame.minX, y: frame.maxY - NSEvent.mouseLocation.y)
-    let height = frame.height
-    let heroHeight: CGFloat = 96 * 1.15 // GameBalance.heroHitboxHeight
-    let hero = NSRect(x: 68, y: height - heroHeight, width: 72, height: heroHeight)
-    let menu = NSRect(x: frame.width - 46, y: height - 182, width: 38, height: 38)
-    let panel = NSRect(x: 8, y: 8, width: frame.width - 16, height: max(0, height - 202))
-    let interactive = (heroVisible && hero.contains(local)) || menu.contains(local) || (expanded && panel.contains(local))
+    let scale = min(windowScale, frame.width / 400, frame.height / 190)
+    let menu = NSRect(x: frame.width - 46, y: frame.height - 190 * scale + 8, width: 38, height: 38)
+    let panelHeight = min(418, frame.height - 16)
+    let panelBottom = min(194, max(8, frame.height - panelHeight - 8))
+    let panel = NSRect(x: frame.width - 392, y: frame.height - panelBottom - panelHeight, width: 384, height: panelHeight)
+    let interactive = menu.contains(local) || (expanded && panel.contains(local))
     ignoresMouseEvents = !interactive
   }
   func requestClose() {

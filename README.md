@@ -43,7 +43,7 @@ flutter pub get
 flutter run -d windows
 ```
 
-Click the heroine or the menu button to open Equipment, Talents, Statistics,
+Click the menu button to open Equipment, Talents, Statistics,
 or Settings. Use **Exit** to save and close the app.
 
 ## Development

@@ -52,6 +52,7 @@ void main() {
       game.settings.backgroundOpacity = .35;
       game.settings.roadOpacity = .65;
       game.settings.overallOpacity = 0;
+      game.settings.windowSize = .6;
       game.activity.total.activeSeconds = 200;
       final now = DateTime(2026, 10, 8);
       await repository.save(GameSave.capture(game, now));
@@ -64,11 +65,18 @@ void main() {
       expect(restored.settings.backgroundOpacity, .35);
       expect(restored.settings.roadOpacity, .65);
       expect(restored.settings.overallOpacity, 0);
+      expect(restored.settings.windowSize, .6);
+      expect(restored.settings.windowScale, 2);
       expect(restored.distance, 100);
       expect(restored.kills, 9);
       expect(restored.stage, 10);
       expect(restored.stageKills, 3);
       expect(restored.lastSaveTime.toLocal(), now);
+      final previousSave = restored.toJson();
+      (previousSave['settings'] as Map).remove('windowSize');
+      final defaults = GameSave.fromJson(previousSave).settings;
+      expect(defaults.windowSize, .2);
+      expect(defaults.windowScale, 1);
     },
   );
 

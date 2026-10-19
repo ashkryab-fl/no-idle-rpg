@@ -2,6 +2,7 @@
 
 #include <optional>
 #include <algorithm>
+#include <cmath>
 #include <flutter/standard_method_codec.h>
 
 #include "flutter/generated_plugin_registrant.h"
@@ -58,7 +59,10 @@ bool FlutterWindow::OnCreate() {
         };
         expanded_ = read("expanded", false);
         topmost_ = read("alwaysOnTop", true);
-        hero_visible_ = read("heroVisible", true);
+        const auto it = map->find(flutter::EncodableValue("scale"));
+        const double* scale = it == map->end() ? nullptr : std::get_if<double>(&it->second);
+        window_scale_ = scale && std::isfinite(*scale)
+            ? std::clamp(*scale, 0.5, 3.0) : 1.0;
       }
       ConfigureOverlay();
       UpdateClickThrough();
@@ -149,10 +153,16 @@ void FlutterWindow::ConfigureOverlay() {
   if (!GetMonitorInfo(monitor, &info)) return;
   const double scale = GetDpiForWindow(hwnd) / 96.0;
   const int margin = static_cast<int>(12 * scale);
-  const int width = std::min(static_cast<int>(400 * scale),
-      static_cast<int>(info.rcWork.right - info.rcWork.left) - margin * 2);
-  const int height = std::min(static_cast<int>((expanded_ ? 620 : 190) * scale),
-      static_cast<int>(info.rcWork.bottom - info.rcWork.top) - margin * 2);
+  const double available_width = (info.rcWork.right - info.rcWork.left - margin * 2) / scale;
+  const double available_height = (info.rcWork.bottom - info.rcWork.top - margin * 2) / scale;
+  const double fitted_scale = std::min({window_scale_,
+      available_width / 400.0, available_height / 190.0});
+  // The popup overlays the scene; it never reserves scene space.
+  const int width = static_cast<int>((expanded_ ? available_width :
+      std::max(400.0, 400 * fitted_scale)) * scale);
+  // Keep room for speech at its default text and container size.
+  const int height = static_cast<int>((expanded_ ? available_height :
+      std::min(available_height, std::max(190.0, 190 * fitted_scale))) * scale);
   SetWindowPos(hwnd, topmost_ ? HWND_TOPMOST : HWND_NOTOPMOST,
       info.rcWork.right - width - margin, info.rcWork.bottom - height - margin,
       width, height, SWP_NOACTIVATE | SWP_FRAMECHANGED);
@@ -169,11 +179,14 @@ void FlutterWindow::UpdateClickThrough() {
   const double x = cursor.x / scale, y = cursor.y / scale;
   const double width = client.right / scale, height = client.bottom / scale;
   const bool inside = x >= 0 && x < width && y >= 0 && y < height;
-  const double hero_height = 96.0 * 1.15;  // GameBalance.heroHitboxHeight
-  const bool hero = x >= 68 && x < 140 && y >= height - hero_height && y < height;
-  const bool menu = x >= width - 46 && x < width - 8 && y >= height - 182 && y < height - 144;
-  const bool panel = expanded_ && x >= 8 && x < width - 8 && y >= 8 && y < height - 194;
-  const bool interactive = inside && (panel || (hero_visible_ && hero) || menu);
+  const double scene_scale = std::min({window_scale_, width / 400.0, height / 190.0});
+  const double menu_top = height - 190 * scene_scale + 8;
+  const bool menu = x >= width - 46 && x < width - 8 && y >= menu_top && y < menu_top + 38;
+  const double panel_height = std::min(418.0, height - 16);
+  const double panel_bottom = std::min(194.0, std::max(8.0, height - panel_height - 8));
+  const double panel_top = height - panel_bottom - panel_height;
+  const bool panel = expanded_ && x >= width - 392 && x < width - 8 && y >= panel_top && y < panel_top + panel_height;
+  const bool interactive = inside && (panel || menu);
   const LONG_PTR previous = GetWindowLongPtr(hwnd, GWL_EXSTYLE);
   const LONG_PTR next = interactive ? previous & ~WS_EX_TRANSPARENT : previous | WS_EX_TRANSPARENT;
   if (previous != next) SetWindowLongPtr(hwnd, GWL_EXSTYLE, next);

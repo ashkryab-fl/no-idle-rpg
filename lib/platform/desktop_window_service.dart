@@ -5,6 +5,7 @@ abstract class DesktopWindowService {
     required bool alwaysOnTop,
     required bool expanded,
     bool heroVisible = true,
+    double scale = 1,
   });
   Future<void> quit();
   Future<void> cancelClose();
@@ -18,11 +19,13 @@ class NativeDesktopWindowService implements DesktopWindowService {
     required bool alwaysOnTop,
     required bool expanded,
     bool heroVisible = true,
+    double scale = 1,
   }) async {
     await channel.invokeMethod<void>('configure', {
       'alwaysOnTop': alwaysOnTop,
       'expanded': expanded,
       'heroVisible': heroVisible,
+      'scale': scale,
     });
   }
 
